@@ -32,8 +32,6 @@ function AdminSidebar() {
     { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/accounts" },
     { name: "Hostel", icon: ShoppingCart, path: "/admin-dashboard/hostel" },
     { name: "Library", icon: Megaphone, path: "/admin-dashboard/library" },
-
-    // ✅ NEW FIELDS
     { name: "Alumni Co-ordinator", icon: GraduationCap, path: "/admin-dashboard/alumni" },
     { name: "Central Placement Department", icon: Briefcase, path: "/admin-dashboard/placement" },
     { name: "Department Placement Co-ordinator", icon: ClipboardList, path: "/admin-dashboard/department-placement" },
@@ -97,7 +95,7 @@ function AdminSidebar() {
         </div>
 
         {/* Footer */}
-        <div className="px-2 space-y-2 mt-auto">
+        <div className="px-2 space-y-2 ">
           <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50 cursor-pointer">
             <HelpCircle className="w-6 h-6 text-[#00539C]" />
             {!collapsed && <span className="font-medium">Help</span>}
