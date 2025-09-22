@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  prn                 String         @id  
+  studentName         String
+  email               String      @unique
+  phoneNo             String?     @db.VarChar(15)
+  password            String      @db.VarChar(255)
+
+  profile             StudentProfile?
+  approvals           ApprovalRequest[]
+}
+
+model StudentProfile {
+  profileId               Int           @id @default(autoincrement())
+  prn                     String           @unique
+  studentID               String           @unique
+  fatherName              String?
+  motherName              String?
+  caste                   String?
+  subCaste                String?
+  nationality             String?
+  placeOfBirth            String?
+  dateOfBirth             DateTime?
+  dobWords                String?
+  lastCollege             String?
+  yearOfAdmission         DateTime?
+  branch                  String?
+  admissionMode           AdmissionMode
+  reasonForLeaving        String?
+
+  student                 Student @relation(fields: [studentID], references: [prn])
+}
+
+model Department {
+  deptId        Int    @id @default(autoincrement())
+  deptName      String
+  deptHead      String?
+  branchId      Int?  
+  username      String @unique
+  passwordHash  String
+  email         String @unique
+
+  approvalRequests ApprovalRequest[]
+  approvalActions  ApprovalAction[]
+}
+
+model ApprovalRequest {
+  approvalId   Int       @id @default(autoincrement())
+  studentId    String
+  deptId       Int
+  status       ApprovalStatus @default(PENDING)
+  approvedAt   DateTime?
+  remarks      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student      Student    @relation(fields: [studentId], references: [prn])
+  department   Department @relation(fields: [deptId], references: [deptId])
+  actions      ApprovalAction[]
+}
+
+model ApprovalAction {
+  actionId    Int       @id @default(autoincrement())
+  approvalId  Int
+  deptId      Int
+  action      ActionType
+  remarks     String?
+  actionAt    DateTime? @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  approval    ApprovalRequest @relation(fields: [approvalId], references: [approvalId])
+  department  Department      @relation(fields: [deptId], references: [deptId])
+}
+
+model SuperAdmin {
+  id        Int    @id @default(autoincrement())
+  username  String @unique
+  email     String @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+
+enum AdmissionMode {
+  FIRSTYEAR
+  DIRECTSECONDYEAR
+  MBA
+  MCA
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REQUESTED_INFO
+}
+
+enum ActionType {
+  APPROVED
+  REJECTED
+  REQUESTED_INFO
+  COMMENTED
+  REOPENED
+}
