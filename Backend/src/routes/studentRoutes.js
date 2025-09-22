@@ -7,8 +7,6 @@ const router = Router();
 
 //Submit LC Form 
 router.post("/", verifyToken(["student"]), submitLCForm);
-
-
 router.get("/status", verifyToken(["student"]), getApprovalStatus);
 
 export default router;
