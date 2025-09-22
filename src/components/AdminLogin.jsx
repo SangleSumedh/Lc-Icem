@@ -10,6 +10,20 @@ const AdminLogin = () => {
     password: "",
   });
   const [formErrors, setFormErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  const departments = [
+    "HOD",
+    "Accounts",
+    "Library",
+    "Alumini Co-ordinator",
+    "Central Placement Dept",
+    "Dept Placement Co-ordinator",
+    "Scholarship",
+    "Exam Section",
+    "Hostel",
+    "Bus",
+  ];
 
   const handleInputChange = (e) => {
     setFormData({
@@ -111,14 +125,13 @@ const AdminLogin = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 
-                    1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 
-                    0 001.065 2.572c1.756.426 1.756 2.924 0 
-                    3.35a1.724 1.724 0 00-1.066 2.573c.94 
-                    1.543-.826 3.31-2.37 2.37a1.724 1.724 
-                    0 00-2.572 1.065c-.426 1.756-2.924 
-                    1.756-3.35 0a1.724 1.724 0 
-                    00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 
+                    1.724 0 002.573 1.066c1.543-.94 3.31.826 
+                    2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 
+                    1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 
+                    2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 
+                    1.724 0 00-2.572 1.065c-.426 1.756-2.924 
+                    1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 
                     1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 
                     0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 
                     2.37-2.37.996.608 2.296.07 2.572-1.065z"
@@ -178,26 +191,17 @@ const AdminLogin = () => {
                   name="department"
                   value={formData.department}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border border-white/30 rounded-xl text-white placeholder-white/60 
+                  className={`w-full px-4 py-3 border border-white/30 rounded-xl text-white bg-white/20 
                   focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 backdrop-blur-sm ${
                     formErrors.department ? "bg-red-500/20" : "bg-white/20"
                   }`}
                 >
-                  <option value="" className="text-gray-800">
-                    Select Department
-                  </option>
-                  <option value="IT" className="text-gray-800">
-                    IT
-                  </option>
-                  <option value="HR" className="text-gray-800">
-                    HR
-                  </option>
-                  <option value="Finance" className="text-gray-800">
-                    Finance
-                  </option>
-                  <option value="Operations" className="text-gray-800">
-                    Operations
-                  </option>
+                  <option value="">Select Department</option>
+                  {departments.map((dept, index) => (
+                    <option key={index} value={dept} className="text-gray-800">
+                      {dept}
+                    </option>
+                  ))}
                 </select>
                 {formErrors.department && (
                   <p className="mt-1 text-xs text-red-300">
@@ -214,18 +218,27 @@ const AdminLogin = () => {
                 >
                   Password
                 </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border border-white/30 rounded-xl text-white placeholder-white/60 
-                  focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 backdrop-blur-sm ${
-                    formErrors.password ? "bg-red-500/20" : "bg-white/20"
-                  }`}
-                  placeholder="Enter admin password"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border border-white/30 rounded-xl text-white placeholder-white/60 
+                    focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 backdrop-blur-sm ${
+                      formErrors.password ? "bg-red-500/20" : "bg-white/20"
+                    }`}
+                    placeholder="Enter admin password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-3 flex items-center text-white/70 hover:text-white"
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
                 {formErrors.password && (
                   <p className="mt-1 text-xs text-red-300">
                     Password is required

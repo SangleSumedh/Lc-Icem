@@ -82,7 +82,7 @@ function AdminSidebar() {
                 ref={(el) => (itemRefs.current[dept.path] = el)}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
                   isActive
-                    ? "text-blue-600 text-xl bg-blue-50 font-semibold"
+                    ? "text-blue-600 bg-blue-50 font-semibold"
                     : "hover:text-blue-400"
                 }`}
                 onClick={() => clickHandler(dept)}
