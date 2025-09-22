@@ -4,11 +4,7 @@ import Logo from "/Logo.png";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    username: "",
-    department: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ username: "", password: "" });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -24,95 +20,66 @@ const AdminLogin = () => {
     "Hostel",
     "Bus",
   ];
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     if (formErrors[e.target.name]) {
-      setFormErrors({
-        ...formErrors,
-        [e.target.name]: false,
-      });
+      setFormErrors({ ...formErrors, [e.target.name]: false });
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    const errors = {
-      username: !formData.username,
-      department: !formData.department,
-      password: !formData.password,
-    };
-
+    const errors = { username: !formData.username, password: !formData.password };
     setFormErrors(errors);
 
-    if (!errors.username && !errors.department && !errors.password) {
-      // Dummy login logic
-      navigate("/admin-dashboard");
+    if (!errors.username && !errors.password) {
+      try {
+        setLoading(true);
+        const res = await fetch("http://localhost:5000/auth/department/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("role", "admin");
+          navigate("/admin-dashboard");
+        } else {
+          alert(data.error || "❌ Login failed");
+        }
+      } catch (err) {
+        console.error("❌ Network error:", err);
+        alert("Could not connect to backend.");
+      } finally {
+        setLoading(false);
+      }
     }
-  };
-
-  const handleForgetPassword = () => {
-    navigate("/forget-password");
-  };
-
-  const handleStudentLogin = () => {
-    navigate("/");
   };
 
   return (
     <div className="h-screen w-full flex flex-col bg-white">
-      {/* Navbar */}
       <header className="bg-[#00539C] text-white shadow-lg">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            {/* Left - Logo */}
-            <div className="flex items-center">
-              <img src={Logo} alt="Logo" className="h-16" />
-            </div>
-
-            {/* Right - Navigation Links */}
-            <div className="flex space-x-4">
-              <button
-                onClick={() => navigate("/")}
-                className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
-              >
-                Student Login
-              </button>
-              <button
-                onClick={() => navigate("/admin-login")}
-                className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
-              >
-                Admin Login
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                className="px-4 py-2 rounded-lg bg-white text-[#00539C] hover:bg-gray-100 transition-colors"
-              >
-                Register
-              </button>
-            </div>
+        <div className="flex justify-between items-center py-4 px-6">
+          <img src={Logo} alt="Logo" className="h-16" />
+          <div className="flex space-x-4">
+            <button onClick={() => navigate("/")} className="px-4 py-2">Student Login</button>
+            <button onClick={() => navigate("/admin-login")} className="px-4 py-2">Admin Login</button>
+            <button onClick={() => navigate("/register")} className="px-4 py-2">Register</button>
           </div>
         </div>
       </header>
 
-      {/* Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left - Image */}
         <div className="w-1/2 flex items-center justify-center bg-gray-100">
-          <img
-            src="image.png"
-            alt="Admin illustration"
-            className="w-full object-contain h-auto"
-          />
+          <img src="image.png" alt="Admin" className="w-full object-contain h-auto" />
         </div>
-
-        {/* Right - Admin Login Form */}
         <div className="w-1/2 bg-[#003C84] p-5 flex items-start justify-center">
           <div className="max-w-md w-full text-white">
+            <h1 className="text-2xl font-bold mb-2">ICEM CRM - Admin Login</h1>
             <div className="text-center mb-8">
               <div className="mx-auto mb-4 w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
                 <svg
@@ -252,28 +219,17 @@ const AdminLogin = () => {
                 className="w-full bg-white text-[#003C84] font-semibold py-3 px-6 rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg backdrop-blur-sm border border-white/30 flex items-center justify-center space-x-3"
               >
                 <span>Admin Login</span>
+              <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-lg text-black" />
+              <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-lg text-black" />
+
+              <button type="submit" disabled={loading} className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg">
+                {loading ? "Logging in..." : "Admin Login"}
               </button>
             </form>
 
-            <div className="mt-6 flex justify-between text-sm">
-              <button
-                onClick={handleForgetPassword}
-                className="text-white/80 hover:text-white underline transition-colors duration-200"
-              >
-                Forget Password?
-              </button>
-              <button
-                onClick={handleStudentLogin}
-                className="text-white/80 hover:text-white underline transition-colors duration-200"
-              >
-                Student Login
-              </button>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-white/60 text-sm">
-                Administrative access only
-              </p>
+            <div className="mt-4 flex justify-between text-xs">
+              <button onClick={() => navigate("/forget-password")} className="underline">Forget Password?</button>
+              <button onClick={() => navigate("/")} className="underline">Student Login</button>
             </div>
           </div>
         </div>
