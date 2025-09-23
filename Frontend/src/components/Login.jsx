@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "/Logo.png";
+import { jwtDecode } from "jwt-decode"; // ✅ fixed import
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,7 +34,10 @@ const Login = () => {
         const data = await res.json();
         if (res.ok) {
           localStorage.setItem("token", data.token);
-          localStorage.setItem("role", "student");
+
+          const decoded = jwtDecode(data.token); // ✅ decode
+          localStorage.setItem("role", decoded.role); // "student"
+
           navigate("/student");
         } else {
           alert(data.error || "❌ Login failed");
@@ -53,9 +57,15 @@ const Login = () => {
         <div className="flex justify-between items-center py-4 px-6">
           <img src={Logo} alt="Logo" className="h-16" />
           <div className="flex space-x-4">
-            <button onClick={() => navigate("/")} className="px-4 py-2">Student Login</button>
-            <button onClick={() => navigate("/admin-login")} className="px-4 py-2">Admin Login</button>
-            <button onClick={() => navigate("/register")} className="px-4 py-2">Register</button>
+            <button onClick={() => navigate("/")} className="px-4 py-2">
+              Student Login
+            </button>
+            <button onClick={() => navigate("/admin-login")} className="px-4 py-2">
+              Admin Login
+            </button>
+            <button onClick={() => navigate("/register")} className="px-4 py-2">
+              Register
+            </button>
           </div>
         </div>
       </header>
@@ -68,23 +78,52 @@ const Login = () => {
           <div className="max-w-md w-full text-white">
             <h1 className="text-2xl font-bold mb-2">ICEM CRM - Student Login</h1>
             <form onSubmit={handleLogin} className="space-y-5">
-              <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-lg text-black" />
-              <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-lg text-black" />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
 
               <div className="flex items-start">
-                <input type="checkbox" checked={agreeToTerms} onChange={() => setAgreeToTerms(!agreeToTerms)} className="h-4 w-4 mt-1" />
+                <input
+                  type="checkbox"
+                  checked={agreeToTerms}
+                  onChange={() => setAgreeToTerms(!agreeToTerms)}
+                  className="h-4 w-4 mt-1"
+                />
                 <label className="ml-2 text-xs">I agree to Terms</label>
               </div>
 
-              <button type="submit" disabled={loading} className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg"
+              >
                 {loading ? "Logging in..." : "Login"}
               </button>
             </form>
 
             <div className="mt-4 flex justify-between text-xs">
-              <button onClick={() => navigate("/forget-password")} className="underline">Forget Password?</button>
-              <button onClick={() => navigate("/register")} className="underline">Register</button>
-              <button onClick={() => navigate("/admin-login")} className="underline">Admin Login</button>
+              <button onClick={() => navigate("/forget-password")} className="underline">
+                Forget Password?
+              </button>
+              <button onClick={() => navigate("/register")} className="underline">
+                Register
+              </button>
+              <button onClick={() => navigate("/admin-login")} className="underline">
+                Admin Login
+              </button>
             </div>
           </div>
         </div>

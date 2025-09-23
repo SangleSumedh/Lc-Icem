@@ -1,14 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User } from "lucide-react"; // icons
+import { LogOut, User } from "lucide-react";
+import { jwtDecode } from "jwt-decode"; // decode JWT
 import Logo from "/Logo.png";
 
 function AdminNavbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const user = localStorage.getItem("username");
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+
+        if (decoded.role === "student") {
+          setDisplayName("Student");
+        } else if (decoded.role === "superadmin") {
+          setDisplayName("Super Admin");
+        } else if (decoded.role === "department") {
+          setDisplayName(decoded.deptName || "Department");
+        } else {
+          setDisplayName("User");
+        }
+      } catch (err) {
+        console.error("Invalid token:", err);
+        setDisplayName("User");
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
+    localStorage.clear();
     navigate("/");
   };
 
@@ -18,7 +42,7 @@ function AdminNavbar() {
         <div className="flex justify-between items-center py-4">
           {/* Left - Logo */}
           <div className="flex items-center">
-            <img src={Logo} alt="" className="h-20 " />
+            <img src={Logo} alt="Logo" className="h-20" />
           </div>
 
           {/* Right - Profile Menu */}
@@ -31,7 +55,7 @@ function AdminNavbar() {
                 <User className="w-6 h-6" />
               </div>
               <span className="hidden sm:inline text-white font-medium">
-                {user || "Admin"}
+                {displayName}
               </span>
             </button>
 
