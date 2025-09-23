@@ -31,7 +31,7 @@ function AdminNavbar() {
                 <User className="w-6 h-6" />
               </div>
               <span className="hidden sm:inline text-white font-medium">
-                Admin
+                {user || "Admin"}
               </span>
             </button>
 
