@@ -14,16 +14,16 @@ datasource db {
 }
 
 model Student {
-  prn                 String         @id  
-  studentName         String
-  email               String      @unique
-  phoneNo             String?     @db.VarChar(15)
-  password            String      @db.VarChar(255)
+  prn          String   @id
+  studentName  String
+  email        String   @unique
+  phoneNo      String?  @db.VarChar(15)
+  password     String   @db.VarChar(255)
+  college      College  @default(ICEM) 
 
-  profile             StudentProfile?
-  approvals           ApprovalRequest[]
+  profile      StudentProfile?
+  approvals    ApprovalRequest[]
 }
-
 model StudentProfile {
   profileId               Int           @id @default(autoincrement())
   prn                     String           @unique
@@ -65,6 +65,10 @@ model ApprovalRequest {
   status       ApprovalStatus @default(PENDING)
   approvedAt   DateTime?
   remarks      String?
+  deptName         String?
+  branch           String?
+  studentName      String?
+  yearOfAdmission  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -72,6 +76,7 @@ model ApprovalRequest {
   department   Department @relation(fields: [deptId], references: [deptId])
   actions      ApprovalAction[]
 }
+
 
 model ApprovalAction {
   actionId    Int       @id @default(autoincrement())
@@ -93,6 +98,8 @@ model SuperAdmin {
   email     String @unique
   password  String
   createdAt DateTime @default(now())
+
+  @@map("SuperAdmin") // explicitly map to PascalCase table name
 }
 
 
@@ -116,4 +123,9 @@ enum ActionType {
   REQUESTED_INFO
   COMMENTED
   REOPENED
+}
+
+enum College {
+  ICEM
+  IGSB
 }

@@ -6,7 +6,7 @@
 //     const username = "superadmin";
 //     const email = "admin@example.com";
 //     const password = "supersecret";
-
+// w
 //     // Hash password
 //     const hashedPassword = await bcrypt.hash(password, 10);
 

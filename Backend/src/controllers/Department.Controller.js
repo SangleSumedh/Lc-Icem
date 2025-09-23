@@ -11,27 +11,27 @@ export const updateApprovalStatus = async (req, res) => {
   try {
     const approval = await prisma.approvalRequest.findUnique({
       where: { approvalId },
-    });
-
-    if (!approval) {
-      return res.status(404).json({ error: "Approval request not found" });
-    }
-
-    if (approval.deptId != deptId) {
-      return res
-        .status(403)
-        .json({ error: "You cannot modify this approval request" });
-    }
-
-    const updatedApproval = await prisma.approvalRequest.update({
-      where: { approvalId },
-      data: {
-        status,
-        remarks,
-        approvedAt: new Date(),
+      include: {
+        student: { include: { profile: true } },
+        department: true,
       },
     });
 
+    if (!approval)
+      return res.status(404).json({ error: "Approval request not found" });
+    if (approval.deptId !== deptId)
+      return res
+        .status(403)
+        .json({ error: "You cannot modify this approval request" });
+
+    // Update current approval request
+
+    const updatedApproval = await prisma.approvalRequest.update({
+      where: { approvalId },
+      data: { status, remarks, approvedAt: new Date() },
+    });
+
+    // Log the action
     await prisma.approvalAction.create({
       data: {
         approvalId,
@@ -44,6 +44,45 @@ export const updateApprovalStatus = async (req, res) => {
     console.log(
       `Approval Request ${approvalId} marked as ${status} by dept ${deptId}`
     );
+
+    // Trigger next approval request if current is approved
+    if (status === "APPROVED") {
+      const studentId = approval.studentId;
+      const studentBranch = approval.student.profile?.branch;
+
+      if (approval.department.deptName === "Account") {
+        // Create Library request
+        const libraryDept = await prisma.department.findFirst({
+          where: { deptName: "Library" },
+        });
+        if (libraryDept)
+          await createApprovalIfNotExists(
+            studentId,
+            libraryDept,
+            approval.student
+          );
+      } else if (approval.department.deptName === "Library") {
+        // Create HOD request(s) for student's branch
+        const hodDepts = await prisma.department.findMany({
+          where: {
+            deptName: { contains: "HOD" },
+          },
+        });
+        for (const hodDept of hodDepts)
+          await createApprovalIfNotExists(studentId, hodDept, approval.student);
+      } else if (approval.department.deptName.includes("HOD")) {
+        // Create remaining requests for all other departments except Account, Library, and HOD
+        const remainingDepts = await prisma.department.findMany({
+          where: {
+            NOT: { deptName: { in: ["Account", "Library"] } },
+            branchId: null, // Only include departments that are not branch-specific
+          },
+        });
+
+        for (const dept of remainingDepts)
+          await createApprovalIfNotExists(studentId, dept, approval.student);
+      }
+    }
 
     res.json({
       success: true,
@@ -58,6 +97,27 @@ export const updateApprovalStatus = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// Helper function to create approval if it doesn't exist
+async function createApprovalIfNotExists(studentId, dept, student) {
+  const existing = await prisma.approvalRequest.findFirst({
+    where: { studentId, deptId: dept.deptId },
+  });
+  if (!existing) {
+    await prisma.approvalRequest.create({
+      data: {
+        status: "PENDING",
+        studentName: student.studentName,
+        yearOfAdmission: student.profile?.yearOfAdmission,
+        deptName: dept.deptName,
+        branch: student.profile?.branch,
+        student: { connect: { prn: studentId } },
+        department: { connect: { deptId: dept.deptId } },
+      },
+    });
+    console.log(`✅ Created approval request for ${dept.deptName}`);
+  }
+}
 
 export const getPendingApprovals = async (req, res) => {
   const deptId = req.user.deptId; // From JWT
