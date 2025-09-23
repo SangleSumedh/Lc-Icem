@@ -5,83 +5,108 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET not set in environment variables");
 
-
-
 export const registerStudent = async (req, res) => {
-    const {prn, studentName, email, phoneNo, password} = req.body;
-    
-    if (!prn || !studentName || !email || !phoneNo || !password) {
-    return res.status(400).json({ error: "All fields are required" });
-    }
+  const { prn, studentName, email, phoneNo, password, college } = req.body;
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const student = await prisma.student.create({
-            data: {prn, studentName, email, phoneNo, password: hashedPassword},
-        });
-        console.log("Student Registered")
-        res.json({message: "Registration Successful", student});
-    } catch (err) {
-        console.log("Something went wrong while registration")
-        res.status(400).json({error: err.message})
-    }
-}
+  // Validate all required fields including college
+  if (!prn || !studentName || !email || !phoneNo || !password || !college) {
+    return res
+      .status(400)
+      .json({ error: "All fields are required, including college" });
+  }
 
+  // Validate that college value is one of the enum values
+  const allowedColleges = ["ICEM", "IGSB"];
+  if (!allowedColleges.includes(college)) {
+    return res.status(400).json({ error: "Invalid college value" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const student = await prisma.student.create({
+      data: {
+        prn,
+        studentName,
+        email,
+        phoneNo,
+        password: hashedPassword,
+        college,
+      },
+    });
+
+    console.log("Student Registered");
+    res.json({ message: "Registration Successful", student });
+  } catch (err) {
+    console.error("Something went wrong during registration:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
 
 export const loginStudent = async (req, res) => {
-    const {email, password} = req.body;
+  const { email, password } = req.body;
 
-    try {
-        const student = await prisma.student.findUnique({where: {email}});
-        if (!student) return res.status(400).json({error: "Student not found"});
+  try {
+    const student = await prisma.student.findUnique({ where: { email } });
+    if (!student) return res.status(400).json({ error: "Student not found" });
 
-        const valid = await bcrypt.compare(password, student.password);
-        if(!valid) return res.status(401).json({error: "Invalid credentials"});
+    const valid = await bcrypt.compare(password, student.password);
+    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-        const token = jwt.sign({role: "student", prn: student.prn , email: student.email }, JWT_SECRET, {
-            expiresIn: "3h",
-        })
+    const token = jwt.sign(
+      { role: "student", prn: student.prn, email: student.email },
+      JWT_SECRET,
+      {
+        expiresIn: "3h",
+      }
+    );
 
-       res.json({
-        success: true,
-        message: "Logged In",
-        token,
-        user: { prn: student.prn, email: student.email }
-       });
-    } catch (err) {
-        res.status(400).json({error: err.message});
-    }
-}
+    res.json({
+      success: true,
+      message: "Logged In",
+      token,
+      user: { prn: student.prn, email: student.email },
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 export const departmentLogin = async (req, res) => {
-    const {username, password} = req.body;
+  const { username, password } = req.body;
 
-    try {
-        const dept = await prisma.department.findUnique({where: {username}});
-        if(!dept) return res.status(400).json({error: "Department not found"});
+  try {
+    const dept = await prisma.department.findUnique({ where: { username } });
+    if (!dept) return res.status(400).json({ error: "Department not found" });
 
-        const valid = await bcrypt.compare(password, dept.passwordHash);
-        if(!valid) return res.status(401).json({error: "Invalid credentials"});
+    const valid = await bcrypt.compare(password, dept.passwordHash);
+    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-        const token  = jwt.sign({role: "department", deptId: dept.deptId, deptName: dept.deptName }, JWT_SECRET, {expiresIn: "8h"});
-        res.json({
-        success: true,
-        message: "Logged In as department",
-        token,
-        user: {deptId: dept.deptId, deptName: dept.deptName }
-       });
-
-    } catch (err) {
-     res.status(400).json({error: err.message});   
-    }
-}
+    const token = jwt.sign(
+      { role: "department", deptId: dept.deptId, deptName: dept.deptName },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+    res.json({
+      success: true,
+      message: "Logged In as department",
+      token,
+      user: { deptId: dept.deptId, deptName: dept.deptName },
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 export const superAdminLogin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const superAdmin = await prisma.superAdmin.findUnique({ where: { username } });
-    if (!superAdmin) return res.status(400).json({ error: "Super Admin not found" });
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: { username },
+    });
+    if (!superAdmin)
+      return res.status(400).json({ error: "Super Admin not found" });
 
     const valid = await bcrypt.compare(password, superAdmin.password);
     if (!valid) return res.status(401).json({ error: "Invalid credentials" });
@@ -96,7 +121,11 @@ export const superAdminLogin = async (req, res) => {
       success: true,
       message: "Logged In as Super Admin",
       token,
-      user: { id: superAdmin.id, username: superAdmin.username, email: superAdmin.email },
+      user: {
+        id: superAdmin.id,
+        username: superAdmin.username,
+        email: superAdmin.email,
+      },
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
