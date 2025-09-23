@@ -1,28 +1,92 @@
-import React from "react";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const StudentDashboard = () => {
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold text-gray-700 mb-2">
-          Your verification status is in progress
-        </h2>
-        <p className="text-gray-600 text-sm mb-4">
-          If you need to update your information, you will be able to request
-          a change after current verification is completed.
-        </p>
+  const [approvals, setApprovals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-        {/* Simple Step Indicator */}
-        <div className="flex items-center justify-between">
-          <div className="w-1/4 h-2 bg-blue-500 rounded-full"></div>
-          <div className="w-1/4 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-1/4 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-1/4 h-2 bg-gray-300 rounded-full"></div>
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const token = localStorage.getItem('token'); // Get token from localStorage
+        const response = await axios.get('http://localhost:5000/lc-form/status', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setApprovals(response.data.approvals);
+        setLoading(false);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to fetch approvals');
+        setLoading(false);
+      }
+    };
+
+    fetchApprovals();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 p-4 rounded-lg">
+          <p className="text-red-600">{error}</p>
+          <p className="mt-2 text-sm text-red-500">Please submit your LC form first</p>
         </div>
+      </div>
+    );
+  }
 
-        <p className="text-gray-500 text-sm mt-2">
-          Estimated day: <span className="font-medium">Aug 27</span> (2 days left)
-        </p>
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h2 className="text-2xl font-bold mb-6">LC Form Approval Status</h2>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {approvals.map((approval) => (
+          <div 
+            key={approval.id} 
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {approval.department.deptName}
+              </h3>
+              <span 
+                className={`px-3 py-1 rounded-full text-sm font-medium
+                  ${approval.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 
+                    approval.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 
+                    'bg-yellow-100 text-yellow-800'}`}
+              >
+                {approval.status}
+              </span>
+            </div>
+
+            <div className="text-sm text-gray-600">
+              <p><span className="font-medium">Department Head:</span> {approval.department.deptHead || 'Not Assigned'}</p>
+              <p><span className="font-medium">Department ID:</span> {approval.department.deptId}</p>
+              {approval.remarks && (
+                <div className="mt-2">
+                  <p className="font-medium">Remarks:</p>
+                  <p className="text-gray-700">{approval.remarks}</p>
+                </div>
+              )}
+            </div>
+
+            {approval.lastUpdated && (
+              <p className="text-xs text-gray-500 mt-4">
+                Last updated: {new Date(approval.lastUpdated).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
