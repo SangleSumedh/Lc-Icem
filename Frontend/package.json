@@ -12,7 +12,11 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.13",
+<<<<<<< HEAD
     "axios": "^1.12.2",
+=======
+    "jwt-decode": "^4.0.0",
+>>>>>>> ae18b16ff3dd286e88b44221d6da767a3c60c878
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
