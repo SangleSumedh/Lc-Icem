@@ -165,3 +165,87 @@ export const getPendingApprovals = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+export const getApprovedApprovals = async (req, res) => {
+  const deptId = req.user.deptId;
+
+  try {
+    const approvedApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "APPROVED",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        approvedAt: "desc",
+      },
+    });
+
+    if (!approvedApprovals || approvedApprovals.length === 0) {
+      return res.status(404).json({ error: "No approved requests found" });
+    }
+
+    console.log(
+      `Fetched ${approvedApprovals.length} approved approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      approvedApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching approved approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getRejectedApprovals = async (req, res) => {
+  const deptId = req.user.deptId;
+
+  try {
+    const rejectedApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "REJECTED",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        approvedAt: "desc",
+      },
+    });
+
+    if (!rejectedApprovals || rejectedApprovals.length === 0) {
+      return res.status(404).json({ error: "No rejected requests found" });
+    }
+
+    console.log(
+      `Fetched ${rejectedApprovals.length} rejected approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      rejectedApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching rejected approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
