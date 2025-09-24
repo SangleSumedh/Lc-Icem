@@ -10,6 +10,7 @@ const Register = () => {
     email: "",
     phoneNo: "",
     password: "",
+    college: "", // ✅ Added college field
   });
   const [formErrors, setFormErrors] = useState({});
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -39,6 +40,7 @@ const Register = () => {
       email: !formData.email,
       phoneNo: !formData.phoneNo,
       password: !formData.password,
+      college: !formData.college, // ✅ Validate college
     };
 
     setFormErrors(errors);
@@ -78,9 +80,21 @@ const Register = () => {
               <img src={Logo} alt="Logo" className="h-16" />
             </div>
             <div className="flex space-x-4">
-              <button onClick={() => navigate("/")} className="px-4 py-2">Student Login</button>
-              <button onClick={() => navigate("/admin-login")} className="px-4 py-2">Admin Login</button>
-              <button onClick={() => navigate("/register")} className="px-4 py-2 bg-white text-[#00539C]">Register</button>
+              <button onClick={() => navigate("/")} className="px-4 py-2">
+                Student Login
+              </button>
+              <button
+                onClick={() => navigate("/admin-login")}
+                className="px-4 py-2"
+              >
+                Admin Login
+              </button>
+              <button
+                onClick={() => navigate("/register")}
+                className="px-4 py-2 bg-white text-[#00539C]"
+              >
+                Register
+              </button>
             </div>
           </div>
         </div>
@@ -88,32 +102,101 @@ const Register = () => {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-1/2 flex items-center justify-center bg-gray-100">
-          <img src="image.png" alt="Students" className="w-full object-contain h-auto" />
+          <img
+            src="image.png"
+            alt="Students"
+            className="w-full object-contain h-auto"
+          />
         </div>
 
         <div className="w-1/2 bg-[#003C84] p-5 flex items-start justify-center overflow-y-auto">
           <div className="max-w-md w-full text-white py-4">
             <h1 className="text-2xl font-bold text-center mb-4">ICEM CRM</h1>
             <form onSubmit={handleRegister} className="space-y-3">
-              <input type="text" name="studentName" value={formData.studentName} onChange={handleInputChange} placeholder="Full Name" className="w-full px-3 py-2 border rounded-lg text-black" />
-              <input type="text" name="prn" value={formData.prn} onChange={handleInputChange} placeholder="PRN" className="w-full px-3 py-2 border rounded-lg text-black" />
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email" className="w-full px-3 py-2 border rounded-lg text-black" />
-              <input type="tel" name="phoneNo" value={formData.phoneNo} onChange={handleInputChange} placeholder="Phone Number" className="w-full px-3 py-2 border rounded-lg text-black" />
-              <input type="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="Password" className="w-full px-3 py-2 border rounded-lg text-black" />
+              <input
+                type="text"
+                name="studentName"
+                value={formData.studentName}
+                onChange={handleInputChange}
+                placeholder="Full Name"
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+              <input
+                type="text"
+                name="prn"
+                value={formData.prn}
+                onChange={handleInputChange}
+                placeholder="PRN"
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Email"
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+              <input
+                type="tel"
+                name="phoneNo"
+                value={formData.phoneNo}
+                onChange={handleInputChange}
+                placeholder="Phone Number"
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Password"
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              />
+
+              {/* ✅ College Dropdown */}
+              <select
+                name="college"
+                value={formData.college}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg text-black"
+              >
+                <option value="">Select College</option>
+                <option value="ICEM">ICEM</option>
+                <option value="IGSB">IGSB</option>
+              </select>
 
               <div className="flex items-start">
-                <input type="checkbox" checked={agreeToTerms} onChange={() => setAgreeToTerms(!agreeToTerms)} className="h-4 w-4 mt-1" />
-                <label className="ml-2 text-xs">I agree to the Terms and Privacy Policy</label>
+                <input
+                  type="checkbox"
+                  checked={agreeToTerms}
+                  onChange={() => setAgreeToTerms(!agreeToTerms)}
+                  className="h-4 w-4 mt-1"
+                />
+                <label className="ml-2 text-xs">
+                  I agree to the Terms and Privacy Policy
+                </label>
               </div>
 
-              <button type="submit" disabled={loading} className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg"
+              >
                 {loading ? "Registering..." : "Register"}
               </button>
             </form>
 
             <div className="mt-4 flex justify-between text-xs">
-              <button onClick={() => navigate("/")} className="underline">Already have an account? Login</button>
-              <button onClick={() => navigate("/admin-login")} className="underline">Admin Login</button>
+              <button onClick={() => navigate("/")} className="underline">
+                Already have an account? Login
+              </button>
+              <button
+                onClick={() => navigate("/admin-login")}
+                className="underline"
+              >
+                Admin Login
+              </button>
             </div>
           </div>
         </div>
