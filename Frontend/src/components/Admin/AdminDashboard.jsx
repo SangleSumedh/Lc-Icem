@@ -1,158 +1,260 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-
-// Components
-import AdminNavbar from "./AdminNavbar";
-import AdminSidebar from "./AdminSidebar";
-
-// Icons
-import { Plus, Edit, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    deptName: "",
+    username: "",
+    email: "",
+    password: "",
+    branchId: null, // ✅ default null instead of ""
+  });
+  const [saving, setSaving] = useState(false);
 
-  const handleLogout = () => {
-    navigate("/");
+  const BASE_URL = "http://localhost:5000/admin";
+  const token = localStorage.getItem("token"); // ✅ JWT stored at login
+
+  // Fetch departments
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/departments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setDepartments(data.departments);
+      } else {
+        alert(data.error || "Failed to load departments");
+      }
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+      alert("Could not connect to server");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddDepartmentBtn = () => {
-    navigate("/admin-dashboard/add-department");
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  // Handle form input
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData({
+      ...formData,
+      [name]:
+        name === "branchId"
+          ? value === "" // ✅ empty → null
+            ? null
+            : parseInt(value, 10)
+          : value,
+    });
   };
 
-  const handleAddUserBtn = () => {
-    navigate("/admin-dashboard/add-user");
+  // Add Department
+  const handleAddDepartment = async (e) => {
+    e.preventDefault();
+
+    if (!formData.deptName || !formData.username || !formData.email || !formData.password) {
+      alert("❌ Department Name, Username, Email, and Password are required");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const res = await fetch(`${BASE_URL}/add-department`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("✅ Department created successfully!");
+        setDepartments([...departments, data.department]); // update UI instantly
+        setFormData({
+          deptName: "",
+          username: "",
+          email: "",
+          password: "",
+          branchId: null, // ✅ reset to null
+        });
+      } else {
+        alert(data.error || "❌ Failed to create department");
+      }
+    } catch (err) {
+      console.error("Error creating department:", err);
+      alert("Server error, please try again later.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const users = [
-    { user: "Sumedh Sangle", department: "IT", role: "Intern" },
-    { user: "Aarav Mehta", department: "Finance", role: "Manager" },
-    { user: "Priya Sharma", department: "HR", role: "Staff" },
-    { user: "Rohan Gupta", department: "Marketing", role: "Admin" },
-  ];
+  // Delete Department
+  const handleDelete = async (deptId) => {
+    if (!window.confirm("Are you sure you want to delete this department?")) return;
 
-  const stats = [
-    {
-      title: "Total Students Onboard",
-      value: "1,250",
-      change: "+12%",
-      color: "text-emerald-600",
-    },
-    {
-      title: "Faculty Members",
-      value: "5",
-      change: "+25%",
-      color: "text-emerald-600",
-    },
-    { title: "Departments", value: "8", change: "0%", color: "text-gray-500" },
-    {
-      title: "Documents Online",
-      value: "92%",
-      change: "+8%",
-      color: "text-emerald-600",
-    },
-  ];
+    try {
+      const res = await fetch(`${BASE_URL}/delete-department/${deptId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ deptId }), // ✅ match backend
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setDepartments(departments.filter((d) => d.deptId !== deptId));
+        alert("✅ Department deleted successfully");
+      } else {
+        alert(data.error || "Failed to delete department");
+      }
+    } catch (err) {
+      console.error("Error deleting department:", err);
+      alert("Server error while deleting department");
+    }
+  };
 
   return (
-    <div className="w-full">
-      {/* Main Content */}
-      <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-10 py-4">
-        <div className="bg-white/80  min-h-[90vh]   backdrop-blur-lg rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8">
-          {/* Dashboard Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-3">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 ">
-              Admin Dashboard
-            </h2>
-            <button
-              className="flex items-center justify-center gap-2 text-sm sm:text-base font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg sm:rounded-xl py-2 px-3 sm:px-4 transition"
-              onClick={handleAddDepartmentBtn}
-            >
-              <Plus size={18} />
-              Add Department
-            </button>
-          </div>
+    <div className="w-full min-h-screen bg-gray-100 p-6">
+      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pb-8 sm:pb-12">
-            {stats.map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-gradient-to-br from-white to-gray-50 shadow-md rounded-lg sm:rounded-xl p-4 sm:p-6 hover:shadow-lg transition"
-              >
-                <p className="text-xs sm:text-sm font-medium text-gray-500">
-                  {item.title}
-                </p>
-                <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">
-                  {item.value}
-                </p>
-                <p
-                  className={`mt-1 sm:mt-2 text-xs sm:text-sm font-semibold ${item.color}`}
-                >
-                  {item.change} since last year
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* Add Department Form */}
+        <form onSubmit={handleAddDepartment} className="space-y-3 mb-6">
+          <input
+            type="text"
+            name="deptName"
+            value={formData.deptName}
+            onChange={handleChange}
+            placeholder="Department Name"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Username"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Password"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="number"
+            name="branchId"
+            value={formData.branchId ?? ""}
+            onChange={handleChange}
+            placeholder="Branch ID (Optional)"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
 
-          {/* User Management Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              User Management
-            </h2>
-            <button
-              className="flex items-center justify-center gap-2 text-sm sm:text-base font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg sm:rounded-xl py-2 px-3 sm:px-4 transition"
-              onClick={handleAddUserBtn}
-            >
-              <Plus size={18} />
-              Add User
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition"
+          >
+            {saving ? "Saving..." : "Add Department"}
+          </button>
+        </form>
 
-          {/* User Table */}
-          <div className="overflow-x-auto border border-gray-200 rounded-lg sm:rounded-xl shadow-sm">
+        {/* Departments List */}
+        <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+          {loading ? (
+            <p className="p-4 text-center">Loading departments...</p>
+          ) : departments.length === 0 ? (
+            <p className="p-4 text-center">No departments found</p>
+          ) : (
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-100/80">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    User
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Department Name
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Department
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Username
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Role
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Email
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Branch
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {users.map((u, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-gray-900 font-medium">
-                      {u.user}
+                {departments.map((dept) => (
+                  <tr
+                    key={dept.deptId}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {dept.deptName}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-gray-500">
-                      {u.department}
+                    <td className="px-4 py-3 text-gray-500">{dept.username}</td>
+                    <td className="px-4 py-3 text-gray-500">{dept.email}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {dept.branchId ?? "—"}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-gray-500">
-                      {u.role}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right space-x-2 sm:space-x-3">
-                      <button className="p-1.5 sm:p-2 rounded-lg text-blue-600 hover:bg-blue-200 transition">
-                        <Edit size={16} className="sm:w-[18px] sm:h-[18px]" />
-                      </button>
-                      <button className="p-1.5 sm:p-2 rounded-lg text-red-600 hover:bg-red-200 transition">
-                        <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleDelete(dept.deptId)}
+                        className="p-2 rounded-lg text-red-600 hover:bg-red-200 transition"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

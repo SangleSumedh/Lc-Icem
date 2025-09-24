@@ -1,29 +1,29 @@
-// import prisma from "./src/prisma.js";
-// import bcrypt from "bcrypt";
+import prisma from "./src/prisma.js";
+import bcrypt from "bcrypt";
 
-// const main = async () => {
-//   try {
-//     const username = "superadmin";
-//     const email = "admin@example.com";
-//     const password = "supersecret";
-// w
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
+const main = async () => {
+  try {
+    const username = "superadmin";
+    const email = "admin@example.com";
+    const password = "supersecret";
 
-//     const superAdmin = await prisma.superAdmin.create({
-//       data: {
-//         username,
-//         email,
-//         password: hashedPassword,
-//       },
-//     });
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-//     console.log("✅ SuperAdmin created:", superAdmin);
-//   } catch (err) {
-//     console.error("Error creating SuperAdmin:", err.message);
-//   } finally {
-//     await prisma.$disconnect();
-//   }
-// };
+    const superAdmin = await prisma.superAdmin.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+      },
+    });
 
-// main();
+    console.log("✅ SuperAdmin created:", superAdmin);
+  } catch (err) {
+    console.error("Error creating SuperAdmin:", err.message);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+main();

@@ -52,12 +52,22 @@ const AdminLogin = () => {
           if (decoded.role === "superadmin") {
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
-            localStorage.setItem("deptName", decoded.deptName.toLowerCase());
-            navigate(
-              `/admin-dashboard/${decoded.deptName
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`
-            );
+            let deptName = decoded.deptName.toLowerCase();
+            localStorage.setItem("deptName", deptName);
+
+            if (deptName.startsWith("hod")) {
+              // ✅ strip "hod" + optional "-" or space
+              const cleanDept = deptName.replace(/^hod[-\s]*/i, "").trim();
+
+              // ✅ slugify (replace spaces → dash, collapse multiple dashes)
+              const slug = cleanDept.replace(/\s+/g, "-").replace(/-+/g, "-");
+
+              navigate(`/admin-dashboard/hod-${slug}`);
+            } else {
+              // ✅ Normal departments
+              const slug = deptName.replace(/\s+/g, "-").replace(/-+/g, "-");
+              navigate(`/admin-dashboard/${slug}`);
+            }
           }
         } else {
           alert(data.error || "❌ Login failed");
