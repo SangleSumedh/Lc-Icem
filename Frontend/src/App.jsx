@@ -16,7 +16,6 @@ import AccountsDashboard from "./components/Admin/AccountDashboard";
 import HostelDashboard from "./components/Admin/HostelDashboard";
 
 // ✅ Newly Added Pages
-
 import AlumniDashboard from "./components/Admin/AdminDashboard";
 
 import Register from "./components/Register";
@@ -55,15 +54,20 @@ function App() {
           <Route path="add-department" element={<AddDepartmentForm />} />
           <Route path="add-user" element={<AddUserForm />} />
           <Route path="library" element={<LibraryDashboard />} />
-          <Route path="hod" element={<HODDashboard />} />
-          <Route path="accounts" element={<AccountsDashboard />} />
+          <Route path="account" element={<AccountsDashboard />} />
           <Route path="hostel" element={<HostelDashboard />} />
+
+          {/* ✅ HOD Dynamic Route */}
+          <Route path="hod-computer-science" element={<HODDashboard />} />
 
           {/* ✅ New Sections */}
           <Route path="alumni" element={<AlumniDashboard />} />
           <Route path="placement" element={<CentralPlacementDepartment />} />
-          <Route path="department-placement" element={<DepartmentPlacementCoordinator />} />
-          <Route path="scholarship" element={<Scholarship/>} />
+          <Route
+            path="department-placement"
+            element={<DepartmentPlacementCoordinator />}
+          />
+          <Route path="scholarship" element={<Scholarship />} />
           <Route path="exam" element={<ExamSection />} />
           <Route path="bus" element={<Bus />} />
         </Route>

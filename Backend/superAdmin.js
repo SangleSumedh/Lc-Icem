@@ -1,5 +1,7 @@
 import prisma from "./src/prisma.js";
 import bcrypt from "bcrypt";
+import prisma from "./src/prisma.js";
+import bcrypt from "bcrypt";
 
 const main = async () => {
   try {
@@ -76,3 +78,4 @@ const main = async () => {
 };
 
 main();
+
