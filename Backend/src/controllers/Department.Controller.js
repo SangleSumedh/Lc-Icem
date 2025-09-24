@@ -65,7 +65,10 @@ export const updateApprovalStatus = async (req, res) => {
         // Create HOD request(s) for student's branch
         const hodDepts = await prisma.department.findMany({
           where: {
-            deptName: { contains: "HOD" },
+            deptName: `HOD - ${studentBranch}`,
+           //Ex-> HOD - Computer Engineering matches exactly avoids matching M.tech in computer engineering
+           //Frontend has to add exact branch as given in database to avoid conflicts 
+           //run hodSeed.js to get exact branches in database 
           },
         });
         for (const hodDept of hodDepts)
