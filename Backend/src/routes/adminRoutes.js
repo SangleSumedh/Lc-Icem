@@ -26,7 +26,7 @@ router.delete(
 // ✅ Get All Departments
 router.get(
   "/departments",
-  verifyToken(["superadmin", "department"]),
+  //verifyToken(["superadmin", "department"]),
   getDepartments
 );
 

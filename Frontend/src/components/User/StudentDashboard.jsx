@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+} from "@heroicons/react/24/solid";
 
 const StudentDashboard = () => {
   const [approvals, setApprovals] = useState([]);
@@ -9,7 +14,7 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
-        const token = localStorage.getItem("token"); // Get token from localStorage
+        const token = localStorage.getItem("token"); 
         const response = await axios.get(
           "http://localhost:5000/lc-form/status",
           {
@@ -50,74 +55,51 @@ const StudentDashboard = () => {
     );
   }
 
+  // Function to render icon based on status
+  const renderStatusIcon = (status) => {
+    if (status === "APPROVED")
+      return <CheckCircleIcon className="h-6 w-6 text-green-500" />;
+    if (status === "REJECTED")
+      return <XCircleIcon className="h-6 w-6 text-red-500" />;
+    return <ClockIcon className="h-6 w-6 text-yellow-500" />;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6 text-center md:text-left">
+      <h2 className="text-2xl font-bold mb-6 text-center">
         LC Form Approval Status
       </h2>
 
-      <div className="flex flex-col items-center">
-        <div className="w-full max-w-2xl">
-          <div className="relative">
-            {/* Vertical Timeline Line */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-500 transform -translate-x-1/2"></div>
-
-            {[...approvals].reverse().map((approval) => (
-              <div
-                key={approval.approvalId}
-                className="relative flex items-start mb-8"
-              >
-                {/* Timeline Dot */}
-                <div className="absolute left-4 w-3 h-3 bg-blue-500 rounded-full transform -translate-x-1/2 z-10"></div>
-
-                {/* Card */}
-                <div className="ml-10 bg-white rounded-lg shadow-md p-4 border border-gray-200 w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2 sm:mb-0">
-                      {approval.department.deptName}
-                    </h3>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium w-fit
-                        ${
-                          approval.status === "APPROVED"
-                            ? "bg-green-100 text-green-800"
-                            : approval.status === "REJECTED"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                    >
-                      {approval.status}
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-600">
-                    {approval.remarks && (
-                      <div className="mt-2">
-                        <p className="font-medium">Remarks:</p>
-                        <p className="text-gray-700">{approval.remarks}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {approval.updatedAt && (
-                    <p className="text-xs text-gray-500 mt-3">
-                      Last updated:{" "}
-                      {new Date(approval.updatedAt).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {[...approvals].reverse().map((approval) => (
+          <div
+            key={approval.approvalId}
+            className="bg-white shadow-md rounded-lg p-4 flex flex-col items-center justify-center border"
+          >
+            <div className="mb-3">{renderStatusIcon(approval.status)}</div>
+            <h3 className="text-lg font-semibold text-gray-800 text-center">
+              {approval.department.deptName}
+            </h3>
+            <p
+              className={`mt-2 font-medium ${
+                approval.status === "APPROVED"
+                  ? "text-green-600"
+                  : approval.status === "REJECTED"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+              }`}
+            >
+              {approval.status}
+            </p>
           </div>
-        </div>
-
-        {/* No Approvals Message */}
-        {approvals.length === 0 && (
-          <div className="text-center py-8 w-full">
-            <p className="text-gray-500 text-lg">No approval records found.</p>
-          </div>
-        )}
+        ))}
       </div>
+
+      {approvals.length === 0 && (
+        <div className="text-center py-8 w-full">
+          <p className="text-gray-500 text-lg">No approval records found.</p>
+        </div>
+      )}
     </div>
   );
 };
