@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+// Admin/AdminSidebar.jsx
+import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, DollarSign, ShoppingCart, Megaphone,
-  HelpCircle, Ticket, Home, FileText, User, GraduationCap,
-  Briefcase, ClipboardList, Bus,
+  GraduationCap, Briefcase, ClipboardList, FileText, Bus,
+  Home, User, HelpCircle, Ticket
 } from "lucide-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,8 +19,7 @@ function AdminSidebar() {
 
   const departments = [
     { name: "Admin", icon: LayoutDashboard, path: "/admin-dashboard", roles: ["superadmin"] },
-    { name: "HOD", icon: Users, path: "/admin-dashboard/hod-computer-science", roles: ["department"], dept: "hod-computer-science" },
-    { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/accounts", roles: ["department"], dept: "account" },
+    { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/account", roles: ["department"], dept: "account" },
     { name: "Hostel", icon: ShoppingCart, path: "/admin-dashboard/hostel", roles: ["department"], dept: "hostel" },
     { name: "Library", icon: Megaphone, path: "/admin-dashboard/library", roles: ["department"], dept: "library" },
     { name: "Alumni Co-ordinator", icon: GraduationCap, path: "/admin-dashboard/alumni", roles: ["department"], dept: "alumni" },
@@ -28,23 +28,37 @@ function AdminSidebar() {
     { name: "Scholarship", icon: DollarSign, path: "/admin-dashboard/scholarship", roles: ["department"], dept: "scholarship" },
     { name: "Exam Section", icon: FileText, path: "/admin-dashboard/exam", roles: ["department"], dept: "exam" },
     { name: "Bus", icon: Bus, path: "/admin-dashboard/bus", roles: ["department"], dept: "bus" },
-
-    // Student
-    { name: "Student DashBoard", path: "/student", icon: Home, roles: ["student"] },
-    { name: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText, roles: ["student"] },
-    { name: "My Details", path: "/student/my-details", icon: User, roles: ["student"] },
   ];
+
+  // ✅ Add all HODs (13 of them) dynamically
+  const hods = [
+    "computer-science", "it", "mechanical", "civil", "entc",
+    "electrical", "aids", "aime", "mba", "mca",
+    "chemical", "biotech", "mechatronics"
+  ];
+  hods.forEach(branch => {
+    departments.push({
+      name: `HOD - ${branch.replace(/-/g, " ").toUpperCase()}`,
+      icon: Users,
+      path: `/admin-dashboard/hod-${branch}`,
+      roles: ["department"],
+      dept: `hod-${branch}`,
+    });
+  });
 
   let filteredDepartments = [];
   if (role === "student") {
-    filteredDepartments = departments.filter((d) => d.roles.includes("student"));
+    filteredDepartments = [
+      { name: "Student DashBoard", path: "/student", icon: Home },
+      { name: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
+      { name: "My Details", path: "/student/my-details", icon: User },
+    ];
   } else if (role === "superadmin") {
-    filteredDepartments = departments.filter((d) => d.roles.includes("superadmin"));
+    filteredDepartments = departments.filter(d => d.roles.includes("superadmin"));
   } else if (role === "department") {
-    // ✅ normalize both sides (spaces → dash, lowercase)
     const storedDept = deptName?.toLowerCase().replace(/\s+/g, "-");
     filteredDepartments = departments.filter(
-      (d) => d.roles.includes("department") && 
+      (d) => d.roles.includes("department") &&
              d.dept?.toLowerCase().replace(/\s+/g, "-") === storedDept
     );
   }
@@ -53,8 +67,6 @@ function AdminSidebar() {
     const activeRef = itemRefs.current[location.pathname];
     if (activeRef) activeRef.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [location]);
-
-  const clickHandler = (dept) => navigate(dept.path);
 
   return (
     <div>
@@ -76,7 +88,7 @@ function AdminSidebar() {
                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
                   isActive ? "text-blue-600 bg-blue-50 font-semibold" : "hover:text-blue-400"
                 }`}
-                onClick={() => clickHandler(dept)}
+                onClick={() => navigate(dept.path)}
               >
                 <Icon className="w-6 h-6 text-[#00539C]" />
                 {!collapsed && <span className="font-medium">{dept.name}</span>}

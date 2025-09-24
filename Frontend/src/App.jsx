@@ -1,3 +1,4 @@
+// App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -10,26 +11,14 @@ import LeavingCertificate from "./components/User/LeavingCertificate";
 import MyDetails from "./components/User/MyDetails";
 
 import AdminDashboard from "./components/Admin/AdminDashboard";
-import LibraryDashboard from "./components/Admin/LibraryDashboard";
-import HODDashboard from "./components/Admin/HODDashboard";
-import AccountsDashboard from "./components/Admin/AccountDashboard";
-import HostelDashboard from "./components/Admin/HostelDashboard";
-
-// ✅ Newly Added Pages
-import AlumniDashboard from "./components/Admin/AdminDashboard";
-
-import Register from "./components/Register";
 import AddDepartmentForm from "./components/Admin/AddDepartmentForm";
 import AddUserForm from "./components/Admin/AddUserForm";
+import DepartmentDashboard from "./components/Admin/DepartmentDashboard";
 
 import Admin from "./Pages/Admin";
 import Student from "./Pages/Student";
 import NotFound from "./components/NotFound";
-import ExamSection from "./components/Admin/ExamSection";
-import Bus from "./components/Admin/Bus";
-import CentralPlacementDepartment from "./components/Admin/CentralPlacementDepartment";
-import Scholarship from "./components/Admin/Scholarship";
-import DepartmentPlacementCoordinator from "./components/Admin/DepartmentPlacementCoordinator";
+import Register from "./components/Register"; // ✅ Missing import added
 
 function App() {
   return (
@@ -37,13 +26,13 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Register />} /> {/* ✅ Register fixed */}
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* Student Dashboard */}
         <Route path="/student" element={<Student />}>
-          <Route index element={<StudentDashboard />} /> {/* Default page */}
+          <Route index element={<StudentDashboard />} />
           <Route path="my-details" element={<MyDetails />} />
           <Route path="leaving-certificate" element={<LeavingCertificate />} />
         </Route>
@@ -53,23 +42,9 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="add-department" element={<AddDepartmentForm />} />
           <Route path="add-user" element={<AddUserForm />} />
-          <Route path="library" element={<LibraryDashboard />} />
-          <Route path="account" element={<AccountsDashboard />} />
-          <Route path="hostel" element={<HostelDashboard />} />
 
-          {/* ✅ HOD Dynamic Route */}
-          <Route path="hod-computer-science" element={<HODDashboard />} />
-
-          {/* ✅ New Sections */}
-          <Route path="alumni" element={<AlumniDashboard />} />
-          <Route path="placement" element={<CentralPlacementDepartment />} />
-          <Route
-            path="department-placement"
-            element={<DepartmentPlacementCoordinator />}
-          />
-          <Route path="scholarship" element={<Scholarship />} />
-          <Route path="exam" element={<ExamSection />} />
-          <Route path="bus" element={<Bus />} />
+          {/* ✅ Dynamic Department Dashboard */}
+          <Route path=":deptKey" element={<DepartmentDashboard />} />
         </Route>
 
         {/* 404 Page */}
