@@ -18,8 +18,8 @@ function AdminSidebar() {
 
   const departments = [
     { name: "Admin", icon: LayoutDashboard, path: "/admin-dashboard", roles: ["superadmin"] },
-    { name: "HOD", icon: Users, path: "/admin-dashboard/hod", roles: ["department"], dept: "hod" },
-    { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/accounts", roles: ["department"], dept: "accounts" },
+    { name: "HOD", icon: Users, path: "/admin-dashboard/hod-computer-science", roles: ["department"], dept: "hod-computer-science" },
+    { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/accounts", roles: ["department"], dept: "account" },
     { name: "Hostel", icon: ShoppingCart, path: "/admin-dashboard/hostel", roles: ["department"], dept: "hostel" },
     { name: "Library", icon: Megaphone, path: "/admin-dashboard/library", roles: ["department"], dept: "library" },
     { name: "Alumni Co-ordinator", icon: GraduationCap, path: "/admin-dashboard/alumni", roles: ["department"], dept: "alumni" },
@@ -41,8 +41,11 @@ function AdminSidebar() {
   } else if (role === "superadmin") {
     filteredDepartments = departments.filter((d) => d.roles.includes("superadmin"));
   } else if (role === "department") {
+    // ✅ normalize both sides (spaces → dash, lowercase)
+    const storedDept = deptName?.toLowerCase().replace(/\s+/g, "-");
     filteredDepartments = departments.filter(
-      (d) => d.roles.includes("department") && d.dept === deptName
+      (d) => d.roles.includes("department") && 
+             d.dept?.toLowerCase().replace(/\s+/g, "-") === storedDept
     );
   }
 
