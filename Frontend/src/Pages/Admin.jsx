@@ -14,7 +14,7 @@ function Admin() {
       <div className="flex flex-1 pt-20">
         {/* Fixed Sidebar */}
         <div className="fixed top-20 left-0 h-[calc(100vh-80px)] z-40">
-          {/* <AdminSidebar /> */}
+          <AdminSidebar />
         </div>
 
         {/* Main Content (scrollable) */}

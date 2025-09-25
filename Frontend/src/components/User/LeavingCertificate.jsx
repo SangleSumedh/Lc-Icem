@@ -32,7 +32,10 @@ const LeavingCertificate = () => {
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  // dropdown open states
+  // Branches state
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
+
   const [dropdownOpen, setDropdownOpen] = useState({});
 
   const handleOpenModal = () => setShowModal(true);
@@ -61,6 +64,31 @@ const LeavingCertificate = () => {
       }
     };
     checkStatus();
+  }, []);
+
+  // 🔍 Fetch branches once
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          const branchOptions = data.branches.map((b) => ({
+            value: b.branch.toUpperCase().replace(/\s+/g, ""),
+            label: b.branch,
+          }));
+          setBranches(branchOptions);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching branches:", err);
+      } finally {
+        setBranchesLoading(false);
+      }
+    };
+    fetchBranches();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -109,6 +137,8 @@ const LeavingCertificate = () => {
         >
           {value
             ? options.find((opt) => opt.value === value)?.label
+            : branchesLoading
+            ? "Loading..."
             : "Select option"}
         </span>
         <ChevronDown
@@ -117,7 +147,7 @@ const LeavingCertificate = () => {
           }`}
         />
       </div>
-      {dropdownOpen[name] && !disabled && (
+      {dropdownOpen[name] && !disabled && !branchesLoading && (
         <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
           {options.map((opt) => (
             <div
@@ -180,7 +210,7 @@ const LeavingCertificate = () => {
             </ul>
           </div>
 
-          {/* CTA Button with Icon */}
+          {/* CTA Button */}
           <button
             onClick={handleOpenModal}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition"
@@ -213,7 +243,7 @@ const LeavingCertificate = () => {
               onSubmit={handleSubmit}
               className="p-8 max-h-[80vh] overflow-y-auto space-y-8"
             >
-              {/* Section 1: Personal Details */}
+              {/* Personal Details */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
                   <UserCircleIcon className="h-5 w-5 text-blue-600" /> Personal
@@ -257,7 +287,7 @@ const LeavingCertificate = () => {
                 </div>
               </div>
 
-              {/* Section 2: College Details */}
+              {/* College Details */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
                   <AcademicCapIcon className="h-5 w-5 text-blue-600" /> College
@@ -270,14 +300,7 @@ const LeavingCertificate = () => {
                     name="branch"
                     required
                     value={formData.branch}
-                    options={[
-                      { value: "COMPUTERSCIENCE", label: "Computer Science" },
-                      { value: "MECHANICAL", label: "Mechanical" },
-                      { value: "CIVIL", label: "Civil" },
-                      { value: "ENTC", label: "ENTC" },
-                      { value: "IT", label: "IT" },
-                      { value: "MBA", label: "MBA" },
-                    ]}
+                    options={branches}
                   />
 
                   <div>
