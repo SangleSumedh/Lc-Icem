@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,94 +8,98 @@ datasource db {
 }
 
 model Student {
-  prn          String   @id
-  studentName  String
-  email        String   @unique
-  phoneNo      String?  @db.VarChar(15)
-  password     String   @db.VarChar(255)
-  college      College  @default(ICEM) 
-
-  profile      StudentProfile?
-  approvals    ApprovalRequest[]
+  prn         String            @id 
+  studentName String
+  email       String            @unique
+  phoneNo     String?           @db.VarChar(15)
+  password    String            @db.VarChar(255)
+  college     College           @default(ICEM)
+  approvals   ApprovalRequest[]
+  profile     StudentProfile?
 }
-model StudentProfile {
-  profileId               Int           @id @default(autoincrement())
-  prn                     String           @unique
-  studentID               String           @unique
-  fatherName              String?
-  motherName              String?
-  caste                   String?
-  subCaste                String?
-  nationality             String?
-  placeOfBirth            String?
-  dateOfBirth             DateTime?
-  dobWords                String?
-  lastCollege             String?
-  yearOfAdmission         DateTime?
-  branch                  String?
-  admissionMode           AdmissionMode
-  reasonForLeaving        String?
 
-  student                 Student @relation(fields: [studentID], references: [prn])
+model StudentProfile {
+  profileId        Int      @id @default(autoincrement())
+  prn              String   @unique   
+  studentID        String?   @unique   
+  fatherName       String?
+  motherName       String?
+  caste            String?
+  subCaste         String?
+  nationality      String?
+  placeOfBirth     String?
+  dateOfBirth      DateTime?
+  dobWords         String?
+  lastCollege      String?
+  yearOfAdmission  DateTime?
+  dateOfAdmission    DateTime?
+  dateOfLeaving      DateTime?
+  progressAndConduct String?
+  branch           String?
+  admissionMode    AdmissionMode
+  reasonForLeaving String?
+  lcReady      Boolean  @default(false)
+  lcGenerated  Boolean  @default(false)
+  lcUrl        String?  // store the file path / cloud URL
+
+  student          Student  @relation(fields: [prn], references: [prn])
 }
 
 model Department {
-  deptId        Int    @id @default(autoincrement())
-  deptName      String
-  deptHead      String?
-  branchId      Int?  
-  username      String @unique
-  passwordHash  String
-  email         String @unique
-
-  approvalRequests ApprovalRequest[]
+  deptId           Int               @id @default(autoincrement())
+  deptName         String
+  deptHead         String?
+  branchId         Int?
+  username         String            @unique
+  passwordHash     String
+  email            String            @unique
+  college          College           @default(ICEM)
   approvalActions  ApprovalAction[]
+  approvalRequests ApprovalRequest[]
 }
 
 model ApprovalRequest {
-  approvalId   Int       @id @default(autoincrement())
-  studentId    String
-  deptId       Int
-  status       ApprovalStatus @default(PENDING)
-  approvedAt   DateTime?
-  remarks      String?
-  deptName         String?
-  branch           String?
-  studentName      String?
-  yearOfAdmission  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  approvalId      Int            @id @default(autoincrement())
+  studentPrn      String         
+  deptId          Int
+  status          ApprovalStatus @default(PENDING)
+  approvedAt      DateTime?
+  remarks         String?
+  deptName        String?
+  branch          String?
+  studentName     String?
+  yearOfAdmission DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  student      Student    @relation(fields: [studentId], references: [prn])
-  department   Department @relation(fields: [deptId], references: [deptId])
-  actions      ApprovalAction[]
+  actions         ApprovalAction[]
+  department      Department     @relation(fields: [deptId], references: [deptId])
+  student         Student        @relation(fields: [studentPrn], references: [prn])
 }
 
 
 model ApprovalAction {
-  actionId    Int       @id @default(autoincrement())
-  approvalId  Int
-  deptId      Int
-  action      ActionType
-  remarks     String?
-  actionAt    DateTime? @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  approval    ApprovalRequest @relation(fields: [approvalId], references: [approvalId])
-  department  Department      @relation(fields: [deptId], references: [deptId])
+  actionId   Int             @id @default(autoincrement())
+  approvalId Int
+  deptId     Int
+  action     ActionType
+  remarks    String?
+  actionAt   DateTime?       @default(now())
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  approval   ApprovalRequest @relation(fields: [approvalId], references: [approvalId])
+  department Department      @relation(fields: [deptId], references: [deptId])
 }
 
 model SuperAdmin {
-  id        Int    @id @default(autoincrement())
-  username  String @unique
-  email     String @unique
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
   password  String
   createdAt DateTime @default(now())
 
-  @@map("SuperAdmin") // explicitly map to PascalCase table name
+  @@map("SuperAdmin")
 }
-
 
 enum AdmissionMode {
   FIRSTYEAR

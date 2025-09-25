@@ -5,6 +5,7 @@ import {
   getPendingApprovals,
   getApprovedApprovals,
   getRejectedApprovals,
+  getRequestedInfoApprovals,
 } from "../controllers/Department.Controller.js";
 
 const router = Router();
@@ -32,5 +33,12 @@ router.get(
   verifyToken(["department"]),
   getRejectedApprovals
 );
+
+router.get(
+  "/approvals/requested-info",
+  verifyToken(["department"]),
+  getRequestedInfoApprovals
+);
+
 
 export default router;
