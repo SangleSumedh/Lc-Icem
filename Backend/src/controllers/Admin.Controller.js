@@ -1,408 +1,269 @@
-import prisma from "../prisma.js";
-import bcrypt from "bcrypt";
+import React, { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 
-/**
- * Utility: Standard response
- */
-const sendResponse = (res, success, message, data = null, status = 200) => {
-  return res.status(status).json({ success, message, data });
-};
+const AdminDashboard = () => {
+  const [departments, setDepartments] = useState([]); // always an array
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    deptName: "",
+    username: "",
+    email: "",
+    password: "",
+    branchId: null,
+  });
+  const [saving, setSaving] = useState(false);
 
-/* ================================
-   📌 SuperAdmin CRUD
-   ================================ */
+  const BASE_URL = "http://localhost:5000/admin";
+  const token = localStorage.getItem("token");
 
-// ➕ Create SuperAdmin
-export const addSuperAdmin = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-      return sendResponse(res, false, "All fields are required", null, 400);
+  // Fetch departments
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/departments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("📦 Fetched departments:", data);
+
+      if (data.success) {
+        // normalize response key
+        const deptList = data.data || data.departments || [];
+        setDepartments(Array.isArray(deptList) ? deptList : []);
+      } else {
+        alert(data.error || "Failed to load departments");
+      }
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+      alert("Could not connect to server");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
-    const superAdmin = await prisma.superAdmin.create({
-      data: { username, email, password: hashedPassword },
-      select: { id: true, username: true, email: true },
+  // Handle form input
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]:
+        name === "branchId"
+          ? value === "" // empty → null
+            ? null
+            : parseInt(value, 10)
+          : value,
     });
+  };
 
-    console.log(`✅ SuperAdmin created: ${username}`);
-    return sendResponse(
-      res,
-      true,
-      "SuperAdmin created successfully",
-      superAdmin
-    );
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "Email already exists", null, 400);
+  // Add Department
+  const handleAddDepartment = async (e) => {
+    e.preventDefault();
+
+    if (!formData.deptName || !formData.username || !formData.email || !formData.password) {
+      alert("❌ Department Name, Username, Email, and Password are required");
+      return;
     }
-    return sendResponse(res, false, err.message, null, 500);
-  }
+
+    try {
+      setSaving(true);
+      const res = await fetch(`${BASE_URL}/add-department`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("✅ Department created successfully!");
+        setDepartments((prev) => [...prev, data.department]);
+        setFormData({
+          deptName: "",
+          username: "",
+          email: "",
+          password: "",
+          branchId: null,
+        });
+      } else {
+        alert(data.error || "❌ Failed to create department");
+      }
+    } catch (err) {
+      console.error("Error creating department:", err);
+      alert("Server error, please try again later.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete Department
+  const handleDelete = async (deptId) => {
+    if (!window.confirm("Are you sure you want to delete this department?")) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}/delete-department/${deptId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ deptId }), // matches backend
+      });
+
+      if (res.status === 401) {
+        alert("❌ Unauthorized. Please login again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setDepartments((prev) => prev.filter((d) => d.deptId !== deptId));
+        alert("✅ Department deleted successfully");
+      } else {
+        alert(data.error || "Failed to delete department");
+      }
+    } catch (err) {
+      console.error("Error deleting department:", err);
+      alert("Server error while deleting department");
+    }
+  };
+
+  return (
+    <div className="w-full min-h-screen bg-gray-100 p-6">
+      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
+
+        {/* Add Department Form */}
+        <form onSubmit={handleAddDepartment} className="space-y-3 mb-6">
+          <input
+            type="text"
+            name="deptName"
+            value={formData.deptName}
+            onChange={handleChange}
+            placeholder="Department Name"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Username"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Password"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+          <input
+            type="number"
+            name="branchId"
+            value={formData.branchId ?? ""}
+            onChange={handleChange}
+            placeholder="Branch ID (Optional)"
+            className="w-full border px-3 py-2 rounded-lg"
+          />
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition"
+          >
+            {saving ? "Saving..." : "Add Department"}
+          </button>
+        </form>
+
+        {/* Departments List */}
+        <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+          {loading ? (
+            <p className="p-4 text-center">Loading departments...</p>
+          ) : !Array.isArray(departments) || departments.length === 0 ? (
+            <p className="p-4 text-center">No departments found</p>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-100/80">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Department Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Branch
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {departments.map((dept) => (
+                  <tr
+                    key={dept.deptId}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {dept.deptName}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {dept.username ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {dept.email ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {dept.branchId ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleDelete(dept.deptId)}
+                        className="p-2 rounded-lg text-red-600 hover:bg-red-200 transition"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-// ✏️ Update SuperAdmin
-export const updateSuperAdmin = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { username, email, password } = req.body;
-
-    const data = {};
-    if (username) data.username = username;
-    if (email) data.email = email;
-    if (password && password.trim().length > 0) {
-      data.password = await bcrypt.hash(password, 10);
-    }
-
-    const superAdmin = await prisma.superAdmin.update({
-      where: { id: parseInt(id) },
-      data,
-      select: { id: true, username: true, email: true },
-    });
-
-    console.log(`✅ SuperAdmin updated: ID ${id}`);
-    return sendResponse(
-      res,
-      true,
-      "SuperAdmin updated successfully",
-      superAdmin
-    );
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "Email already exists", null, 400);
-    }
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// ❌ Delete SuperAdmin
-export const deleteSuperAdmin = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await prisma.superAdmin.delete({
-      where: { id: parseInt(id) },
-    });
-
-    console.log(`🗑️ SuperAdmin deleted: ID ${id}`);
-    return sendResponse(res, true, "SuperAdmin deleted successfully");
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-/* ================================
-   📌 Department CRUD
-   ================================ */
-
-// ➕ Create Department
-// ➕ Create Department
-export const addDepartment = async (req, res) => {
-  try {
-    const { deptName, deptHead, branchId, username, email, password, college } =
-      req.body;
-    if (!deptName || !username || !email || !password || !college) {
-      return sendResponse(res, false, "All fields are required, including college", null, 400);
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const department = await prisma.department.create({
-      data: {
-        deptName,
-        deptHead,
-        branchId: branchId || null,
-        username,
-        email,
-        passwordHash,
-        college,
-      },
-      select: { deptId: true, deptName: true, deptHead: true, email: true, college: true },
-    });
-
-    console.log(`✅ Department created: ${deptName} | College: ${college}`);
-    return sendResponse(
-      res,
-      true,
-      "Department created successfully",
-      department
-    );
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(
-        res,
-        false,
-        "Email or Username already exists",
-        null,
-        400
-      );
-    }
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-
-// ✏️ Update Department Head
-export const updateDepartment = async (req, res) => {
-  try {
-    const { deptId, deptHead, username, password, email } = req.body;
-
-    if (!deptId) {
-      return sendResponse(res, false, "deptId is required", null, 400);
-    }
-
-    // Prepare the update object dynamically
-    const data = {};
-    if (deptHead) data.deptHead = deptHead; // optional
-    if (username) data.username = username; // optional
-    if (email) data.email = email; // optional
-    if (password) data.passwordHash = await bcrypt.hash(password, 10); // optional
-
-    if (Object.keys(data).length === 0) {
-      return sendResponse(
-        res,
-        false,
-        "No fields provided to update",
-        null,
-        400
-      );
-    }
-
-    const department = await prisma.department.update({
-      where: { deptId: parseInt(deptId) },
-      data,
-      select: {
-        deptId: true,
-        deptName: true,
-        deptHead: true,
-        username: true,
-        email: true,
-      },
-    });
-
-    console.log(`✅ Department updated: Dept ID ${deptId}`);
-    return sendResponse(
-      res,
-      true,
-      "Department updated successfully",
-      department
-    );
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(
-        res,
-        false,
-        "Email or username already exists",
-        null,
-        400
-      );
-    }
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-
-// ❌ Delete Department
-export const deleteDepartment = async (req, res) => {
-  try {
-    const { deptId } = req.params;
-
-    await prisma.department.delete({
-      where: { deptId: parseInt(deptId) },
-    });
-
-    console.log(`🗑️ Department deleted: Dept ID ${deptId}`);
-    return sendResponse(res, true, "Department deleted successfully");
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// 📜 Get All Departments
-export const getDepartments = async (req, res) => {
-  try {
-    const departments = await prisma.department.findMany({
-      select: { deptId: true, deptName: true, deptHead: true, email: true },
-    });
-
-    return sendResponse(
-      res,
-      true,
-      "Departments fetched successfully",
-      departments
-    );
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// 🔍 Get Department by ID
-export const getDepartmentById = async (req, res) => {
-  try {
-    const { deptId } = req.params;
-
-    const department = await prisma.department.findUnique({
-      where: { deptId: parseInt(deptId) },
-      select: { deptId: true, deptName: true, deptHead: true, email: true },
-    });
-
-    if (!department) {
-      return sendResponse(res, false, "Department not found", null, 404);
-    }
-
-    return sendResponse(
-      res,
-      true,
-      "Department fetched successfully",
-      department
-    );
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-/* ================================
-   📌 Student CRUD
-   ================================ */
-
-// ➕ Create Student
-export const addStudent = async (req, res) => {
-  try {
-    const { prn, studentName, email, phoneNo, password, college } = req.body;
-
-    if (!prn || !studentName || !email || !password) {
-      return sendResponse(res, false, "PRN, name, email, and password are required", null, 400);
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const student = await prisma.student.create({
-      data: {
-        prn,
-        studentName,
-        email,
-        phoneNo: phoneNo || null,
-        password: hashedPassword,
-        college: college || "ICEM",
-      },
-      select: {
-        prn: true,
-        studentName: true,
-        email: true,
-        phoneNo: true,
-        college: true,
-      },
-    });
-
-    console.log(`✅ Student created: ${studentName} | PRN: ${prn}`);
-    return sendResponse(res, true, "Student created successfully", student);
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "PRN or email already exists", null, 400);
-    }
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// 🔍 Get all Students
-export const getStudents = async (req, res) => {
-  try {
-    const students = await prisma.student.findMany({
-      select: {
-        prn: true,
-        studentName: true,
-        email: true,
-        phoneNo: true,
-        college: true,
-      },
-    });
-
-    return sendResponse(res, true, "Students fetched successfully", students);
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// 🔍 Get Student by PRN
-export const getStudentByPrn = async (req, res) => {
-  try {
-    const { prn } = req.params;
-
-    const student = await prisma.student.findUnique({
-      where: { prn },
-      select: {
-        prn: true,
-        studentName: true,
-        email: true,
-        phoneNo: true,
-        college: true,
-      },
-    });
-
-    if (!student) {
-      return sendResponse(res, false, "Student not found", null, 404);
-    }
-
-    return sendResponse(res, true, "Student fetched successfully", student);
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// ✏️ Update Student
-export const updateStudent = async (req, res) => {
-  try {
-    const { prn } = req.params;
-    const { studentName, email, phoneNo, password, college } = req.body;
-
-    const data = {};
-    if (studentName) data.studentName = studentName;
-    if (email) data.email = email;
-    if (phoneNo) data.phoneNo = phoneNo;
-    if (college) data.college = college;
-    if (password && password.trim().length > 0) {
-      data.password = await bcrypt.hash(password, 10);
-    }
-
-    if (Object.keys(data).length === 0) {
-      return sendResponse(res, false, "No fields provided to update", null, 400);
-    }
-
-    const student = await prisma.student.update({
-      where: { prn },
-      data,
-      select: {
-        prn: true,
-        studentName: true,
-        email: true,
-        phoneNo: true,
-        college: true,
-      },
-    });
-
-    console.log(`✅ Student updated: PRN ${prn}`);
-    return sendResponse(res, true, "Student updated successfully", student);
-  } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "Email already exists", null, 400);
-    }
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
-
-// ❌ Delete Student
-export const deleteStudent = async (req, res) => {
-  try {
-    const { prn } = req.params;
-
-    await prisma.student.delete({
-      where: { prn },
-    });
-
-    console.log(`🗑️ Student deleted: PRN ${prn}`);
-    return sendResponse(res, true, "Student deleted successfully");
-  } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
-  }
-};
+export default AdminDashboard;

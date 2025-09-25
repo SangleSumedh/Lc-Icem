@@ -8,7 +8,7 @@ import AdminLogin from "./components/AdminLogin";
 
 import StudentDashboard from "./components/User/StudentDashboard";
 import LeavingCertificate from "./components/User/LeavingCertificate";
-import MyDetails from "./components/User/MyDetails";
+
 
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import AddDepartmentForm from "./components/Admin/AddDepartmentForm";
@@ -32,7 +32,6 @@ function App() {
         {/* Student Dashboard */}
         <Route path="/student" element={<Student />}>
           <Route index element={<StudentDashboard />} />
-          <Route path="my-details" element={<MyDetails />} />
           <Route path="leaving-certificate" element={<LeavingCertificate />} />
         </Route>
 

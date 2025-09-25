@@ -2,19 +2,19 @@ import React, { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 const AdminDashboard = () => {
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState([]); // always array
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     deptName: "",
     username: "",
     email: "",
     password: "",
-    branchId: null, // ✅ default null instead of ""
+    branchId: null,
   });
   const [saving, setSaving] = useState(false);
 
   const BASE_URL = "http://localhost:5000/admin";
-  const token = localStorage.getItem("token"); // ✅ JWT stored at login
+  const token = localStorage.getItem("token");
 
   // Fetch departments
   const fetchDepartments = async () => {
@@ -31,8 +31,10 @@ const AdminDashboard = () => {
       }
 
       const data = await res.json();
+      console.log("📦 API /departments response:", data);
+
       if (data.success) {
-        setDepartments(data.departments);
+        setDepartments(Array.isArray(data.data) ? data.data : []);
       } else {
         alert(data.error || "Failed to load departments");
       }
@@ -51,12 +53,11 @@ const AdminDashboard = () => {
   // Handle form input
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData({
       ...formData,
       [name]:
         name === "branchId"
-          ? value === "" // ✅ empty → null
+          ? value === ""
             ? null
             : parseInt(value, 10)
           : value,
@@ -91,13 +92,13 @@ const AdminDashboard = () => {
       const data = await res.json();
       if (res.ok && data.success) {
         alert("✅ Department created successfully!");
-        setDepartments([...departments, data.department]); // update UI instantly
+        setDepartments((prev) => [...prev, data.department]);
         setFormData({
           deptName: "",
           username: "",
           email: "",
           password: "",
-          branchId: null, // ✅ reset to null
+          branchId: null,
         });
       } else {
         alert(data.error || "❌ Failed to create department");
@@ -121,7 +122,7 @@ const AdminDashboard = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ deptId }), // ✅ match backend
+        body: JSON.stringify({ deptId }),
       });
 
       if (res.status === 401) {
@@ -131,7 +132,7 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (data.success) {
-        setDepartments(departments.filter((d) => d.deptId !== deptId));
+        setDepartments((prev) => prev.filter((d) => d.deptId !== deptId));
         alert("✅ Department deleted successfully");
       } else {
         alert(data.error || "Failed to delete department");
@@ -144,7 +145,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
-      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mx-auto">
+      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-5xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
 
         {/* Add Department Form */}
@@ -213,7 +214,7 @@ const AdminDashboard = () => {
                     Department Name
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Username
+                    Dept Head
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Email
@@ -228,18 +229,11 @@ const AdminDashboard = () => {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {departments.map((dept) => (
-                  <tr
-                    key={dept.deptId}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {dept.deptName}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">{dept.username}</td>
-                    <td className="px-4 py-3 text-gray-500">{dept.email}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {dept.branchId ?? "—"}
-                    </td>
+                  <tr key={dept.deptId} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-gray-900 font-medium">{dept.deptName}</td>
+                    <td className="px-4 py-3 text-gray-500">{dept.deptHead ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-500">{dept.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-500">{dept.branchId ?? "—"}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => handleDelete(dept.deptId)}
