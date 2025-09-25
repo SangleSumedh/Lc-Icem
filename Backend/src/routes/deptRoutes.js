@@ -3,6 +3,9 @@ import { verifyToken } from "../middlewares/auth.middleware.js";
 import {
   updateApprovalStatus,
   getPendingApprovals,
+  getApprovedApprovals,
+  getRejectedApprovals,
+  getRequestedInfoApprovals,
 } from "../controllers/Department.Controller.js";
 
 const router = Router();
@@ -18,5 +21,24 @@ router.post(
   verifyToken(["department"]),
   updateApprovalStatus
 );
+
+router.get(
+  "/approvals/approved",
+  verifyToken(["department"]),
+  getApprovedApprovals
+);
+
+router.get(
+  "/approvals/rejected",
+  verifyToken(["department"]),
+  getRejectedApprovals
+);
+
+router.get(
+  "/approvals/requested-info",
+  verifyToken(["department"]),
+  getRequestedInfoApprovals
+);
+
 
 export default router;

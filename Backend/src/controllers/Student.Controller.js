@@ -1,8 +1,9 @@
 import prisma from "../prisma.js";
 
 export const submitLCForm = async (req, res) => {
-  const studentId = req.user.prn; // PRN from JWT
+  const prn = req.user.prn; // PRN from JWT
   const {
+    studentID, // optional
     fatherName,
     motherName,
     caste,
@@ -19,44 +20,38 @@ export const submitLCForm = async (req, res) => {
   } = req.body;
 
   try {
+    // Prepare profile data, only include studentID if present
+    const profileData = {
+      fatherName,
+      motherName,
+      caste,
+      subCaste,
+      nationality,
+      placeOfBirth,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      dobWords,
+      lastCollege,
+      yearOfAdmission: yearOfAdmission ? new Date(yearOfAdmission) : null,
+      branch,
+      admissionMode,
+      reasonForLeaving,
+    };
+    if (studentID) profileData.studentID = studentID;
+
     // Upsert student profile
     const profile = await prisma.studentProfile.upsert({
-      where: { studentID: studentId },
-      update: {
-        fatherName,
-        motherName,
-        caste,
-        subCaste,
-        nationality,
-        placeOfBirth,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        dobWords,
-        lastCollege,
-        yearOfAdmission: yearOfAdmission ? new Date(yearOfAdmission) : null,
-        branch,
-        admissionMode,
-        reasonForLeaving,
-      },
-      create: {
-        prn: studentId,
-        studentID: studentId,
-        fatherName,
-        motherName,
-        caste,
-        subCaste,
-        nationality,
-        placeOfBirth,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        dobWords,
-        lastCollege,
-        yearOfAdmission: yearOfAdmission ? new Date(yearOfAdmission) : null,
-        branch,
-        admissionMode,
-        reasonForLeaving,
-      },
+      where: { prn },
+      update: profileData,
+      create: { prn, ...profileData },
     });
 
-    // Fetch only the Account department
+    // Fetch student name
+    const student = await prisma.student.findUnique({
+      where: { prn },
+      select: { studentName: true },
+    });
+
+    // Fetch Account department
     const accountDept = await prisma.department.findFirst({
       where: { deptName: "Account" },
     });
@@ -65,19 +60,20 @@ export const submitLCForm = async (req, res) => {
       return res.status(404).json({ error: "Account department not found" });
     }
 
+    // Create approval request if not exists
     const existing = await prisma.approvalRequest.findFirst({
-      where: { studentId, deptId: accountDept.deptId },
+      where: { studentPrn: prn, deptId: accountDept.deptId },
     });
 
     if (!existing) {
       await prisma.approvalRequest.create({
         data: {
           status: "PENDING",
-          studentName: profile.studentName || undefined,
+          studentName: student?.studentName,
           yearOfAdmission: profile.yearOfAdmission || undefined,
           deptName: accountDept.deptName,
           branch: branch || undefined,
-          student: { connect: { prn: studentId } },
+          student: { connect: { prn } },
           department: { connect: { deptId: accountDept.deptId } },
         },
       });
@@ -95,11 +91,11 @@ export const submitLCForm = async (req, res) => {
 };
 
 export const getApprovalStatus = async (req, res) => {
-  const studentId = req.user.prn;
+  const prn = req.user.prn;
 
   try {
     const approvals = await prisma.approvalRequest.findMany({
-      where: { studentId },
+      where: { studentPrn: prn },
       include: {
         department: {
           select: { deptId: true, deptName: true, deptHead: true },
@@ -126,12 +122,99 @@ export const getApprovalStatus = async (req, res) => {
       department: approval.department,
     }));
 
-    res.json({
-      success: true,
-      approvals: approvalsWithExtra,
-    });
+    res.json({ success: true, approvals: approvalsWithExtra });
   } catch (err) {
     console.error("Error fetching approval status:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getHodBranches = async (req, res) => {
+  try {
+    const hodDepartments = await prisma.department.findMany({
+      where: { deptName: { contains: "HOD -", mode: "insensitive" } },
+      select: { deptId: true, deptName: true },
+    });
+
+    const branches = hodDepartments.map((dept) => ({
+      deptId: dept.deptId,
+      branch: dept.deptName.replace(/^HOD\s*-\s*/i, ""),
+    }));
+
+    res.json({ success: true, branches });
+  } catch (err) {
+    console.error("Error fetching HOD branches:", err.message);
+    res.status(500).json({ error: "Failed to fetch HOD branches" });
+  }
+};
+
+export const getRequestedInfoApprovals = async (req, res) => {
+  const prn = req.user.prn;
+
+  try {
+    const requests = await prisma.approvalRequest.findMany({
+      where: { studentPrn: prn, status: "REQUESTED_INFO" },
+      include: { department: { select: { deptName: true } } },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    if (!requests || requests.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No requests for more information" });
+    }
+
+    res.json({ success: true, requests });
+  } catch (err) {
+    console.error("Error fetching REQUESTED_INFO approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const resubmitLCForm = async (req, res) => {
+  const prn = req.user.prn;
+  const { approvalId, updates } = req.body;
+
+  if (!approvalId || !updates) {
+    return res
+      .status(400)
+      .json({ error: "approvalId and updates are required" });
+  }
+
+  try {
+    const approval = await prisma.approvalRequest.findUnique({
+      where: { approvalId },
+    });
+
+    if (!approval)
+      return res.status(404).json({ error: "Approval request not found" });
+    if (approval.studentPrn !== prn)
+      return res
+        .status(403)
+        .json({ error: "You cannot update this approval request" });
+    if (approval.status !== "REQUESTED_INFO")
+      return res
+        .status(400)
+        .json({ error: "Approval request is not requesting more info" });
+
+    const updatedProfile = await prisma.studentProfile.update({
+      where: { prn },
+      data: updates,
+    });
+
+    const updatedApproval = await prisma.approvalRequest.update({
+      where: { approvalId },
+      data: { status: "PENDING", remarks: null, updatedAt: new Date() },
+    });
+
+    res.json({
+      success: true,
+      message: "LC form resubmitted successfully",
+      profile: updatedProfile,
+      approval: updatedApproval,
+    });
+  } catch (err) {
+    console.error("Error resubmitting LC form:", err.message);
     res.status(400).json({ error: err.message });
   }
 };
