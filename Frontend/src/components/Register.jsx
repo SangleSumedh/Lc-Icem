@@ -1,6 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Logo from "/Logo.png";
+import {
+  User,
+  IdCard,
+  Mail,
+  Phone,
+  Lock,
+  School,
+  ChevronDown,
+} from "lucide-react";
+import AuthLayout from "./AuthLayout";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -10,42 +19,31 @@ const Register = () => {
     email: "",
     phoneNo: "",
     password: "",
-    college: "", // ✅ Added college field
+    college: "",
   });
   const [formErrors, setFormErrors] = useState({});
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     if (formErrors[e.target.name]) {
-      setFormErrors({
-        ...formErrors,
-        [e.target.name]: false,
-      });
+      setFormErrors({ ...formErrors, [e.target.name]: false });
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setFormSubmitted(true);
-
     const errors = {
       studentName: !formData.studentName,
       prn: !formData.prn,
       email: !formData.email,
       phoneNo: !formData.phoneNo,
       password: !formData.password,
-      college: !formData.college, // ✅ Validate college
+      college: !formData.college,
     };
-
     setFormErrors(errors);
 
-    if (Object.values(errors).every((v) => !v) && agreeToTerms) {
+    if (Object.values(errors).every((v) => !v)) {
       try {
         setLoading(true);
         const res = await fetch("http://localhost:5000/auth/student/register", {
@@ -57,151 +55,255 @@ const Register = () => {
         const data = await res.json();
         if (res.ok) {
           alert("✅ Registration successful!");
-          navigate("/"); // redirect to login page
+          navigate("/");
         } else {
           alert(data.error || "❌ Failed to register");
         }
       } catch (err) {
         console.error("❌ Network error:", err);
-        alert("Could not connect to backend. Check server.");
+        alert("Could not connect to backend.");
       } finally {
         setLoading(false);
       }
     }
   };
 
+  // Dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const collegeOptions = [
+    {
+      value: "ICEM",
+      label: "ICEM",
+      description: "Indira College of Engineering",
+    },
+    {
+      value: "IGSB",
+      label: "IGSB",
+      description: "Indira Global School of Business",
+    },
+  ];
+
+  const selectedCollege = collegeOptions.find(
+    (opt) => opt.value === formData.college
+  );
+
+  const handleCollegeSelect = (option) => {
+    setFormData({ ...formData, college: option.value });
+    setDropdownOpen(false);
+    if (formErrors.college) {
+      setFormErrors({ ...formErrors, college: false });
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="h-screen w-full flex flex-col bg-white">
-      {/* Navbar */}
-      <header className="bg-[#00539C] text-white shadow-lg">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <img src={Logo} alt="Logo" className="h-16" />
-            </div>
-            <div className="flex space-x-4">
-              <button onClick={() => navigate("/")} className="px-4 py-2">
-                Student Login
-              </button>
-              <button
-                onClick={() => navigate("/admin-login")}
-                className="px-4 py-2"
-              >
-                Admin Login
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                className="px-4 py-2 bg-white text-[#00539C]"
-              >
-                Register
-              </button>
-            </div>
+    <AuthLayout
+      currentPage="register"
+      title="Leaving Certificate Portal"
+      description="Quick and easy registration for Indira College of Engineering and Management students."
+      points={[
+        "Register once, apply anytime",
+        "College-specific selection",
+        "Fast application process",
+      ]}
+    >
+      <style>
+        {`
+          @keyframes scaleIn {
+            from { opacity: 0; transform: scaleY(0.9); }
+            to { opacity: 1; transform: scaleY(1); }
+          }
+          .animate-scaleIn {
+            animation: scaleIn 0.2s ease;
+            transform-origin: top;
+          }
+        `}
+      </style>
+
+      <h2 className="text-xl font-bold text-center text-[#003C84] mb-4">
+        Student Registration
+      </h2>
+
+      <form
+        onSubmit={handleRegister}
+        className="space-y-3 w-full max-w-md mx-auto"
+      >
+        {/* Full Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            Full Name
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md px-2 py-1.5">
+            <User className="w-4 h-4 text-gray-500 mr-2" />
+            <input
+              type="text"
+              name="studentName"
+              placeholder="e.g. John Doe"
+              value={formData.studentName}
+              onChange={handleInputChange}
+              className="w-full text-sm outline-none"
+            />
           </div>
         </div>
-      </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/2 flex items-center justify-center bg-gray-100">
-          <img
-            src="image.png"
-            alt="Students"
-            className="w-full object-contain h-auto"
-          />
-        </div>
-
-        <div className="w-1/2 bg-[#003C84] p-5 flex items-start justify-center overflow-y-auto">
-          <div className="max-w-md w-full text-white py-4">
-            <h1 className="text-2xl font-bold text-center mb-4">ICEM CRM</h1>
-            <form onSubmit={handleRegister} className="space-y-3">
-              <input
-                type="text"
-                name="studentName"
-                value={formData.studentName}
-                onChange={handleInputChange}
-                placeholder="Full Name"
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-              <input
-                type="text"
-                name="prn"
-                value={formData.prn}
-                onChange={handleInputChange}
-                placeholder="PRN"
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Email"
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-              <input
-                type="tel"
-                name="phoneNo"
-                value={formData.phoneNo}
-                onChange={handleInputChange}
-                placeholder="Phone Number"
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Password"
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-
-              {/* ✅ College Dropdown */}
-              <select
-                name="college"
-                value={formData.college}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              >
-                <option value="">Select College</option>
-                <option value="ICEM">ICEM</option>
-                <option value="IGSB">IGSB</option>
-              </select>
-
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  checked={agreeToTerms}
-                  onChange={() => setAgreeToTerms(!agreeToTerms)}
-                  className="h-4 w-4 mt-1"
-                />
-                <label className="ml-2 text-xs">
-                  I agree to the Terms and Privacy Policy
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg"
-              >
-                {loading ? "Registering..." : "Register"}
-              </button>
-            </form>
-
-            <div className="mt-4 flex justify-between text-xs">
-              <button onClick={() => navigate("/")} className="underline">
-                Already have an account? Login
-              </button>
-              <button
-                onClick={() => navigate("/admin-login")}
-                className="underline"
-              >
-                Admin Login
-              </button>
-            </div>
+        {/* PRN */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            PRN
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md px-2 py-1.5">
+            <IdCard className="w-4 h-4 text-gray-500 mr-2" />
+            <input
+              type="text"
+              name="prn"
+              placeholder="e.g. 1234567890"
+              value={formData.prn}
+              onChange={handleInputChange}
+              className="w-full text-sm outline-none"
+            />
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            Email
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md px-2 py-1.5">
+            <Mail className="w-4 h-4 text-gray-500 mr-2" />
+            <input
+              type="email"
+              name="email"
+              placeholder="e.g. john@example.com"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full text-sm outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            Phone Number
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md px-2 py-1.5">
+            <Phone className="w-4 h-4 text-gray-500 mr-2" />
+            <input
+              type="tel"
+              name="phoneNo"
+              placeholder="e.g. +91 9876543210"
+              value={formData.phoneNo}
+              onChange={handleInputChange}
+              className="w-full text-sm outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            Password
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-md px-2 py-1.5">
+            <Lock className="w-4 h-4 text-gray-500 mr-2" />
+            <input
+              type="password"
+              name="password"
+              placeholder="e.g. ••••••••"
+              value={formData.password}
+              onChange={handleInputChange}
+              className="w-full text-sm outline-none"
+            />
+          </div>
+        </div>
+
+        {/* College - Custom Dropdown */}
+        <div className="relative w-full" ref={dropdownRef}>
+          <label className="block text-sm font-medium text-gray-700 mb-0.5">
+            College
+          </label>
+          <div
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className={`flex items-center justify-between border rounded-md px-3 py-2 cursor-pointer transition ${
+              dropdownOpen ? "border-[#003C84]" : "border-[#00539C]"
+            } bg-white`}
+          >
+            <div className="flex items-center space-x-2">
+              <School className="w-4 h-4 text-[#00539C]" />
+              <span
+                className={
+                  selectedCollege
+                    ? "text-gray-800 text-sm"
+                    : "text-gray-400 text-sm"
+                }
+              >
+                {selectedCollege ? selectedCollege.label : "Select College"}
+              </span>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-500 transition-transform ${
+                dropdownOpen ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+
+          {dropdownOpen && (
+            <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 animate-scaleIn">
+              {[
+                {
+                  value: "ICEM",
+                  label: "ICEM",
+                  description: "Indira College of Engineering and Management",
+                },
+                {
+                  value: "IGSB",
+                  label: "IGSB",
+                  description: "Indira Global School of Business",
+                },
+              ].map((option) => (
+                <div
+                  key={option.value}
+                  onClick={() => handleCollegeSelect(option)}
+                  className="group px-3 py-2 flex flex-col cursor-pointer transition rounded-md hover:bg-[#00539C] hover:text-white"
+                >
+                  <span className="text-sm font-medium group-hover:text-white">
+                    {option.label}
+                  </span>
+                  <span className="text-xs text-gray-500 group-hover:text-white">
+                    {option.description}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {formErrors.college && (
+            <p className="text-xs text-red-500 mt-1">Please select a college</p>
+          )}
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#003C84] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#00539C] transition"
+        >
+          {loading ? "Registering..." : "Register"}
+        </button>
+      </form>
+    </AuthLayout>
   );
 };
 

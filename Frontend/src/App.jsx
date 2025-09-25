@@ -1,8 +1,8 @@
-// App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Login from "./components/Login";
+import Register from "./components/Register";
 import ForgetPassword from "./components/ForgetPassword";
 import AdminLogin from "./components/AdminLogin";
 
@@ -18,7 +18,6 @@ import DepartmentDashboard from "./components/Admin/DepartmentDashboard";
 import Admin from "./Pages/Admin";
 import Student from "./Pages/Student";
 import NotFound from "./components/NotFound";
-import Register from "./components/Register"; // ✅ Missing import added
 
 function App() {
   return (
@@ -26,7 +25,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} /> {/* ✅ Register fixed */}
+        <Route path="/register" element={<Register />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/admin-login" element={<AdminLogin />} />
 
@@ -42,8 +41,6 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="add-department" element={<AddDepartmentForm />} />
           <Route path="add-user" element={<AddUserForm />} />
-
-          {/* ✅ Dynamic Department Dashboard */}
           <Route path=":deptKey" element={<DepartmentDashboard />} />
         </Route>
 

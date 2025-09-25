@@ -38,9 +38,9 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
-        const token = localStorage.getItem("token"); 
+        const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/lc-form/status",
+          "http://localhost:5000/lc-form/approval-status",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -59,18 +59,18 @@ const StudentDashboard = () => {
   }, []);
 
   const ChatBubbleIcon = () => (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
-      strokeWidth={1.5} 
-      stroke="currentColor" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
       className="size-5 text-gray-500 hover:text-gray-700 transition-colors"
     >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
       />
     </svg>
   );
@@ -78,27 +78,56 @@ const StudentDashboard = () => {
   // Function to get department icon based on department name
   const getDepartmentIcon = (deptName) => {
     const department = deptName.toLowerCase();
-    
-    if (department.includes("account")) return <BanknotesIcon className="h-6 w-6 text-blue-600" />;
-    if (department.includes("library")) return <BookOpenIcon className="h-6 w-6 text-green-600" />;
-    if (department.includes("alumni")) return <UserGroupIcon className="h-6 w-6 text-purple-600" />;
-    if (department.includes("placement")) return <BriefcaseIcon className="h-6 w-6 text-indigo-600" />;
-    if (department.includes("scholarship")) return <TrophyIcon className="h-6 w-6 text-yellow-600" />;
-    if (department.includes("exam")) return <ClipboardDocumentListIcon className="h-6 w-6 text-red-600" />;
-    if (department.includes("hostel") || department.includes("mess")) return <HomeIcon className="h-6 w-6 text-gray-600" />;
-    if (department.includes("bus") || department.includes("transport")) return <TruckIcon className="h-6 w-6 text-orange-600" />;
-    if (department.includes("civil")) return <BuildingOfficeIcon className="h-6 w-6 text-brown-600" />;
-    if (department.includes("computer")) return <ComputerDesktopIcon className="h-6 w-6 text-blue-500" />;
-    if (department.includes("mechanical")) return <WrenchIcon className="h-6 w-6 text-gray-700" />;
-    if (department.includes("artificial") || department.includes("ai") || department.includes("data")) return <CpuChipIcon className="h-6 w-6 text-purple-500" />;
-    if (department.includes("electronics") || department.includes("telecommunication")) return <CubeIcon className="h-6 w-6 text-green-500" />;
-    if (department.includes("first year")) return <AcademicCapIcon className="h-6 w-6 text-indigo-500" />;
-    if (department.includes("information technology") || department.includes("it")) return <CodeBracketIcon className="h-6 w-6 text-red-500" />;
-    if (department.includes("mba")) return <ChartBarIcon className="h-6 w-6 text-green-700" />;
-    if (department.includes("mca")) return <PuzzlePieceIcon className="h-6 w-6 text-blue-700" />;
-    if (department.includes("m.tech")) return <BeakerIcon className="h-6 w-6 text-orange-500" />;
-    if (department.includes("engineering")) return <RocketLaunchIcon className="h-6 w-6 text-teal-600" />;
-    
+
+    if (department.includes("account"))
+      return <BanknotesIcon className="h-6 w-6 text-blue-600" />;
+    if (department.includes("library"))
+      return <BookOpenIcon className="h-6 w-6 text-green-600" />;
+    if (department.includes("alumni"))
+      return <UserGroupIcon className="h-6 w-6 text-purple-600" />;
+    if (department.includes("placement"))
+      return <BriefcaseIcon className="h-6 w-6 text-indigo-600" />;
+    if (department.includes("scholarship"))
+      return <TrophyIcon className="h-6 w-6 text-yellow-600" />;
+    if (department.includes("exam"))
+      return <ClipboardDocumentListIcon className="h-6 w-6 text-red-600" />;
+    if (department.includes("hostel") || department.includes("mess"))
+      return <HomeIcon className="h-6 w-6 text-gray-600" />;
+    if (department.includes("bus") || department.includes("transport"))
+      return <TruckIcon className="h-6 w-6 text-orange-600" />;
+    if (department.includes("civil"))
+      return <BuildingOfficeIcon className="h-6 w-6 text-brown-600" />;
+    if (department.includes("computer"))
+      return <ComputerDesktopIcon className="h-6 w-6 text-blue-500" />;
+    if (department.includes("mechanical"))
+      return <WrenchIcon className="h-6 w-6 text-gray-700" />;
+    if (
+      department.includes("artificial") ||
+      department.includes("ai") ||
+      department.includes("data")
+    )
+      return <CpuChipIcon className="h-6 w-6 text-purple-500" />;
+    if (
+      department.includes("electronics") ||
+      department.includes("telecommunication")
+    )
+      return <CubeIcon className="h-6 w-6 text-green-500" />;
+    if (department.includes("first year"))
+      return <AcademicCapIcon className="h-6 w-6 text-indigo-500" />;
+    if (
+      department.includes("information technology") ||
+      department.includes("it")
+    )
+      return <CodeBracketIcon className="h-6 w-6 text-red-500" />;
+    if (department.includes("mba"))
+      return <ChartBarIcon className="h-6 w-6 text-green-700" />;
+    if (department.includes("mca"))
+      return <PuzzlePieceIcon className="h-6 w-6 text-blue-700" />;
+    if (department.includes("m.tech"))
+      return <BeakerIcon className="h-6 w-6 text-orange-500" />;
+    if (department.includes("engineering"))
+      return <RocketLaunchIcon className="h-6 w-6 text-teal-600" />;
+
     // Default icon for any other department
     return <BuildingLibraryIcon className="h-6 w-6 text-gray-500" />;
   };
@@ -152,12 +181,12 @@ const StudentDashboard = () => {
             <div className="mb-2 p-2 bg-gray-50 rounded-full">
               {getDepartmentIcon(approval.department.deptName)}
             </div>
-            
+
             {/* Department Name */}
             <h3 className="text-xl font-semibold text-gray-800 text-center mb-1 leading-tight">
               {approval.department.deptName}
             </h3>
-            
+
             {/* Status Icon and Text */}
             <div className="flex items-center gap-1 mt-1">
               {renderStatusIcon(approval.status)}
@@ -185,7 +214,7 @@ const StudentDashboard = () => {
 
             {approval.updatedAt && (
               <p className="text-[15px] text-gray-400 mt-1 text-center">
-                Updated at: 
+                Updated at:
                 {new Date(approval.updatedAt).toLocaleDateString()}
               </p>
             )}
