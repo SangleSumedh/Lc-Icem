@@ -4,6 +4,7 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 const LeavingCertificate = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
+    studentId:"",
     fatherName: "",
     motherName: "",
     caste: "",
@@ -170,6 +171,20 @@ const LeavingCertificate = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
+                    Student ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="studentId"
+                    placeholder="Enter Student ID"
+                    value={formData.studentId}
+                    onChange={handleChange}
+                    required
+                    className="border p-2 rounded w-full"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     Father's Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -182,7 +197,7 @@ const LeavingCertificate = () => {
                     className="border p-2 rounded w-full"
                   />
                 </div>
-                
+ 
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     Mother's Name <span className="text-red-500">*</span>
