@@ -1,15 +1,22 @@
-// Admin/AdminSidebar.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
-  LayoutDashboard, Users, DollarSign, ShoppingCart, Megaphone,
-  GraduationCap, Briefcase, ClipboardList, FileText, Bus,
-  Home, User, HelpCircle, Ticket
+  LayoutDashboard,
+  Users,
+  DollarSign,
+  ShoppingCart,
+  Megaphone,
+  GraduationCap,
+  Briefcase,
+  ClipboardList,
+  FileText,
+  Bus,
+  Home,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-function AdminSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+function AdminSidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
   const itemRefs = useRef({});
   const location = useLocation();
@@ -30,7 +37,6 @@ function AdminSidebar() {
     { name: "Bus", icon: Bus, path: "/admin-dashboard/bus", roles: ["department"], dept: "bus" },
   ];
 
-  // ✅ Add all HODs (13 of them) dynamically
   const hods = [
     "computer-science", "it", "mechanical", "civil", "entc",
     "electrical", "aids", "aime", "mba", "mca",
@@ -49,17 +55,17 @@ function AdminSidebar() {
   let filteredDepartments = [];
   if (role === "student") {
     filteredDepartments = [
-      { name: "Student DashBoard", path: "/student", icon: Home },
+      { name: "Student Dashboard", path: "/student", icon: Home },
       { name: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
-      { name: "My Details", path: "/student/my-details", icon: User },
     ];
   } else if (role === "superadmin") {
     filteredDepartments = departments.filter(d => d.roles.includes("superadmin"));
   } else if (role === "department") {
     const storedDept = deptName?.toLowerCase().replace(/\s+/g, "-");
     filteredDepartments = departments.filter(
-      (d) => d.roles.includes("department") &&
-             d.dept?.toLowerCase().replace(/\s+/g, "-") === storedDept
+      (d) =>
+        d.roles.includes("department") &&
+        d.dept?.toLowerCase().replace(/\s+/g, "-") === storedDept
     );
   }
 
@@ -69,44 +75,43 @@ function AdminSidebar() {
   }, [location]);
 
   return (
-    <div>
-      <div className={`${collapsed ? "w-20" : "w-64"} min-h-[90vh] rounded-r-2xl py-2 my-4 bg-white shadow-lg flex flex-col transition-all duration-300`}>
-        <div className="p-4">
-          <button onClick={() => setCollapsed(!collapsed)} className="w-full py-2 rounded-lg hover:bg-gray-100">
-            {collapsed ? <ChevronRight size={28} /> : <ChevronLeft size={28} />}
-          </button>
-        </div>
+    <div
+      className={`${collapsed ? "w-20" : "w-64"} 
+        h-[calc(100vh-80px)]
+        rounded-r-2xl py-2
+        bg-white shadow-lg flex flex-col 
+        transition-all duration-300 
+        overflow-y-auto`}
+    >
+      {/* Collapse Button */}
+      <div className="p-4">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full py-2 rounded-lg hover:bg-gray-100"
+        >
+          {collapsed ? <ChevronRight size={28} /> : <ChevronLeft size={28} />}
+        </button>
+      </div>
 
-        <div className="flex-1 px-2 space-y-2">
-          {filteredDepartments.map((dept) => {
-            const isActive = location.pathname === dept.path;
-            const Icon = dept.icon;
-            return (
-              <div
-                key={dept.name}
-                ref={(el) => (itemRefs.current[dept.path] = el)}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
-                  isActive ? "text-blue-600 bg-blue-50 font-semibold" : "hover:text-blue-400"
-                }`}
-                onClick={() => navigate(dept.path)}
-              >
-                <Icon className="w-6 h-6 text-[#00539C]" />
-                {!collapsed && <span className="font-medium">{dept.name}</span>}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="px-2 space-y-2">
-          <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50 cursor-pointer">
-            <HelpCircle className="w-6 h-6 text-[#00539C]" />
-            {!collapsed && <span className="font-medium">Help</span>}
-          </div>
-          <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50 cursor-pointer">
-            <Ticket className="w-6 h-6 text-[#00539C]" />
-            {!collapsed && <span className="font-medium">Active Tickets</span>}
-          </div>
-        </div>
+      {/* Menu Items */}
+      <div className="flex-1 px-2 space-y-2">
+        {filteredDepartments.map((dept) => {
+          const isActive = location.pathname === dept.path;
+          const Icon = dept.icon;
+          return (
+            <div
+              key={dept.name}
+              ref={(el) => (itemRefs.current[dept.path] = el)}
+              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
+                isActive ? "text-blue-600 bg-blue-50 font-semibold" : "hover:text-blue-400"
+              }`}
+              onClick={() => navigate(dept.path)}
+            >
+              <Icon className="w-6 h-6 text-[#00539C]" />
+              {!collapsed && <span className="font-medium">{dept.name}</span>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

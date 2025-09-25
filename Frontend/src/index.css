@@ -1,1 +1,13 @@
-@import "tailwindcss";
+@import "tailwindcss"; 
+
+/* 🔹 Remove browser autofill background and match input color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #f9fafb inset !important; /* Tailwind's gray-50 */
+  box-shadow: 0 0 0px 1000px #f9fafb inset !important;
+  -webkit-text-fill-color: #111827 !important; /* Tailwind's gray-900 for text */
+  caret-color: #111827 !important;
+  border-radius: 0.375rem; /* rounded-md to match your inputs */
+}

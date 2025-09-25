@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
-import { jwtDecode } from "jwt-decode"; // decode JWT
+import { jwtDecode } from "jwt-decode";
 import Logo from "/Logo.png";
 
 function AdminNavbar() {
@@ -37,15 +37,15 @@ function AdminNavbar() {
   };
 
   return (
-    <header className="bg-[#00539C] text-white shadow-lg z-50">
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          {/* Left - Logo */}
+    <header className="bg-[#00539C] text-white shadow-lg z-50 h-20 flex items-center">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="flex justify-between items-center">
+          {/* Logo */}
           <div className="flex items-center">
-            <img src={Logo} alt="Logo" className="h-20" />
+            <img src={Logo} alt="Logo" className="h-16" />
           </div>
 
-          {/* Right - Profile Menu */}
+          {/* Profile Menu */}
           <div className="relative">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
@@ -59,7 +59,6 @@ function AdminNavbar() {
               </span>
             </button>
 
-            {/* Dropdown */}
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 z-50">
                 <button

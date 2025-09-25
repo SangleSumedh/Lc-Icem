@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Logo from "/Logo.png";
-import { jwtDecode } from "jwt-decode"; // ✅ fixed import
+import { jwtDecode } from "jwt-decode";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import AuthLayout from "./AuthLayout";
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [formErrors, setFormErrors] = useState({});
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,10 +20,13 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const errors = { email: !formData.email, password: !formData.password };
+    const errors = {
+      email: !formData.email,
+      password: !formData.password,
+    };
     setFormErrors(errors);
 
-    if (!errors.email && !errors.password && agreeToTerms) {
+    if (!errors.email && !errors.password) {
       try {
         setLoading(true);
         const res = await fetch("http://localhost:5000/auth/student/login", {
@@ -35,8 +39,8 @@ const Login = () => {
         if (res.ok) {
           localStorage.setItem("token", data.token);
 
-          const decoded = jwtDecode(data.token); // ✅ decode
-          localStorage.setItem("role", decoded.role); // "student"
+          const decoded = jwtDecode(data.token);
+          localStorage.setItem("role", decoded.role);
 
           navigate("/student");
         } else {
@@ -52,83 +56,99 @@ const Login = () => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-white">
-      <header className="bg-[#00539C] text-white shadow-lg">
-        <div className="flex justify-between items-center py-4 px-6">
-          <img src={Logo} alt="Logo" className="h-16" />
-          <div className="flex space-x-4">
-            <button onClick={() => navigate("/")} className="px-4 py-2">
-              Student Login
-            </button>
-            <button onClick={() => navigate("/admin-login")} className="px-4 py-2">
-              Admin Login
-            </button>
-            <button onClick={() => navigate("/register")} className="px-4 py-2">
-              Register
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/2 flex items-center justify-center bg-gray-100">
-          <img src="image.png" alt="Students" className="w-full object-contain h-auto" />
-        </div>
-        <div className="w-1/2 bg-[#003C84] p-5 flex items-start justify-center">
-          <div className="max-w-md w-full text-white">
-            <h1 className="text-2xl font-bold mb-2">ICEM CRM - Student Login</h1>
-            <form onSubmit={handleLogin} className="space-y-5">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded-lg text-black"
-              />
-
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  checked={agreeToTerms}
-                  onChange={() => setAgreeToTerms(!agreeToTerms)}
-                  className="h-4 w-4 mt-1"
-                />
-                <label className="ml-2 text-xs">I agree to Terms</label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-white text-[#003C84] py-2 px-4 rounded-lg"
-              >
-                {loading ? "Logging in..." : "Login"}
-              </button>
-            </form>
-
-            <div className="mt-4 flex justify-between text-xs">
-              <button onClick={() => navigate("/forget-password")} className="underline">
-                Forget Password?
-              </button>
-              <button onClick={() => navigate("/register")} className="underline">
-                Register
-              </button>
-              <button onClick={() => navigate("/admin-login")} className="underline">
-                Admin Login
-              </button>
-            </div>
-          </div>
-        </div>
+    <AuthLayout
+      currentPage="login"
+      title="Leaving Certificate Portal"
+      description="Apply for Leaving Certificates at Indira College of Engineering and Management easily and quickly."
+      points={[
+        "Student-friendly login system",
+        "Secure authentication",
+        "Track application status",
+      ]}
+    >
+      {/* Heading + Subtitle */}
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-[#003C84]">Student Login</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Welcome back! Please enter your credentials.
+        </p>
       </div>
-    </div>
+
+      <form
+        onSubmit={handleLogin}
+        className="space-y-6 w-full max-w-md mx-auto"
+      >
+        {/* Email */}
+        <div>
+          <label className="block text-base font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3">
+            <Mail className="w-5 h-5 text-gray-500 mr-3" />
+            <input
+              type="email"
+              name="email"
+              placeholder="e.g. john@example.com"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full text-base outline-none"
+            />
+          </div>
+          {formErrors.email && (
+            <p className="text-sm text-red-500 mt-1">Email is required</p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="block text-base font-medium text-gray-700 mb-1">
+            Password
+          </label>
+          <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 relative">
+            <Lock className="w-5 h-5 text-gray-500 mr-3" />
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="e.g. ••••••••"
+              value={formData.password}
+              onChange={handleInputChange}
+              className="w-full text-base outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 text-gray-500 hover:text-[#003C84] transition"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          {formErrors.password && (
+            <p className="text-sm text-red-500 mt-1">Password is required</p>
+          )}
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#003C84] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#00539C] transition"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
+
+        {/* Footer Note */}
+        <p className="text-center text-sm text-gray-600 mt-4">
+          Don&apos;t have an account?{" "}
+          <span className="font-medium text-[#003C84]">Contact Admin</span>
+        </p>
+        
+      </form>
+    </AuthLayout>
   );
 };
 
