@@ -97,12 +97,13 @@ export const deleteSuperAdmin = async (req, res) => {
    ================================ */
 
 // ➕ Create Department
+// ➕ Create Department
 export const addDepartment = async (req, res) => {
   try {
-    const { deptName, deptHead, branchId, username, email, password } =
+    const { deptName, deptHead, branchId, username, email, password, college } =
       req.body;
-    if (!deptName || !username || !email || !password) {
-      return sendResponse(res, false, "All fields are required", null, 400);
+    if (!deptName || !username || !email || !password || !college) {
+      return sendResponse(res, false, "All fields are required, including college", null, 400);
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -115,11 +116,12 @@ export const addDepartment = async (req, res) => {
         username,
         email,
         passwordHash,
+        college,
       },
-      select: { deptId: true, deptName: true, deptHead: true, email: true },
+      select: { deptId: true, deptName: true, deptHead: true, email: true, college: true },
     });
 
-    console.log(`✅ Department created: ${deptName}`);
+    console.log(`✅ Department created: ${deptName} | College: ${college}`);
     return sendResponse(
       res,
       true,
@@ -139,6 +141,7 @@ export const addDepartment = async (req, res) => {
     return sendResponse(res, false, err.message, null, 500);
   }
 };
+
 
 // ✏️ Update Department Head
 export const updateDepartment = async (req, res) => {
