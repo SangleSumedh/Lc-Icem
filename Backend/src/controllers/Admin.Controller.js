@@ -268,6 +268,7 @@ export const getDepartments = async (req, res) => {
         deptId: true,
         deptName: true,
         deptHead: true,
+        username: true,
         email: true,
         college: true,
       },
