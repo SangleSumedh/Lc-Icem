@@ -41,6 +41,7 @@ model StudentProfile {
   lcReady      Boolean  @default(false)
   lcGenerated  Boolean  @default(false)
   lcUrl        String?  // store the file path / cloud URL
+  isFormEditable    Boolean  @default(true) 
 
   student          Student  @relation(fields: [prn], references: [prn])
 }

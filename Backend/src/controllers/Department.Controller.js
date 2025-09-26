@@ -29,7 +29,6 @@ export const updateApprovalStatus = async (req, res) => {
         .status(403)
         .json({ error: "You cannot modify this approval request" });
 
-    // ✅ Define studentPrn at the top
     const studentPrn = approval.student.prn;
 
     // Determine timestamp: approvedAt only for APPROVED/REJECTED
@@ -58,12 +57,26 @@ export const updateApprovalStatus = async (req, res) => {
       `Approval Request ${approvalId} marked as ${status} by dept ${deptId}`
     );
 
+    // ✅ Handle isFormEditable flag based on status
+    if (status === "APPROVED") {
+      // Lock the LC form after approval
+      await prisma.studentProfile.update({
+        where: { prn: studentPrn },
+        data: { isFormEditable: false },
+      });
+    } else if (status === "REQUESTED_INFO") {
+      // Unlock the LC form so student can edit
+      await prisma.studentProfile.update({
+        where: { prn: studentPrn },
+        data: { isFormEditable: true },
+      });
+    }
+
     // Trigger next approvals only if APPROVED
     if (status === "APPROVED") {
       const studentBranch = approval.student.profile?.branch;
 
       if (approval.department.deptName === "Account") {
-        // After Account → Library
         const libraryDept = await prisma.department.findFirst({
           where: { deptName: "Library" },
         });
@@ -75,12 +88,11 @@ export const updateApprovalStatus = async (req, res) => {
           );
         }
       } else if (approval.department.deptName === "Library") {
-        // After Library → HOD of that branch
         const hodDepts = await prisma.department.findMany({
           where: {
             deptName: {
               contains: `HOD - ${studentBranch}`,
-              mode: "insensitive", // ✅ case-insensitive match
+              mode: "insensitive",
             },
           },
         });
@@ -93,7 +105,6 @@ export const updateApprovalStatus = async (req, res) => {
           );
         }
       } else if (approval.department.deptName.includes("HOD")) {
-        // After HOD → all remaining departments (excluding Account & Library)
         const remainingDepts = await prisma.department.findMany({
           where: {
             NOT: { deptName: { in: ["Account", "Library", "Registrar"] } },
@@ -107,7 +118,7 @@ export const updateApprovalStatus = async (req, res) => {
       }
     }
 
-    // ✅ Now studentPrn always defined here
+    // Check if all approvals are done
     const pendingApprovals = await prisma.approvalRequest.findMany({
       where: {
         studentPrn,
@@ -116,7 +127,6 @@ export const updateApprovalStatus = async (req, res) => {
     });
 
     if (pendingApprovals.length === 0) {
-      // All approvals done
       await prisma.studentProfile.update({
         where: { prn: studentPrn },
         data: { lcReady: true, lcGenerated: false, lcUrl: null },
@@ -137,6 +147,7 @@ export const updateApprovalStatus = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
 
 // Helper function to create approval if it doesn't exist
 async function createApprovalIfNotExists(studentPrn, dept, student) {
