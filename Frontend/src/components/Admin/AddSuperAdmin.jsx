@@ -1,42 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Trash2, Edit } from "lucide-react";
 
-function AddUserForm() {
-  const token = localStorage.getItem("token");
-  const BASE_URL = "http://localhost:5000/admin";
-
+function AddSuperAdmin() {
   const [formData, setFormData] = useState({
-    prn: "",
-    studentName: "",
+    username: "",
     email: "",
-    phoneNo: "",
-    college: "ICEM",
     password: "",
   });
 
-  const [students, setStudents] = useState([]);
+  const [superAdmins, setSuperAdmins] = useState([]);
   const [editing, setEditing] = useState(null);
 
+  const token = localStorage.getItem("token");
+  const BASE_URL = "http://localhost:5000/admin";
   const navigate = useNavigate();
 
-  // 🔹 Fetch Students
-  const fetchStudents = async () => {
+  // 🔹 Fetch SuperAdmins
+  const fetchSuperAdmins = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/students`, {
+      const res = await fetch(`${BASE_URL}/superadmins`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) {
-        setStudents(data.data);
-      }
+      if (data.success) setSuperAdmins(data.data);
     } catch (err) {
-      console.error("Fetch students error:", err);
+      console.error("Fetch superadmins error:", err);
     }
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchSuperAdmins();
   }, []);
 
   const handleChange = (e) => {
@@ -48,11 +42,11 @@ function AddUserForm() {
     }
   };
 
-  // ➕ Add Student
-  const handleAdd = async (e) => {
+  // ➕ Add
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${BASE_URL}/add-student`, {
+      const res = await fetch(`${BASE_URL}/add-superadmin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,46 +56,37 @@ function AddUserForm() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("✅ Student added");
-        fetchStudents();
-        setFormData({
-          prn: "",
-          studentName: "",
-          email: "",
-          phoneNo: "",
-          college: "ICEM",
-          password: "",
-        });
+        alert("✅ SuperAdmin added");
+        fetchSuperAdmins();
+        setFormData({ username: "", email: "", password: "" });
       } else {
-        alert(data.message || "❌ Failed to add student");
+        alert(data.message || "❌ Failed to add superadmin");
       }
     } catch (err) {
-      console.error("Add student error:", err);
+      console.error("Error adding superadmin:", err);
     }
   };
 
-  // ❌ Delete Student
-  const handleDelete = async (prn) => {
-    if (!window.confirm("Delete this student?")) return;
+  // ❌ Delete
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this SuperAdmin?")) return;
     try {
-      const res = await fetch(`${BASE_URL}/delete-student/${prn}`, {
+      const res = await fetch(`${BASE_URL}/delete-superadmin/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) {
-        fetchStudents();
-      }
+      if (data.success) fetchSuperAdmins();
     } catch (err) {
-      console.error("Delete error", err);
+      console.error("Delete error:", err);
     }
   };
 
-  // ✏️ Update Student
+  // ✏️ Update
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${BASE_URL}/update-student/${editing.prn}`, {
+      const res = await fetch(`${BASE_URL}/update-superadmin/${editing.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -109,77 +94,52 @@ function AddUserForm() {
         },
         body: JSON.stringify(editing),
       });
-
       const data = await res.json();
       if (data.success) {
-        alert("✅ Student updated");
-        fetchStudents();
+        alert("✅ SuperAdmin updated");
+        fetchSuperAdmins();
         setEditing(null);
       } else {
         alert(data.message || "❌ Update failed");
       }
     } catch (err) {
-      console.error("Update error", err);
+      console.error("Update error:", err);
     }
   };
 
   return (
     <main className="p-6 space-y-6">
       {/* Add Form */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-bold mb-4">Add Student</h2>
-        <form onSubmit={handleAdd} className="grid grid-cols-2 gap-4">
+      <div className="bg-white rounded-xl shadow p-6 max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-6">Add SuperAdmin</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            name="prn"
-            value={formData.prn}
+            name="username"
+            value={formData.username}
             onChange={handleChange}
-            placeholder="PRN"
+            placeholder="Username"
             required
-            className="border p-2 rounded"
+            className="border p-2 rounded w-full"
           />
           <input
-            name="studentName"
-            value={formData.studentName}
-            onChange={handleChange}
-            placeholder="Student Name"
-            required
-            className="border p-2 rounded"
-          />
-          <input
-            name="email"
             type="email"
+            name="email"
             value={formData.email}
             onChange={handleChange}
             placeholder="Email"
             required
-            className="border p-2 rounded"
+            className="border p-2 rounded w-full"
           />
           <input
-            name="phoneNo"
-            value={formData.phoneNo}
-            onChange={handleChange}
-            placeholder="Phone Number"
-            className="border p-2 rounded"
-          />
-          <select
-            name="college"
-            value={formData.college}
-            onChange={handleChange}
-            className="border p-2 rounded col-span-2"
-          >
-            <option value="ICEM">ICEM</option>
-            <option value="IGSB">IGSB</option>
-          </select>
-          <input
-            name="password"
             type="password"
+            name="password"
             value={formData.password}
             onChange={handleChange}
             placeholder="Password"
             required
-            className="border p-2 rounded col-span-2"
+            className="border p-2 rounded w-full"
           />
-          <div className="col-span-2 flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={() => navigate("/admin-dashboard")}
@@ -187,35 +147,31 @@ function AddUserForm() {
             >
               Go Back
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded">
-              Add Student
+            <button className="px-4 py-2 bg-purple-600 text-white rounded">
+              Add SuperAdmin
             </button>
           </div>
         </form>
       </div>
 
-      {/* Student List */}
+      {/* List */}
       <div className="bg-white p-6 rounded-xl shadow">
-        <h3 className="text-xl font-semibold mb-4">Students</h3>
+        <h3 className="text-xl font-semibold mb-4">SuperAdmins</h3>
         <table className="w-full text-sm border">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-2 text-left">PRN</th>
-              <th className="p-2 text-left">Name</th>
+              <th className="p-2 text-left">ID</th>
+              <th className="p-2 text-left">Username</th>
               <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-left">Phone</th>
-              <th className="p-2 text-left">College</th>
               <th className="p-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {students.map((s) => (
-              <tr key={s.prn} className="border-t">
-                <td className="p-2">{s.prn}</td>
-                <td className="p-2">{s.studentName}</td>
+            {superAdmins.map((s) => (
+              <tr key={s.id} className="border-t">
+                <td className="p-2">{s.id}</td>
+                <td className="p-2">{s.username}</td>
                 <td className="p-2">{s.email}</td>
-                <td className="p-2">{s.phoneNo || "—"}</td>
-                <td className="p-2">{s.college}</td>
                 <td className="p-2 text-right space-x-2">
                   <button
                     className="p-1 text-blue-600 hover:bg-blue-100 rounded"
@@ -225,7 +181,7 @@ function AddUserForm() {
                   </button>
                   <button
                     className="p-1 text-red-600 hover:bg-red-100 rounded"
-                    onClick={() => handleDelete(s.prn)}
+                    onClick={() => handleDelete(s.id)}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -241,10 +197,10 @@ function AddUserForm() {
             onSubmit={handleUpdate}
             className="mt-6 p-4 border rounded space-y-3 bg-gray-50"
           >
-            <h4 className="font-semibold">Edit Student</h4>
+            <h4 className="font-semibold">Edit SuperAdmin</h4>
             <input
-              name="studentName"
-              value={editing.studentName}
+              name="username"
+              value={editing.username}
               onChange={handleChange}
               className="border p-2 rounded w-full"
             />
@@ -254,21 +210,6 @@ function AddUserForm() {
               onChange={handleChange}
               className="border p-2 rounded w-full"
             />
-            <input
-              name="phoneNo"
-              value={editing.phoneNo || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-            />
-            <select
-              name="college"
-              value={editing.college}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-            >
-              <option value="ICEM">ICEM</option>
-              <option value="IGSB">IGSB</option>
-            </select>
             <input
               name="password"
               type="password"
@@ -296,4 +237,4 @@ function AddUserForm() {
   );
 }
 
-export default AddUserForm;
+export default AddSuperAdmin;
