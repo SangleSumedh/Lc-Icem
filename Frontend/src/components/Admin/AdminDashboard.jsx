@@ -11,17 +11,20 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [studentsRes, departmentsRes] = await Promise.all([
+      const [studentsRes, departmentsRes, superadminsRes] = await Promise.all([
         fetch("http://localhost:5000/admin/students", {
           headers: { Authorization: `Bearer ${token}` },
         }).then((r) => r.json()),
         fetch("http://localhost:5000/admin/departments").then((r) => r.json()),
+        fetch("http://localhost:5000/admin/get-superAdmins", {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((r) => r.json()),
       ]);
 
       setStats({
         students: studentsRes?.data?.length || 0,
         departments: departmentsRes?.data?.length || 0,
-        superadmins: 1, // demo (you can expose /superadmins in backend for exact count)
+        superadmins: superadminsRes?.data?.length || 0,
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
