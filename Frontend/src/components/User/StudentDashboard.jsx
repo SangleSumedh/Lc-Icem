@@ -168,7 +168,7 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6 min-h-screen">
+    <div className="container mx-auto px-4 py-6 space-y-6">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
         LC Form Approval Status
       </h2>
@@ -193,8 +193,8 @@ const StudentDashboard = () => {
 
       {/* Approval Grid */}
       {approvals.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {approvals.map((approval) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+          {[...approvals].reverse().map((approval) => {
             const hasRemarks = approval.remarks && approval.status === "REQUESTED_INFO";
             
             return (
@@ -260,7 +260,7 @@ const StudentDashboard = () => {
 
       {/* Remarks Dialog */}
       {showRemarksDialog && selectedRemarks && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
             {/* Header */}
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 rounded-t-xl flex justify-between items-center">
