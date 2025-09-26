@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,9 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
+  ShieldPlus,
+  Building2, // new icon for departments
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -24,49 +27,51 @@ function AdminSidebar({ collapsed, setCollapsed }) {
   const role = localStorage.getItem("role");
   const deptName = localStorage.getItem("deptName");
 
-  const departments = [
-    { name: "Admin", icon: LayoutDashboard, path: "/admin-dashboard", roles: ["superadmin"] },
-    { name: "Accounts", icon: DollarSign, path: "/admin-dashboard/account", roles: ["department"], dept: "account" },
-    { name: "Hostel", icon: ShoppingCart, path: "/admin-dashboard/hostel", roles: ["department"], dept: "hostel" },
-    { name: "Library", icon: Megaphone, path: "/admin-dashboard/library", roles: ["department"], dept: "library" },
-    { name: "Alumni Co-ordinator", icon: GraduationCap, path: "/admin-dashboard/alumni", roles: ["department"], dept: "alumni" },
-    { name: "Central Placement Department", icon: Briefcase, path: "/admin-dashboard/placement", roles: ["department"], dept: "placement" },
-    { name: "Department Placement Co-ordinator", icon: ClipboardList, path: "/admin-dashboard/department-placement", roles: ["department"], dept: "department-placement" },
-    { name: "Scholarship", icon: DollarSign, path: "/admin-dashboard/scholarship", roles: ["department"], dept: "scholarship" },
-    { name: "Exam Section", icon: FileText, path: "/admin-dashboard/exam", roles: ["department"], dept: "exam" },
-    { name: "Bus", icon: Bus, path: "/admin-dashboard/bus", roles: ["department"], dept: "bus" },
-  ];
+  const [departments, setDepartments] = useState([]);
 
-  const hods = [
-    "computer-science", "it", "mechanical", "civil", "entc",
-    "electrical", "aids", "aime", "mba", "mca",
-    "chemical", "biotech", "mechatronics"
-  ];
-  hods.forEach(branch => {
-    departments.push({
-      name: `HOD - ${branch.replace(/-/g, " ").toUpperCase()}`,
-      icon: Users,
-      path: `/admin-dashboard/hod-${branch}`,
-      roles: ["department"],
-      dept: `hod-${branch}`,
-    });
-  });
+  // 🔹 Fetch departments only if role is department
+  useEffect(() => {
+    if (role === "department") {
+      fetch("http://localhost:5000/admin/departments")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setDepartments(data.data);
+          }
+        })
+        .catch((err) => console.error("Error fetching departments", err));
+    }
+  }, [role]);
+
+  // ✅ Create slug for routes
+  function slugify(name) {
+    return name.toLowerCase().replace(/\s+/g, "-");
+  }
 
   let filteredDepartments = [];
+
   if (role === "student") {
     filteredDepartments = [
-      { name: "Student Dashboard", path: "/student", icon: Home },
-      { name: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
+      { deptName: "Student Dashboard", path: "/student", icon: Home },
+      { deptName: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
     ];
   } else if (role === "superadmin") {
-    filteredDepartments = departments.filter(d => d.roles.includes("superadmin"));
+    // 🔹 Show 4 items for superadmin
+    filteredDepartments = [
+      { deptName: "Admin Dashboard", path: "/admin-dashboard", icon: LayoutDashboard },
+      { deptName: "Add Department", path: "/admin-dashboard/add-department", icon: Building2 },
+      { deptName: "Add User", path: "/admin-dashboard/add-user", icon: UserPlus },
+      { deptName: "Add SuperAdmin", path: "/admin-dashboard/add-superadmin", icon: ShieldPlus },
+    ];
   } else if (role === "department") {
-    const storedDept = deptName?.toLowerCase().replace(/\s+/g, "-");
-    filteredDepartments = departments.filter(
-      (d) =>
-        d.roles.includes("department") &&
-        d.dept?.toLowerCase().replace(/\s+/g, "-") === storedDept
-    );
+    const storedDept = deptName?.toLowerCase();
+    filteredDepartments = departments
+      .filter((d) => d.deptName.toLowerCase() === storedDept)
+      .map((d) => ({
+        deptName: d.deptName,
+        path: `/admin-dashboard/${slugify(d.deptName)}`,
+        icon: pickIcon(d.deptName),
+      }));
   }
 
   useEffect(() => {
@@ -97,10 +102,10 @@ function AdminSidebar({ collapsed, setCollapsed }) {
       <div className="flex-1 px-2 space-y-2">
         {filteredDepartments.map((dept) => {
           const isActive = location.pathname === dept.path;
-          const Icon = dept.icon;
+          const Icon = dept.icon || Users;
           return (
             <div
-              key={dept.name}
+              key={dept.deptName}
               ref={(el) => (itemRefs.current[dept.path] = el)}
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
                 isActive ? "text-blue-600 bg-blue-50 font-semibold" : "hover:text-blue-400"
@@ -108,13 +113,29 @@ function AdminSidebar({ collapsed, setCollapsed }) {
               onClick={() => navigate(dept.path)}
             >
               <Icon className="w-6 h-6 text-[#00539C]" />
-              {!collapsed && <span className="font-medium">{dept.name}</span>}
+              {!collapsed && <span className="font-medium">{dept.deptName}</span>}
             </div>
           );
         })}
       </div>
     </div>
   );
+}
+
+/**
+ * 🔹 Map deptName → Icon
+ */
+function pickIcon(name) {
+  if (name.toLowerCase().includes("account")) return DollarSign;
+  if (name.toLowerCase().includes("library")) return Megaphone;
+  if (name.toLowerCase().includes("hostel")) return ShoppingCart;
+  if (name.toLowerCase().includes("alumni")) return GraduationCap;
+  if (name.toLowerCase().includes("placement")) return Briefcase;
+  if (name.toLowerCase().includes("scholarship")) return DollarSign;
+  if (name.toLowerCase().includes("exam")) return FileText;
+  if (name.toLowerCase().includes("bus")) return Bus;
+  if (name.toLowerCase().includes("hod")) return Users;
+  return Users;
 }
 
 export default AdminSidebar;

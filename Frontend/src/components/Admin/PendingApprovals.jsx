@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { SortAsc } from "lucide-react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
-function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
+function PendingApprovals({ title, subtitle }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState(null);
@@ -11,7 +11,11 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [remarks, setRemarks] = useState("");
 
   const token = localStorage.getItem("token");
-  const deptName = localStorage.getItem("deptName"); // 🔹 check logged-in department
+  const deptName = localStorage.getItem("deptName"); // logged-in department name
+
+  // ✅ Correct backend URLs
+  const fetchUrl = "http://localhost:5000/lc-form/pending-approvals";
+  const updateUrl = "http://localhost:5000/lc-form/update-approval";
 
   const fetchApprovals = async () => {
     setLoading(true);
@@ -43,6 +47,10 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       alert("Please select a status");
       return;
     }
+    if (!remarks.trim()) {
+      alert("Remarks are required");
+      return;
+    }
 
     try {
       const res = await fetch(updateUrl, {
@@ -59,7 +67,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
         alert("✅ Approval updated successfully");
         setSelectedApproval(null);
         setStatus("");
@@ -100,7 +108,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
             className="flex items-center gap-2 font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-5 transition"
           >
             <SortAsc size={18} />
-            Filter
+            Refresh
           </button>
         </div>
 
@@ -160,28 +168,30 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                         Approve
                       </button>
 
-                      {/* Reject (only for account dept) */}
-                      {deptName === "account" ? (
-                        <button
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                          onClick={() => {
-                            setSelectedApproval(a);
-                            setStatus("REJECTED");
-                          }}
-                        >
-                          Reject
-                        </button>
-                      ) : (
-                        <button
-                          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                          onClick={() => {
-                            setSelectedApproval(a);
-                            setStatus("REQUEST_INFO");
-                          }}
-                        >
-                          Request Info
-                        </button>
-                      )}
+                      {/* Request Info */}
+                      <button
+                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                        onClick={() => {
+                          setSelectedApproval(a);
+                          setStatus("REQUESTED_INFO");
+                        }}
+                      >
+                        Request Info
+                      </button>
+
+                      {/* Reject (only for Account dept) */}
+                      {deptName &&
+                        deptName.toLowerCase() === "account" && (
+                          <button
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                            onClick={() => {
+                              setSelectedApproval(a);
+                              setStatus("REJECTED");
+                            }}
+                          >
+                            Reject
+                          </button>
+                        )}
                     </div>
                   </td>
                 </tr>
