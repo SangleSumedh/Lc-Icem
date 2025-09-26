@@ -92,6 +92,35 @@ export const deleteSuperAdmin = async (req, res) => {
   }
 };
 
+// 📌 Get all SuperAdmins
+export const getSuperAdmins = async (req, res) => {
+  try {
+    const superAdmins = await prisma.superAdmin.findMany({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+      },
+    });
+
+    if (!superAdmins || superAdmins.length === 0) {
+      return sendResponse(res, false, "No SuperAdmins found", []);
+    }
+
+    console.log("✅ SuperAdmins fetched:", superAdmins);
+    return sendResponse(
+      res,
+      true,
+      "SuperAdmins fetched successfully",
+      superAdmins
+    );
+  } catch (err) {
+    console.error("❌ Error fetching SuperAdmins:", err.message);
+    return sendResponse(res, false, err.message, null, 500);
+  }
+};
+
+
 /* ================================
    📌 Department CRUD
    ================================ */
@@ -103,7 +132,13 @@ export const addDepartment = async (req, res) => {
     const { deptName, deptHead, branchId, username, email, password, college } =
       req.body;
     if (!deptName || !username || !email || !password || !college) {
-      return sendResponse(res, false, "All fields are required, including college", null, 400);
+      return sendResponse(
+        res,
+        false,
+        "All fields are required, including college",
+        null,
+        400
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -118,7 +153,13 @@ export const addDepartment = async (req, res) => {
         passwordHash,
         college,
       },
-      select: { deptId: true, deptName: true, deptHead: true, email: true, college: true },
+      select: {
+        deptId: true,
+        deptName: true,
+        deptHead: true,
+        email: true,
+        college: true,
+      },
     });
 
     console.log(`✅ Department created: ${deptName} | College: ${college}`);
@@ -142,11 +183,10 @@ export const addDepartment = async (req, res) => {
   }
 };
 
-
 // ✏️ Update Department Head
 export const updateDepartment = async (req, res) => {
   try {
-    const { deptId, deptHead, username, password, email , college } = req.body;
+    const { deptId, deptHead, username, password, email, college } = req.body;
 
     if (!deptId) {
       return sendResponse(res, false, "deptId is required", null, 400);
@@ -157,7 +197,7 @@ export const updateDepartment = async (req, res) => {
     if (deptHead) data.deptHead = deptHead; // optional
     if (username) data.username = username; // optional
     if (email) data.email = email;
-    if (college) data.college = college;  // optional
+    if (college) data.college = college; // optional
     if (password) data.passwordHash = await bcrypt.hash(password, 10); // optional
 
     if (Object.keys(data).length === 0) {
@@ -204,7 +244,6 @@ export const updateDepartment = async (req, res) => {
   }
 };
 
-
 // ❌ Delete Department
 export const deleteDepartment = async (req, res) => {
   try {
@@ -225,7 +264,13 @@ export const deleteDepartment = async (req, res) => {
 export const getDepartments = async (req, res) => {
   try {
     const departments = await prisma.department.findMany({
-      select: { deptId: true, deptName: true, deptHead: true, email: true , college: true},
+      select: {
+        deptId: true,
+        deptName: true,
+        deptHead: true,
+        email: true,
+        college: true,
+      },
     });
 
     return sendResponse(
@@ -246,7 +291,13 @@ export const getDepartmentById = async (req, res) => {
 
     const department = await prisma.department.findUnique({
       where: { deptId: parseInt(deptId) },
-      select: { deptId: true, deptName: true, deptHead: true, email: true , college: true},
+      select: {
+        deptId: true,
+        deptName: true,
+        deptHead: true,
+        email: true,
+        college: true,
+      },
     });
 
     if (!department) {
@@ -274,7 +325,13 @@ export const addStudent = async (req, res) => {
     const { prn, studentName, email, phoneNo, password, college } = req.body;
 
     if (!prn || !studentName || !email || !password) {
-      return sendResponse(res, false, "PRN, name, email, and password are required", null, 400);
+      return sendResponse(
+        res,
+        false,
+        "PRN, name, email, and password are required",
+        null,
+        400
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -368,7 +425,13 @@ export const updateStudent = async (req, res) => {
     }
 
     if (Object.keys(data).length === 0) {
-      return sendResponse(res, false, "No fields provided to update", null, 400);
+      return sendResponse(
+        res,
+        false,
+        "No fields provided to update",
+        null,
+        400
+      );
     }
 
     const student = await prisma.student.update({
