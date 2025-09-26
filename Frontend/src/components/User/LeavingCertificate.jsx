@@ -68,28 +68,29 @@ const LeavingCertificate = () => {
 
   // 🔍 Fetch branches once
   useEffect(() => {
-    const fetchBranches = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (data.success) {
-          const branchOptions = data.branches.map((b) => ({
-            value: b.branch.toUpperCase().replace(/\s+/g, ""),
-            label: b.branch,
-          }));
-          setBranches(branchOptions);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching branches:", err);
-      } finally {
-        setBranchesLoading(false);
+  const fetchBranches = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        const branchOptions = data.branches.map((b) => ({
+          value: b.branch, // ✅ keep branch name as-is
+          label: b.branch, // ✅ same label for dropdown
+        }));
+        setBranches(branchOptions);
       }
-    };
-    fetchBranches();
-  }, []);
+    } catch (err) {
+      console.error("❌ Error fetching branches:", err);
+    } finally {
+      setBranchesLoading(false);
+    }
+  };
+  fetchBranches();
+}, []);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
