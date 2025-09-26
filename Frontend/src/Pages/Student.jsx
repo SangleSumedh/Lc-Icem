@@ -7,7 +7,7 @@ function Student() {
   const [collapsed, setCollapsed] = useState(false); // 🔹 state here
 
   return (
-    <div className="h-screen w-full flex flex-col bg-gradient-to-r from-gray-50 to-gray-100">
+    <div className="w-full flex flex-col ">
       {/* Fixed Navbar */}
       <div className="fixed top-0 left-0 right-0 h-20 z-50">
         <AdminNavbar />
