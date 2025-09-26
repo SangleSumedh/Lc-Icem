@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { SortAsc } from "lucide-react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
-function PendingApprovals({ title, subtitle }) {
+function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState(null);
@@ -13,22 +13,26 @@ function PendingApprovals({ title, subtitle }) {
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName"); // logged-in department name
 
-  // ✅ Correct backend URLs
-  const fetchUrl = "http://localhost:5000/lc-form/pending-approvals";
-  const updateUrl = "http://localhost:5000/lc-form/update-approval";
-
-  const fetchApprovals = async () => {
+  // ✅ Fetch approvals
+  const fetchApprovals = async () => { 
     setLoading(true);
     try {
       const res = await fetch(fetchUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (res.ok) {
+          setApprovals(data.pendingApprovals || []);
+        } else {
+          console.error("Fetch error:", data);
+          setApprovals([]);
+        }
+      } catch {
+        console.error("Received non-JSON response:", text);
         setApprovals([]);
-      } else {
-        const data = await res.json();
-        setApprovals(data.pendingApprovals || []);
       }
     } catch (err) {
       console.error("Error fetching approvals:", err);
@@ -42,6 +46,7 @@ function PendingApprovals({ title, subtitle }) {
     fetchApprovals();
   }, []);
 
+  // ✅ Update approval status
   const handleUpdateStatus = async () => {
     if (!status) {
       alert("Please select a status");
@@ -53,6 +58,12 @@ function PendingApprovals({ title, subtitle }) {
     }
 
     try {
+      console.log("Updating approval with:", {
+        approvalId: selectedApproval.approvalId,
+        status,
+        remarks,
+      });
+
       const res = await fetch(updateUrl, {
         method: "POST",
         headers: {
@@ -60,7 +71,7 @@ function PendingApprovals({ title, subtitle }) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          approvalId: selectedApproval.approvalId,
+          approvalId: Number(selectedApproval.approvalId), // ✅ ensure number
           status,
           remarks,
         }),
