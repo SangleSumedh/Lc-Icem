@@ -218,3 +218,53 @@ export const resubmitLCForm = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+export const getLCForm = async (req, res) => {
+  const prn = req.user.prn; 
+
+  try {
+    // Fetch student with profile
+    const studentWithProfile = await prisma.student.findUnique({
+      where: { prn },
+      select: {
+        prn: true,
+        studentName: true,
+        email: true,
+        phoneNo: true,
+        profile: {
+          select: {
+            studentID: true,
+            fatherName: true,
+            motherName: true,
+            caste: true,
+            subCaste: true,
+            nationality: true,
+            placeOfBirth: true,
+            dateOfBirth: true,
+            dobWords: true,
+            lastCollege: true,
+            yearOfAdmission: true,
+            branch: true,
+            admissionMode: true,
+            reasonForLeaving: true,
+            lcReady: true,
+            lcGenerated: true,
+            lcUrl: true,
+            isFormEditable: true, // newly added field
+          },
+        },
+      },
+    });
+
+    if (!studentWithProfile || !studentWithProfile.profile) {
+      return res
+        .status(404)
+        .json({ error: "LC form not found for this student" });
+    }
+
+    res.json({ success: true, lcForm: studentWithProfile });
+  } catch (err) {
+    console.error("Error fetching LC form:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};

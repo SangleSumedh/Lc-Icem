@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { FaWpforms } from "react-icons/fa";
+import { FaWpforms, FaEye, FaEdit } from "react-icons/fa";
 import { FaFileWaveform } from "react-icons/fa6";
 import {
   UserCircleIcon,
@@ -11,6 +11,8 @@ import { ChevronDown } from "lucide-react";
 
 const LeavingCertificate = () => {
   const [showModal, setShowModal] = useState(false);
+  const [viewMode, setViewMode] = useState(false); // NEW: For view-only mode
+  const [editMode, setEditMode] = useState(false); // NEW: For edit mode
   const [formData, setFormData] = useState({
     studentId: "",
     fatherName: "",
@@ -28,9 +30,12 @@ const LeavingCertificate = () => {
     admissionMode: "",
     reasonForLeaving: "",
   });
+  const [originalFormData, setOriginalFormData] = useState({}); // NEW: Store original data
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [lcFormData, setLcFormData] = useState(null); // NEW: Store fetched LC form data
+  const [isFormEditable, setIsFormEditable] = useState(false); // NEW: Editable flag from backend
 
   // Branches state
   const [branches, setBranches] = useState([]);
@@ -39,22 +44,67 @@ const LeavingCertificate = () => {
   const [dropdownOpen, setDropdownOpen] = useState({});
 
   const handleOpenModal = () => setShowModal(true);
-  const handleCloseModal = () => setShowModal(false);
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setViewMode(false);
+    setEditMode(false);
+  };
+  
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // 🔍 Check approval status
+  // 🔍 Check approval status and fetch LC form data
   useEffect(() => {
     const checkStatus = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/lc-form/approval-status", {
+        
+        // Check approval status
+        const statusRes = await fetch("http://localhost:5000/lc-form/approval-status", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.approvals && data.approvals.length > 0) {
+        
+        // NEW: Fetch LC form data
+        const formRes = await fetch("http://localhost:5000/lc-form/form", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.approvals && statusData.approvals.length > 0) {
             setSubmitted(true);
+          }
+        }
+        
+        if (formRes.ok) {
+          const formData = await formRes.json();
+          if (formData.success && formData.lcForm) {
+            setLcFormData(formData.lcForm);
+            setIsFormEditable(formData.lcForm.profile?.isFormEditable || false);
+            
+            // Prepopulate form data if exists
+            if (formData.lcForm.profile) {
+              const profile = formData.lcForm.profile;
+              const newFormData = {
+                studentId: profile.studentID || "",
+                fatherName: profile.fatherName || "",
+                motherName: profile.motherName || "",
+                caste: profile.caste || "",
+                subCaste: profile.subCaste || "",
+                nationality: profile.nationality || "",
+                placeOfBirth: profile.placeOfBirth || "",
+                dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : "",
+                dobWords: profile.dobWords || "",
+                lastCollege: profile.lastCollege || "",
+                lcType: "LEAVING", // Default value
+                yearOfAdmission: profile.yearOfAdmission ? profile.yearOfAdmission.split('T')[0] : "",
+                branch: profile.branch || "",
+                admissionMode: profile.admissionMode || "",
+                reasonForLeaving: profile.reasonForLeaving || "",
+              };
+              setFormData(newFormData);
+              setOriginalFormData(newFormData);
+            }
           }
         }
       } catch (err) {
@@ -68,29 +118,28 @@ const LeavingCertificate = () => {
 
   // 🔍 Fetch branches once
   useEffect(() => {
-  const fetchBranches = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        const branchOptions = data.branches.map((b) => ({
-          value: b.branch, // ✅ keep branch name as-is
-          label: b.branch, // ✅ same label for dropdown
-        }));
-        setBranches(branchOptions);
+    const fetchBranches = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          const branchOptions = data.branches.map((b) => ({
+            value: b.branch,
+            label: b.branch,
+          }));
+          setBranches(branchOptions);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching branches:", err);
+      } finally {
+        setBranchesLoading(false);
       }
-    } catch (err) {
-      console.error("❌ Error fetching branches:", err);
-    } finally {
-      setBranchesLoading(false);
-    }
-  };
-  fetchBranches();
-}, []);
-
+    };
+    fetchBranches();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,6 +158,18 @@ const LeavingCertificate = () => {
       if (res.ok) {
         setSubmitted(true);
         setShowModal(false);
+        setEditMode(false);
+        // Refresh form data
+        const formRes = await fetch("http://localhost:5000/lc-form/form", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (formRes.ok) {
+          const formData = await formRes.json();
+          if (formData.success && formData.lcForm) {
+            setLcFormData(formData.lcForm);
+            setIsFormEditable(formData.lcForm.profile?.isFormEditable || false);
+          }
+        }
       } else {
         alert(data.error || "❌ Failed to submit form");
       }
@@ -117,6 +178,25 @@ const LeavingCertificate = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // NEW: Handle edit button click
+  const handleEditClick = () => {
+    setEditMode(true);
+    setViewMode(false);
+  };
+
+  // NEW: Handle view button click
+  const handleViewClick = () => {
+    setViewMode(true);
+    setEditMode(false);
+    setShowModal(true);
+  };
+
+  // NEW: Cancel editing
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setFormData(originalFormData);
   };
 
   const toggleDropdown = (field) =>
@@ -128,9 +208,9 @@ const LeavingCertificate = () => {
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div
-        onClick={() => !disabled && toggleDropdown(name)}
+        onClick={() => !disabled && !viewMode && toggleDropdown(name)}
         className={`flex items-center justify-between border rounded-md px-3 py-2 cursor-pointer transition bg-white ${
-          disabled ? "bg-gray-100 cursor-not-allowed" : ""
+          disabled || viewMode ? "bg-gray-100 cursor-not-allowed" : ""
         }`}
       >
         <span
@@ -148,7 +228,7 @@ const LeavingCertificate = () => {
           }`}
         />
       </div>
-      {dropdownOpen[name] && !disabled && !branchesLoading && (
+      {dropdownOpen[name] && !disabled && !branchesLoading && !viewMode && (
         <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
           {options.map((opt) => (
             <div
@@ -192,6 +272,34 @@ const LeavingCertificate = () => {
           <p className="mt-2 text-gray-700">
             Your form has been submitted. Please wait for verification.
           </p>
+          
+          {/* NEW: View and Edit Buttons */}
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={handleViewClick}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <FaEye className="text-sm" />
+              View Form
+            </button>
+            
+            {isFormEditable && (
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+              >
+                <FaEdit className="text-sm" />
+                Edit Form
+              </button>
+            )}
+          </div>
+          
+          {/* NEW: Editable Status Message */}
+          {!isFormEditable && (
+            <p className="mt-2 text-sm text-gray-600">
+              Form editing is currently disabled
+            </p>
+          )}
         </div>
       ) : (
         <>
@@ -223,13 +331,13 @@ const LeavingCertificate = () => {
       )}
 
       {/* Modal Form */}
-      {showModal && !submitted && (
+      {(showModal || viewMode || editMode) && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
-                Leaving Certificate Form
+                {viewMode ? "View LC Form" : editMode ? "Edit LC Form" : "Leaving Certificate Form"}
               </h2>
               <button
                 onClick={handleCloseModal}
@@ -280,8 +388,12 @@ const LeavingCertificate = () => {
                         name={field.name}
                         value={formData[field.name]}
                         onChange={handleChange}
-                        required={field.required}
-                        className="border p-2 rounded-lg w-full"
+                        required={field.required && !viewMode}
+                        disabled={viewMode}
+                        readOnly={viewMode}
+                        className={`border p-2 rounded-lg w-full ${
+                          viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                        }`}
                       />
                     </div>
                   ))}
@@ -302,6 +414,7 @@ const LeavingCertificate = () => {
                     required
                     value={formData.branch}
                     options={branches}
+                    disabled={viewMode}
                   />
 
                   <div>
@@ -313,8 +426,12 @@ const LeavingCertificate = () => {
                       name="yearOfAdmission"
                       value={formData.yearOfAdmission}
                       onChange={handleChange}
-                      required
-                      className="border p-2 rounded-lg w-full"
+                      required={!viewMode}
+                      disabled={viewMode}
+                      readOnly={viewMode}
+                      className={`border p-2 rounded-lg w-full ${
+                        viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                     />
                   </div>
 
@@ -329,6 +446,7 @@ const LeavingCertificate = () => {
                       { value: "MBA", label: "MBA" },
                       { value: "MCA", label: "MCA" },
                     ]}
+                    disabled={viewMode}
                   />
                 </div>
 
@@ -344,8 +462,12 @@ const LeavingCertificate = () => {
                       placeholder="Enter last college"
                       value={formData.lastCollege}
                       onChange={handleChange}
-                      required
-                      className="border p-2 rounded-lg w-full"
+                      required={!viewMode}
+                      disabled={viewMode}
+                      readOnly={viewMode}
+                      className={`border p-2 rounded-lg w-full ${
+                        viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                     />
                   </div>
 
@@ -353,7 +475,7 @@ const LeavingCertificate = () => {
                     label="Leaving Certificate Type"
                     name="lcType"
                     value={formData.lcType}
-                    disabled
+                    disabled={true} // Always disabled as per original
                     options={[
                       {
                         value: "LEAVING",
@@ -378,28 +500,61 @@ const LeavingCertificate = () => {
                     rows={3}
                     value={formData.reasonForLeaving}
                     onChange={handleChange}
-                    required
-                    className="border p-2 rounded-lg w-full"
+                    required={!viewMode}
+                    disabled={viewMode}
+                    readOnly={viewMode}
+                    className={`border p-2 rounded-lg w-full ${
+                      viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Footer */}
               <div className="bg-gray-50 px-6 py-3 flex justify-end gap-3 rounded-lg">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? "Submitting..." : "Submit"}
-                </button>
+                {viewMode ? (
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Close
+                  </button>
+                ) : editMode ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {loading ? "Updating..." : "Update"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {loading ? "Submitting..." : "Submit"}
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>
