@@ -1,276 +1,316 @@
-// components/Common/PendingApprovals.jsx
-import React, { useEffect, useState } from "react";
-import { SortAsc } from "lucide-react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import prisma from "../prisma.js";
 
-function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedApproval, setSelectedApproval] = useState(null);
-  const [status, setStatus] = useState("");
-  const [remarks, setRemarks] = useState("");
+export const updateApprovalStatus = async (req, res) => {
+  const deptId = req.user.deptId;
+  const { approvalId, status, remarks } = req.body;
 
-  const token = localStorage.getItem("token");
-  const deptName = localStorage.getItem("deptName"); // logged-in department name
+  // ✅ Allow REQUESTED_INFO status
+  if (
+    !approvalId ||
+    !status ||
+    !["APPROVED", "REJECTED", "REQUESTED_INFO"].includes(status)
+  ) {
+    return res.status(400).json({ error: "Invalid approvalId or status" });
+  }
 
-  const fetchApprovals = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  try {
+    const approval = await prisma.approvalRequest.findUnique({
+      where: { approvalId },
+      include: {
+        student: { include: { profile: true } },
+        department: true,
+      },
+    });
 
-      if (!res.ok) {
-        setApprovals([]);
-      } else {
-        const data = await res.json();
-        setApprovals(data.pendingApprovals || []);
+    if (!approval)
+      return res.status(404).json({ error: "Approval request not found" });
+    if (approval.deptId !== deptId)
+      return res
+        .status(403)
+        .json({ error: "You cannot modify this approval request" });
+
+    // Determine timestamp: approvedAt only for APPROVED/REJECTED
+    const updateData = { status, remarks };
+    if (status === "APPROVED" || status === "REJECTED") {
+      updateData.approvedAt = new Date();
+    }
+
+    // Update current approval request
+    const updatedApproval = await prisma.approvalRequest.update({
+      where: { approvalId },
+      data: updateData,
+    });
+
+    // Log the action
+    await prisma.approvalAction.create({
+      data: {
+        approvalId,
+        deptId,
+        action: status,
+        remarks,
+      },
+    });
+
+    console.log(
+      `Approval Request ${approvalId} marked as ${status} by dept ${deptId}`
+    );
+
+    // Trigger next approvals only if APPROVED
+    if (status === "APPROVED") {
+      const studentPrn = approval.student.prn;
+      const studentBranch = approval.student.profile?.branch;
+
+      if (approval.department.deptName === "Account") {
+        const libraryDept = await prisma.department.findFirst({
+          where: { deptName: "Library" },
+        });
+        if (libraryDept)
+          await createApprovalIfNotExists(
+            studentPrn,
+            libraryDept,
+            approval.student
+          );
+      } else if (approval.department.deptName === "Library") {
+        const hodDepts = await prisma.department.findMany({
+          where: { deptName: `HOD - ${studentBranch}` },
+        });
+        for (const hodDept of hodDepts)
+          await createApprovalIfNotExists(
+            studentPrn,
+            hodDept,
+            approval.student
+          );
+      } else if (approval.department.deptName.includes("HOD")) {
+        const remainingDepts = await prisma.department.findMany({
+          where: {
+            NOT: { deptName: { in: ["Account", "Library"] } },
+            branchId: null,
+          },
+        });
+        for (const dept of remainingDepts)
+          await createApprovalIfNotExists(studentPrn, dept, approval.student);
       }
-    } catch (err) {
-      console.error("Error fetching approvals:", err);
-      setApprovals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchApprovals();
-  }, []);
-
-  const handleUpdateStatus = async () => {
-    if (!status) {
-      alert("Please select a status");
-      return;
-    }
-    if (!remarks.trim()) {
-      alert("Remarks are required");
-      return;
     }
 
-    try {
-      const res = await fetch(updateUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          approvalId: selectedApproval.approvalId,
-          status,
-          remarks,
-        }),
+    const pendingApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        studentPrn,
+        status: { not: "APPROVED" },
+      },
+    });
+
+    if (pendingApprovals.length === 0) {
+      // All approvals done
+      await prisma.studentProfile.update({
+        where: { prn: studentPrn },
+        data: { lcReady: true, lcGenerated: false, lcUrl: null },
       });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert("✅ Approval updated successfully");
-        setSelectedApproval(null);
-        setStatus("");
-        setRemarks("");
-        fetchApprovals();
-      } else {
-        alert(data.error || "❌ Failed to update approval");
-      }
-    } catch (err) {
-      console.error("Error updating approval:", err);
-      alert("❌ Error updating approval");
+      console.log(`🎉 LC ready for student ${studentPrn}`);
     }
-  };
 
-  return (
-    <main className="flex-1 w-auto mx-auto px-6 lg:px-10 py-4">
-      <style>
-        {`
-          @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-          }
-          .animate-scaleIn {
-            animation: scaleIn 0.25s ease-out;
-          }
-        `}
-      </style>
+    res.json({
+      success: true,
+      message: `Approval request ${status.toLowerCase()}`,
+      approval: updatedApproval,
+    });
+  } catch (err) {
+    console.error(
+      "Something went wrong while updating approval status",
+      err.message
+    );
+    res.status(400).json({ error: err.message });
+  }
+};
 
-      <div className="bg-white rounded-xl min-h-[90vh] w-full shadow-xl p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">{title}</h2>
-        </div>
-
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{subtitle}</h2>
-          <button
-            onClick={fetchApprovals}
-            className="flex items-center gap-2 font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-5 transition"
-          >
-            <SortAsc size={18} />
-            Refresh
-          </button>
-        </div>
-
-        {loading && <p>Loading approvals...</p>}
-
-        {/* Students Table */}
-        <div className="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-100/80">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Student Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  PRN
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {approvals.map((a) => (
-                <tr
-                  key={a.approvalId}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {a.student.studentName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {a.student.prn}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {a.student.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {a.student.phoneNo}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
-                      {/* Approve */}
-                      <button
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("APPROVED");
-                        }}
-                      >
-                        Approve
-                      </button>
-
-                      {/* Request Info */}
-                      <button
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("REQUESTED_INFO");
-                        }}
-                      >
-                        Request Info
-                      </button>
-
-                      {/* Reject (only for Account dept) */}
-                      {deptName &&
-                        deptName.toLowerCase() === "account" && (
-                          <button
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                            onClick={() => {
-                              setSelectedApproval(a);
-                              setStatus("REJECTED");
-                            }}
-                          >
-                            Reject
-                          </button>
-                        )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {approvals.length === 0 && !loading && (
-            <p className="p-4 text-gray-500">No pending approvals</p>
-          )}
-        </div>
-
-        {/* Modal for Remarks */}
-        {selectedApproval && (
-          <div className="fixed inset-0 z-50 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-scaleIn">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-white">
-                  {status === "APPROVED"
-                    ? "Approve Application"
-                    : status === "REJECTED"
-                    ? "Reject Application"
-                    : "Request More Info"}
-                </h2>
-                <button
-                  onClick={() => setSelectedApproval(null)}
-                  className="text-white hover:text-gray-200"
-                >
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-4">
-                <p className="text-gray-700">
-                  Student:{" "}
-                  <span className="font-medium">
-                    {selectedApproval.student.studentName}
-                  </span>
-                </p>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Remarks <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Enter remarks"
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="bg-gray-50 px-4 py-3 flex justify-end gap-3">
-                <button
-                  onClick={() => setSelectedApproval(null)}
-                  className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateStatus}
-                  className={`px-5 py-2 rounded-lg text-white font-medium ${
-                    status === "APPROVED"
-                      ? "bg-green-600 hover:bg-green-700"
-                      : status === "REJECTED"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-yellow-600 hover:bg-yellow-700"
-                  }`}
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
+// Helper function to create approval if it doesn't exist
+async function createApprovalIfNotExists(studentPrn, dept, student) {
+  const existing = await prisma.approvalRequest.findFirst({
+    where: { studentPrn: studentPrn, deptId: dept.deptId },
+  });
+  if (!existing) {
+    await prisma.approvalRequest.create({
+      data: {
+        status: "PENDING",
+        studentName: student.studentName,
+        yearOfAdmission: student.profile?.yearOfAdmission,
+        deptName: dept.deptName,
+        branch: student.profile?.branch,
+        student: { connect: { prn: studentPrn } },
+        department: { connect: { deptId: dept.deptId } },
+      },
+    });
+    console.log(`✅ Created approval request for ${dept.deptName}`);
+  }
 }
 
-export default PendingApprovals;
+export const getPendingApprovals = async (req, res) => {
+  const deptId = req.user.deptId; // From JWT
+
+  try {
+    const pendingApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "PENDING",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    if (!pendingApprovals || pendingApprovals.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No pending approval requests found" });
+    }
+
+    console.log(
+      `Fetched ${pendingApprovals.length} pending approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      pendingApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching pending approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getApprovedApprovals = async (req, res) => {
+  const deptId = req.user.deptId;
+
+  try {
+    const approvedApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "APPROVED",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        approvedAt: "desc",
+      },
+    });
+
+    if (!approvedApprovals || approvedApprovals.length === 0) {
+      return res.status(404).json({ error: "No approved requests found" });
+    }
+
+    console.log(
+      `Fetched ${approvedApprovals.length} approved approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      approvedApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching approved approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getRejectedApprovals = async (req, res) => {
+  const deptId = req.user.deptId;
+
+  try {
+    const rejectedApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "REJECTED",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        approvedAt: "desc",
+      },
+    });
+
+    if (!rejectedApprovals || rejectedApprovals.length === 0) {
+      return res.status(404).json({ error: "No rejected requests found" });
+    }
+
+    console.log(
+      `Fetched ${rejectedApprovals.length} rejected approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      rejectedApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching rejected approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getRequestedInfoApprovals = async (req, res) => {
+  const deptId = req.user.deptId;
+
+  try {
+    const requestedInfoApprovals = await prisma.approvalRequest.findMany({
+      where: {
+        deptId,
+        status: "REQUESTED_INFO",
+      },
+      include: {
+        student: {
+          select: {
+            prn: true,
+            studentName: true,
+            email: true,
+            phoneNo: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    if (!requestedInfoApprovals || requestedInfoApprovals.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No requests for more info found" });
+    }
+
+    console.log(
+      `Fetched ${requestedInfoApprovals.length} REQUESTED_INFO approvals for dept ${deptId}`
+    );
+
+    res.json({
+      success: true,
+      requestedInfoApprovals,
+    });
+  } catch (err) {
+    console.error("Error fetching REQUESTED_INFO approvals:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+};
