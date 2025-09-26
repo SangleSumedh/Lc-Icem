@@ -21,7 +21,7 @@ model Student {
 model StudentProfile {
   profileId        Int      @id @default(autoincrement())
   prn              String   @unique   
-  studentID        String?   @unique   
+  studentID        String?   
   fatherName       String?
   motherName       String?
   caste            String?

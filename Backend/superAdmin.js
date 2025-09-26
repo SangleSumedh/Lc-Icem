@@ -33,6 +33,7 @@ const main = async () => {
       "Exam Section",
       "Hostel/Mess",
       "Bus Transport",
+      "Registrar"
     ];
 
     for (const deptName of departments) {
