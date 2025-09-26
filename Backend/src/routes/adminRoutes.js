@@ -11,6 +11,7 @@ import {
   addSuperAdmin,
   updateSuperAdmin,
   deleteSuperAdmin,
+  getSuperAdmins,
   // 🔹 Student Controllers
   addStudent,
   getStudents,
@@ -71,6 +72,7 @@ router.delete(
   deleteSuperAdmin
 );
 
+router.get("/get-superAdmins", getSuperAdmins);
 /* 
 ================================
 📌 Student CRUD via Admin Routes
