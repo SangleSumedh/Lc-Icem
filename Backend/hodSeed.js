@@ -22,7 +22,16 @@ const main = async () => {
     let branchId = 1;
 
     for (const dept of hodDepartments) {
-      const deptName = `HOD - ${dept}`;
+      // 1️⃣ Create the department
+      const department = await prisma.department.create({
+        data: {
+          deptName: `HOD - ${dept}`,
+          branchId,
+          college: "ICEM",
+        },
+      });
+
+      // 2️⃣ Create the HOD staff
       const safeName = dept
         .toLowerCase()
         .replace(/\s+/g, "_")
@@ -31,33 +40,31 @@ const main = async () => {
       const email = `${safeName}@example.com`;
       const passwordHash = await bcrypt.hash("password123", 10);
 
-      // Dept head string (e.g. "HeadCivil", "HeadMBA")
-      const headBase = dept.split(" ")[0].replace(/[^a-zA-Z]/g, "");
-      const deptHead = `Head${headBase}`;
-
-      const department = await prisma.department.upsert({
-        where: { email },
-        update: {},
-        create: {
-          deptName,
-          deptHead,
-          branchId,
-          username,
+      const hodStaff = await prisma.staff.create({
+        data: {
+          name: `HOD ${dept}`,
           email,
+          username,
           passwordHash,
+          deptId: department.deptId,
         },
       });
 
-      console.log(
-        `✅ HOD Department: ${department.deptName} | Branch ID: ${branchId} | Head: ${deptHead}`
-      );
+      // 3️⃣ Link department head
+      await prisma.department.update({
+        where: { deptId: department.deptId },
+        data: { deptHeadId: hodStaff.staffId },
+      });
 
+      console.log(
+        `✅ HOD Department: ${department.deptName} | Head: ${hodStaff.name}`
+      );
       branchId++;
     }
 
     console.log("🎉 HOD Departments seeding complete!");
   } catch (err) {
-    console.error("❌ Error seeding HOD departments:", err.message);
+    console.error("❌ Error seeding HOD departments:", err);
   } finally {
     await prisma.$disconnect();
   }

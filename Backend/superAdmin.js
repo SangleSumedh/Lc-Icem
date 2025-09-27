@@ -7,22 +7,17 @@ const main = async () => {
     const username = "sumedh";
     const email = "sumedh@example.com";
     const password = "supersecret";
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const superAdmin = await prisma.superAdmin.upsert({
       where: { email },
       update: {},
-      create: {
-        username,
-        email,
-        password: hashedPassword,
-      },
+      create: { username, email, password: hashedPassword },
     });
 
     console.log("✅ SuperAdmin ready:", superAdmin);
 
-    // --- Departments creation ---
+    // --- Departments & HOD Staff creation ---
     const departments = [
       "Account",
       "Library",
@@ -33,38 +28,46 @@ const main = async () => {
       "Exam Section",
       "Hostel/Mess",
       "Bus Transport",
-      "Registrar"
+      "Registrar",
     ];
 
     for (const deptName of departments) {
-      // Make safe identifiers
-      const safeName = deptName
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
-      const username = `${safeName}_dept`;
-      const email = `${safeName}@example.com`;
-      const passwordHash = await bcrypt.hash("password123", 10);
-
-      // Dept head string (e.g., "HeadAccount", "HeadLibrary")
-      const headBase = deptName.split(" ")[0].replace(/[^a-zA-Z]/g, ""); // take first word only
-      const deptHead = `Head${headBase}`;
-
-      const department = await prisma.department.upsert({
-        where: { email },
-        update: {},
-        create: {
+      // 1️⃣ Create department
+      const department = await prisma.department.create({
+        data: {
           deptName,
-          deptHead,
           branchId: null,
-          username,
-          email,
-          passwordHash,
+          college: "ICEM",
         },
       });
 
+      // 2️⃣ Create HOD staff
+      const hodEmail = `${department.deptName
+        .replace(/\s+/g, "")
+        .toLowerCase()}@example.com`;
+      const hodUsername = `${department.deptName
+        .replace(/\s+/g, "")
+        .toLowerCase()}_hod`;
+      const hodPasswordHash = await bcrypt.hash("password123", 10);
+
+      const hodStaff = await prisma.staff.create({
+        data: {
+          name: `Head ${department.deptName}`,
+          email: hodEmail,
+          username: hodUsername,
+          passwordHash: hodPasswordHash,
+          deptId: department.deptId,
+        },
+      });
+
+      // 3️⃣ Update department with HOD reference
+      await prisma.department.update({
+        where: { deptId: department.deptId },
+        data: { deptHeadId: hodStaff.staffId },
+      });
+
       console.log(
-        `✅ Department ensured: ${department.deptName} | Head: ${deptHead}`
+        `✅ Department: ${department.deptName} | HOD: ${hodStaff.name}`
       );
     }
 

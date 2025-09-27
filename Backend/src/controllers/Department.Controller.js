@@ -1,10 +1,11 @@
 import prisma from "../prisma.js";
 
+// Update approval status
 export const updateApprovalStatus = async (req, res) => {
-  const deptId = req.user.deptId;
+  const staffId = req.user.staffId; // staff performing the action
+  const deptId = req.user.deptId; // staff's department
   const { approvalId, status, remarks } = req.body;
 
-  // ✅ Allow REQUESTED_INFO status
   if (
     !approvalId ||
     !status ||
@@ -24,6 +25,7 @@ export const updateApprovalStatus = async (req, res) => {
 
     if (!approval)
       return res.status(404).json({ error: "Approval request not found" });
+
     if (approval.deptId !== deptId)
       return res
         .status(403)
@@ -31,48 +33,41 @@ export const updateApprovalStatus = async (req, res) => {
 
     const studentPrn = approval.student.prn;
 
-    // Determine timestamp: approvedAt only for APPROVED/REJECTED
+    // Update approval status
     const updateData = { status, remarks };
     if (status === "APPROVED" || status === "REJECTED") {
       updateData.approvedAt = new Date();
     }
 
-    // Update current approval request
     const updatedApproval = await prisma.approvalRequest.update({
       where: { approvalId },
       data: updateData,
     });
 
-    // Log the action
+    // Log action with staffId
     await prisma.approvalAction.create({
       data: {
         approvalId,
-        deptId,
+        staffId,
         action: status,
         remarks,
       },
     });
 
-    console.log(
-      `Approval Request ${approvalId} marked as ${status} by dept ${deptId}`
-    );
-
-    // ✅ Handle isFormEditable flag based on status
+    // Lock/unlock LC form based on status
     if (status === "APPROVED") {
-      // Lock the LC form after approval
       await prisma.studentProfile.update({
         where: { prn: studentPrn },
         data: { isFormEditable: false },
       });
     } else if (status === "REQUESTED_INFO") {
-      // Unlock the LC form so student can edit
       await prisma.studentProfile.update({
         where: { prn: studentPrn },
         data: { isFormEditable: true },
       });
     }
 
-    // Trigger next approvals only if APPROVED
+    // Trigger next approvals if APPROVED
     if (status === "APPROVED") {
       const studentBranch = approval.student.profile?.branch;
 
@@ -140,20 +135,17 @@ export const updateApprovalStatus = async (req, res) => {
       approval: updatedApproval,
     });
   } catch (err) {
-    console.error(
-      "Something went wrong while updating approval status",
-      err.message
-    );
+    console.error("Something went wrong while updating approval status", err);
     res.status(400).json({ error: err.message });
   }
 };
 
-
-// Helper function to create approval if it doesn't exist
+// Helper to create next approval
 async function createApprovalIfNotExists(studentPrn, dept, student) {
   const existing = await prisma.approvalRequest.findFirst({
-    where: { studentPrn: studentPrn, deptId: dept.deptId },
+    where: { studentPrn, deptId: dept.deptId },
   });
+
   if (!existing) {
     await prisma.approvalRequest.create({
       data: {
@@ -170,172 +162,104 @@ async function createApprovalIfNotExists(studentPrn, dept, student) {
   }
 }
 
+// Fetch pending approvals
 export const getPendingApprovals = async (req, res) => {
-  const deptId = req.user.deptId; // From JWT
+  const deptId = req.user.deptId;
 
   try {
     const pendingApprovals = await prisma.approvalRequest.findMany({
-      where: {
-        deptId,
-        status: "PENDING",
-      },
+      where: { deptId, status: "PENDING" },
       include: {
         student: {
-          select: {
-            prn: true,
-            studentName: true,
-            email: true,
-            phoneNo: true,
-          },
+          select: { prn: true, studentName: true, email: true, phoneNo: true },
         },
       },
-      orderBy: {
-        createdAt: "asc",
-      },
+      orderBy: { createdAt: "asc" },
     });
 
-    if (!pendingApprovals || pendingApprovals.length === 0) {
+    if (!pendingApprovals.length)
       return res
         .status(404)
         .json({ error: "No pending approval requests found" });
-    }
 
-    console.log(
-      `Fetched ${pendingApprovals.length} pending approvals for dept ${deptId}`
-    );
-
-    res.json({
-      success: true,
-      pendingApprovals,
-    });
+    res.json({ success: true, pendingApprovals });
   } catch (err) {
-    console.error("Error fetching pending approvals:", err.message);
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
 
+// Fetch approved approvals
 export const getApprovedApprovals = async (req, res) => {
   const deptId = req.user.deptId;
 
   try {
     const approvedApprovals = await prisma.approvalRequest.findMany({
-      where: {
-        deptId,
-        status: "APPROVED",
-      },
+      where: { deptId, status: "APPROVED" },
       include: {
         student: {
-          select: {
-            prn: true,
-            studentName: true,
-            email: true,
-            phoneNo: true,
-          },
+          select: { prn: true, studentName: true, email: true, phoneNo: true },
         },
       },
-      orderBy: {
-        approvedAt: "desc",
-      },
+      orderBy: { approvedAt: "desc" },
     });
 
-    if (!approvedApprovals || approvedApprovals.length === 0) {
+    if (!approvedApprovals.length)
       return res.status(404).json({ error: "No approved requests found" });
-    }
 
-    console.log(
-      `Fetched ${approvedApprovals.length} approved approvals for dept ${deptId}`
-    );
-
-    res.json({
-      success: true,
-      approvedApprovals,
-    });
+    res.json({ success: true, approvedApprovals });
   } catch (err) {
-    console.error("Error fetching approved approvals:", err.message);
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
 
+// Fetch rejected approvals
 export const getRejectedApprovals = async (req, res) => {
   const deptId = req.user.deptId;
 
   try {
     const rejectedApprovals = await prisma.approvalRequest.findMany({
-      where: {
-        deptId,
-        status: "REJECTED",
-      },
+      where: { deptId, status: "REJECTED" },
       include: {
         student: {
-          select: {
-            prn: true,
-            studentName: true,
-            email: true,
-            phoneNo: true,
-          },
+          select: { prn: true, studentName: true, email: true, phoneNo: true },
         },
       },
-      orderBy: {
-        approvedAt: "desc",
-      },
+      orderBy: { approvedAt: "desc" },
     });
 
-    if (!rejectedApprovals || rejectedApprovals.length === 0) {
+    if (!rejectedApprovals.length)
       return res.status(404).json({ error: "No rejected requests found" });
-    }
 
-    console.log(
-      `Fetched ${rejectedApprovals.length} rejected approvals for dept ${deptId}`
-    );
-
-    res.json({
-      success: true,
-      rejectedApprovals,
-    });
+    res.json({ success: true, rejectedApprovals });
   } catch (err) {
-    console.error("Error fetching rejected approvals:", err.message);
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
 
+// Fetch requested info approvals
 export const getRequestedInfoApprovals = async (req, res) => {
   const deptId = req.user.deptId;
 
   try {
     const requestedInfoApprovals = await prisma.approvalRequest.findMany({
-      where: {
-        deptId,
-        status: "REQUESTED_INFO",
-      },
+      where: { deptId, status: "REQUESTED_INFO" },
       include: {
         student: {
-          select: {
-            prn: true,
-            studentName: true,
-            email: true,
-            phoneNo: true,
-          },
+          select: { prn: true, studentName: true, email: true, phoneNo: true },
         },
       },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      orderBy: { updatedAt: "desc" },
     });
 
-    if (!requestedInfoApprovals || requestedInfoApprovals.length === 0) {
+    if (!requestedInfoApprovals.length)
       return res.status(404).json({ error: "No requests for more info found" });
-    }
 
-    console.log(
-      `Fetched ${requestedInfoApprovals.length} REQUESTED_INFO approvals for dept ${deptId}`
-    );
-
-    res.json({
-      success: true,
-      requestedInfoApprovals,
-    });
+    res.json({ success: true, requestedInfoApprovals });
   } catch (err) {
-    console.error("Error fetching REQUESTED_INFO approvals:", err.message);
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
