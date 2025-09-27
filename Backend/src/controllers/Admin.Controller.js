@@ -457,18 +457,43 @@ export const updateStudent = async (req, res) => {
   }
 };
 
-// ❌ Delete Student
+// ❌ Delete Student (with cascade cleanup)
 export const deleteStudent = async (req, res) => {
   try {
     const { prn } = req.params;
 
-    await prisma.student.delete({
-      where: { prn },
+    // ✅ Start transaction so all deletions succeed or none do
+    await prisma.$transaction(async (tx) => {
+      // 1️⃣ Delete ApprovalActions (child of ApprovalRequest)
+      await tx.approvalAction.deleteMany({
+        where: {
+          approval: {
+            studentPrn: prn,
+          },
+        },
+      });
+
+      // 2️⃣ Delete ApprovalRequests (child of Student)
+      await tx.approvalRequest.deleteMany({
+        where: { studentPrn: prn },
+      });
+
+      // 3️⃣ Delete StudentProfile (child of Student)
+      await tx.studentProfile.deleteMany({
+        where: { prn },
+      });
+
+      // 4️⃣ Delete Student
+      await tx.student.delete({
+        where: { prn },
+      });
     });
 
-    console.log(`🗑️ Student deleted: PRN ${prn}`);
+    console.log(`🗑️ Student deleted (PRN: ${prn})`);
     return sendResponse(res, true, "Student deleted successfully");
   } catch (err) {
+    console.error("❌ Delete Student Error:", err);
     return sendResponse(res, false, err.message, null, 500);
   }
 };
+

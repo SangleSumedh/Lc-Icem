@@ -21,7 +21,11 @@ const router = Router();
 router.post("/", verifyToken(["student"]), submitLCForm);
 
 // Get Approval Status
-router.get("/approval-status", verifyToken(["student"]), getApprovalStatus);
+router.get(
+  "/approval-status",
+  verifyToken(["student", "department"]),
+  getApprovalStatus
+);
 
 router.get("/form", verifyToken(["student"]), getLCForm); 
 

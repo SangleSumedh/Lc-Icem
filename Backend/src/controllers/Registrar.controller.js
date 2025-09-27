@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 
-// GET all students whose LC is ready but not generated
+// GET all students whose LC is ready but not yet generated
 export const getPendingLCs = async (req, res) => {
   try {
     const pendingLCs = await prisma.studentProfile.findMany({
@@ -18,7 +18,7 @@ export const getPendingLCs = async (req, res) => {
       orderBy: { prn: "asc" },
     });
 
-    if (!pendingLCs || pendingLCs.length === 0) {
+    if (!pendingLCs.length) {
       return res.status(404).json({ message: "No pending LCs found." });
     }
 
@@ -29,7 +29,7 @@ export const getPendingLCs = async (req, res) => {
   }
 };
 
-// GET /registrar/lc-details/:prn
+// GET details of a single student's LC
 export const getLCDetails = async (req, res) => {
   const { prn } = req.params;
 
@@ -38,12 +38,7 @@ export const getLCDetails = async (req, res) => {
       where: { prn },
       include: {
         student: {
-          select: {
-            prn: true,
-            studentName: true,
-            email: true,
-            phoneNo: true,
-          },
+          select: { prn: true, studentName: true, email: true, phoneNo: true },
         },
       },
     });
@@ -59,7 +54,7 @@ export const getLCDetails = async (req, res) => {
   }
 };
 
-// POST /registrar/generate-lc/:prn
+// POST /registrar/generate-lc/:prn - generate/update LC
 export const generateLC = async (req, res) => {
   const { prn } = req.params;
 

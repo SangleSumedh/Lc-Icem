@@ -14,7 +14,7 @@ import AuthLayout from "./AuthLayout";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -71,12 +71,12 @@ const AdminLogin = () => {
     e.preventDefault();
     const errors = {
       loginType: !loginType,
-      username: !formData.username,
+      email: !formData.email,
       password: !formData.password,
     };
     setFormErrors(errors);
 
-    if (!errors.username && !errors.password && !errors.loginType) {
+    if (!errors.email && !errors.password && !errors.loginType) {
       try {
         setLoading(true);
         const url =
@@ -210,24 +210,24 @@ const AdminLogin = () => {
         onSubmit={handleLogin}
         className="space-y-6 w-full max-w-md mx-auto"
       >
-        {/* Username */}
+        {/* Email */}
         <div>
           <label className="block text-base font-medium text-gray-700 mb-1">
-            Username
+            Email
           </label>
           <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3">
             <User className="w-5 h-5 text-gray-500 mr-3" />
             <input
               type="text"
-              name="username"
+              name="email"
               placeholder="e.g. adminuser"
-              value={formData.username}
+              value={formData.email}
               onChange={handleInputChange}
               className="w-full text-base outline-none"
             />
           </div>
-          {formErrors.username && (
-            <p className="text-sm text-red-500 mt-1">Username is required</p>
+          {formErrors.email && (
+            <p className="text-sm text-red-500 mt-1">Email id is required</p>
           )}
         </div>
 

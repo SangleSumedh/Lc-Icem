@@ -79,33 +79,21 @@ router.get("/get-superAdmins", getSuperAdmins);
 ================================ 
 */
 // ➕ Create Student
-router.post(
-  "/add-student",
-  verifyToken(["superadmin", "department"]),
-  addStudent
-);
+router.post("/add-student", verifyToken(["superadmin"]), addStudent);
 
 // 🔍 Get All Students
-router.get("/students", verifyToken(["superadmin", "department"]), getStudents);
+router.get("/students", verifyToken(["superadmin"]), getStudents);
 
 // 🔍 Get Student by PRN
-router.get(
-  "/students/:prn",
-  verifyToken(["superadmin", "department"]),
-  getStudentByPrn
-);
+router.get("/students/:prn", verifyToken(["superadmin"]), getStudentByPrn);
 
 // ✏️ Update Student
-router.put(
-  "/update-student/:prn",
-  verifyToken(["superadmin", "department"]),
-  updateStudent
-);
+router.put("/update-student/:prn", verifyToken(["superadmin"]), updateStudent);
 
 // ❌ Delete Student
 router.delete(
   "/delete-student/:prn",
-  verifyToken(["superadmin", "department"]),
+  verifyToken(["superadmin"]),
   deleteStudent
 );
 

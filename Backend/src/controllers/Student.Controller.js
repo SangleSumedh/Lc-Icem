@@ -1,9 +1,10 @@
 import prisma from "../prisma.js";
 
+// Submit LC form
 export const submitLCForm = async (req, res) => {
   const prn = req.user.prn; // PRN from JWT
   const {
-    studentID, // optional
+    studentID,
     fatherName,
     motherName,
     caste,
@@ -20,7 +21,6 @@ export const submitLCForm = async (req, res) => {
   } = req.body;
 
   try {
-    // Prepare profile data, only include studentID if present
     const profileData = {
       fatherName,
       motherName,
@@ -45,20 +45,16 @@ export const submitLCForm = async (req, res) => {
       create: { prn, ...profileData },
     });
 
-    // Fetch student name
     const student = await prisma.student.findUnique({
       where: { prn },
       select: { studentName: true },
     });
 
-    // Fetch Account department
     const accountDept = await prisma.department.findFirst({
       where: { deptName: "Account" },
     });
-
-    if (!accountDept) {
+    if (!accountDept)
       return res.status(404).json({ error: "Account department not found" });
-    }
 
     // Create approval request if not exists
     const existing = await prisma.approvalRequest.findFirst({
@@ -90,6 +86,7 @@ export const submitLCForm = async (req, res) => {
   }
 };
 
+// Get approval status for student
 export const getApprovalStatus = async (req, res) => {
   const prn = req.user.prn;
 
@@ -104,9 +101,8 @@ export const getApprovalStatus = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    if (!approvals || approvals.length === 0) {
+    if (!approvals.length)
       return res.status(404).json({ error: "No approval requests found" });
-    }
 
     const approvalsWithExtra = approvals.map((approval) => ({
       approvalId: approval.approvalId,
@@ -129,6 +125,7 @@ export const getApprovalStatus = async (req, res) => {
   }
 };
 
+// Get all HOD branches
 export const getHodBranches = async (req, res) => {
   try {
     const hodDepartments = await prisma.department.findMany({
@@ -148,6 +145,7 @@ export const getHodBranches = async (req, res) => {
   }
 };
 
+// Get REQUESTED_INFO approvals for student
 export const getRequestedInfoApprovals = async (req, res) => {
   const prn = req.user.prn;
 
@@ -158,11 +156,10 @@ export const getRequestedInfoApprovals = async (req, res) => {
       orderBy: { updatedAt: "desc" },
     });
 
-    if (!requests || requests.length === 0) {
+    if (!requests.length)
       return res
         .status(404)
         .json({ error: "No requests for more information" });
-    }
 
     res.json({ success: true, requests });
   } catch (err) {
@@ -171,15 +168,15 @@ export const getRequestedInfoApprovals = async (req, res) => {
   }
 };
 
+// Resubmit LC form after REQUESTED_INFO
 export const resubmitLCForm = async (req, res) => {
   const prn = req.user.prn;
   const { approvalId, updates } = req.body;
 
-  if (!approvalId || !updates) {
+  if (!approvalId || !updates)
     return res
       .status(400)
       .json({ error: "approvalId and updates are required" });
-  }
 
   try {
     const approval = await prisma.approvalRequest.findUnique({
@@ -219,11 +216,11 @@ export const resubmitLCForm = async (req, res) => {
   }
 };
 
+// Get LC form for student
 export const getLCForm = async (req, res) => {
-  const prn = req.user.prn; 
+  const prn = req.user.prn;
 
   try {
-    // Fetch student with profile
     const studentWithProfile = await prisma.student.findUnique({
       where: { prn },
       select: {
@@ -250,17 +247,16 @@ export const getLCForm = async (req, res) => {
             lcReady: true,
             lcGenerated: true,
             lcUrl: true,
-            isFormEditable: true, // newly added field
+            isFormEditable: true,
           },
         },
       },
     });
 
-    if (!studentWithProfile || !studentWithProfile.profile) {
+    if (!studentWithProfile || !studentWithProfile.profile)
       return res
         .status(404)
         .json({ error: "LC form not found for this student" });
-    }
 
     res.json({ success: true, lcForm: studentWithProfile });
   } catch (err) {
