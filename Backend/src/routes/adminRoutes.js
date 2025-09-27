@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 import {
-  // 🔹 Department Controllers via superadmin
+  // 🔹 Department Controllers
   addDepartment,
   updateDepartment,
   deleteDepartment,
@@ -18,83 +18,73 @@ import {
   getStudentByPrn,
   updateStudent,
   deleteStudent,
+  // 🔹 Staff Controllers
+  addStaff,
+  getStaff,
+  getStaffById,
+  updateStaff,
+  deleteStaff,
 } from "../controllers/Admin.Controller.js";
 
 const router = Router();
 
-/* 
-================================
-📌 Department CRUD via Admin Routes
-================================ 
-*/
-// ➕ Create Department
+/* ================================
+   📌 Department CRUD via Admin Routes
+================================ */
 router.post("/add-department", verifyToken(["superadmin"]), addDepartment);
-
-// ✏️ Update Department (deptHead, username, password optional)
 router.put("/update-department", verifyToken(["superadmin"]), updateDepartment);
-
-// ❌ Delete Department
 router.delete(
   "/delete-department/:deptId",
   verifyToken(["superadmin"]),
   deleteDepartment
 );
-
-// 📜 Get All Departments (no auth to allow frontend seeding)
 router.get("/departments", getDepartments);
-
-// 🔍 Get Department by ID
 router.get(
   "/departments/:deptId",
   verifyToken(["superadmin", "department"]),
   getDepartmentById
 );
 
-/* 
-================================
-📌 SuperAdmin Routes
-================================ 
-*/
-// ➕ Create SuperAdmin
+/* ================================
+   📌 SuperAdmin Routes
+================================ */
 router.post("/add-superadmin", verifyToken(["superadmin"]), addSuperAdmin);
-
-// ✏️ Update SuperAdmin
 router.put(
   "/update-superadmin/:id",
   verifyToken(["superadmin"]),
   updateSuperAdmin
 );
-
-// ❌ Delete SuperAdmin
 router.delete(
   "/delete-superadmin/:id",
   verifyToken(["superadmin"]),
   deleteSuperAdmin
 );
-
 router.get("/get-superAdmins", getSuperAdmins);
-/* 
-================================
-📌 Student CRUD via Admin Routes
-================================ 
-*/
-// ➕ Create Student
+
+/* ================================
+   📌 Student CRUD via Admin Routes
+================================ */
 router.post("/add-student", verifyToken(["superadmin"]), addStudent);
-
-// 🔍 Get All Students
 router.get("/students", verifyToken(["superadmin"]), getStudents);
-
-// 🔍 Get Student by PRN
 router.get("/students/:prn", verifyToken(["superadmin"]), getStudentByPrn);
-
-// ✏️ Update Student
 router.put("/update-student/:prn", verifyToken(["superadmin"]), updateStudent);
-
-// ❌ Delete Student
 router.delete(
   "/delete-student/:prn",
   verifyToken(["superadmin"]),
   deleteStudent
+);
+
+/* ================================
+   📌 Staff CRUD via Admin Routes
+================================ */
+router.post("/add-staff", verifyToken(["superadmin"]), addStaff);
+router.get("/staff", verifyToken(["superadmin"]), getStaff);
+router.get("/staff/:staffId", verifyToken(["superadmin"]), getStaffById);
+router.put("/update-staff/:staffId", verifyToken(["superadmin"]), updateStaff);
+router.delete(
+  "/delete-staff/:staffId",
+  verifyToken(["superadmin"]),
+  deleteStaff
 );
 
 export default router;
