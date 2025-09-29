@@ -63,22 +63,15 @@ model Department {
 }
 
 model Staff {
-  staffId      Int    @id @default(autoincrement())
-  name         String
-  email        String @unique
-  passwordHash String
-
-  deptId     Int
-  department Department @relation(fields: [deptId], references: [deptId])
-
-  // HOD relation
-  headedDepartment Department? @relation("DepartmentHead")
-
-  // Relation for requests created by staff
-  createdRequests ApprovalRequest[] @relation("StaffRequests")
-
-  // Relation for actions performed by staff
-  performedActions ApprovalAction[] @relation("StaffActions")
+  staffId          Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  deptId           Int
+  performedActions ApprovalAction[]  @relation("StaffActions")
+  createdRequests  ApprovalRequest[] @relation("StaffRequests")
+  headedDepartment Department?       @relation("DepartmentHead")
+  department       Department        @relation(fields: [deptId], references: [deptId])
 }
 
 model ApprovalRequest {
@@ -101,6 +94,11 @@ model ApprovalRequest {
   createdByStaff Staff?           @relation("StaffRequests", fields: [createdByStaffId], references: [staffId])
   student        Student          @relation(fields: [studentPrn], references: [prn])
   actions        ApprovalAction[]
+  createdByStaffId Int?
+  actions          ApprovalAction[]
+  createdByStaff   Staff?           @relation("StaffRequests", fields: [createdByStaffId], references: [staffId])
+  department       Department       @relation(fields: [deptId], references: [deptId])
+  student          Student          @relation(fields: [studentPrn], references: [prn])
 
   @@unique([studentPrn, deptId])
 }
