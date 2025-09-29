@@ -130,12 +130,13 @@ export const getHodBranches = async (req, res) => {
   try {
     const hodDepartments = await prisma.department.findMany({
       where: { deptName: { contains: "HOD -", mode: "insensitive" } },
-      select: { deptId: true, deptName: true },
+      select: { deptId: true, deptName: true, college: true },
     });
 
     const branches = hodDepartments.map((dept) => ({
       deptId: dept.deptId,
       branch: dept.deptName.replace(/^HOD\s*-\s*/i, ""),
+      college: dept.college,
     }));
 
     res.json({ success: true, branches });
