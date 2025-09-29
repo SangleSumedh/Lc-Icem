@@ -87,6 +87,7 @@ export const staffLogin = async (req, res) => {
         deptId: staff.deptId,
         name: staff.name,
         deptName: staff.department.deptName,
+        email: staff.email,
       },
       JWT_SECRET,
       { expiresIn: "8h" }
@@ -101,6 +102,7 @@ export const staffLogin = async (req, res) => {
         name: staff.name,
         deptId: staff.deptId,
         deptName: staff.department.deptName,
+        email: staff.email,
       },
     });
   } catch (err) {
