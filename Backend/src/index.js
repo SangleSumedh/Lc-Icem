@@ -7,6 +7,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import deptRoutes from "./routes/deptRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
+import registrarRoutes from "./routes/registrarRoutes.js";
 
 // dotenv.config();
 const app = express();
@@ -28,6 +29,7 @@ app.use("/auth", authRoutes);
 app.use("/departments", deptRoutes);
 app.use("/lc-form", studentRoutes);
 app.use("/admin", adminRoutes);
+app.use("/registrar", registrarRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

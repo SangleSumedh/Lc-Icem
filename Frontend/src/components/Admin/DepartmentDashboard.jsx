@@ -5,6 +5,7 @@ import PendingApprovals from "./PendingApprovals";
 // ✅ Reverse slug back into readable deptName (fallback only)
 const deslugify = (slug) =>
   slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+import RegistrarPendingLCs from "./RegistrarPendingLCs";
 
 function DepartmentDashboard() {
   const { deptKey } = useParams();
@@ -24,6 +25,14 @@ function DepartmentDashboard() {
     }
   }, [deptKey]);
   
+  // ✅ If dept is registrar, load RegistrarPendingLCs
+  if (deptName.toLowerCase() === "registrar") {
+    return (
+      <RegistrarPendingLCs />
+    );
+  }
+
+  // ✅ Otherwise load normal PendingApprovals
   return (
     <PendingApprovals
       title={`${deptName} Dashboard`}
