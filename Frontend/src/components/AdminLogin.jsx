@@ -12,6 +12,15 @@ import {
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 
+// ✅ Utility to generate safe slugs
+const slugify = (str) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/^hod[-_\s]*/i, "hod-")   // normalize HOD prefix
+    .replace(/[\s_/]+/g, "-")          // replace spaces, underscores, slashes → dash
+    .replace(/-+/g, "-");              // collapse multiple dashes
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -32,7 +41,7 @@ const AdminLogin = () => {
       icon: <Building2 className="w-4 h-4 text-[#00539C]" />,
     },
     {
-      value: "superadmin", // backend still expects this value
+      value: "superadmin",
       label: "Admin",
       description: "Full administrative access",
       icon: <Shield className="w-4 h-4 text-[#00539C]" />,
@@ -100,17 +109,11 @@ const AdminLogin = () => {
           if (decoded.role === "superadmin") {
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
-            let deptName = decoded.deptName.toLowerCase();
+            const deptName = decoded.deptName;
             localStorage.setItem("deptName", deptName);
 
-            if (deptName.startsWith("hod")) {
-              const cleanDept = deptName.replace(/^hod[-\s]*/i, "").trim();
-              const slug = cleanDept.replace(/\s+/g, "-").replace(/-+/g, "-");
-              navigate(`/admin-dashboard/hod-${slug}`);
-            } else {
-              const slug = deptName.replace(/\s+/g, "-").replace(/-+/g, "-");
-              navigate(`/admin-dashboard/${slug}`);
-            }
+            const slug = slugify(deptName);
+            navigate(`/admin-dashboard/${slug}`);
           }
         } else {
           alert(data.error || "❌ Login failed");
@@ -135,7 +138,6 @@ const AdminLogin = () => {
         "Application management dashboard",
       ]}
     >
-      {/* Heading + Subtitle */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Admin Login</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -143,7 +145,7 @@ const AdminLogin = () => {
         </p>
       </div>
 
-      {/* Login Type - Custom Dropdown */}
+      {/* Login Type Dropdown */}
       <div className="mb-6 relative w-full" ref={dropdownRef}>
         <label className="block text-base font-medium text-gray-700 mb-1">
           Login As
@@ -206,11 +208,7 @@ const AdminLogin = () => {
       </div>
 
       {/* Form */}
-      <form
-        onSubmit={handleLogin}
-        className="space-y-6 w-full max-w-md mx-auto"
-      >
-        {/* Email */}
+      <form onSubmit={handleLogin} className="space-y-6 w-full max-w-md mx-auto">
         <div>
           <label className="block text-base font-medium text-gray-700 mb-1">
             Email
@@ -231,7 +229,6 @@ const AdminLogin = () => {
           )}
         </div>
 
-        {/* Password */}
         <div>
           <label className="block text-base font-medium text-gray-700 mb-1">
             Password
@@ -250,13 +247,8 @@ const AdminLogin = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 text-gray-500 hover:text-[#003C84] transition"
-              aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
           {formErrors.password && (
@@ -264,7 +256,6 @@ const AdminLogin = () => {
           )}
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={loading}
@@ -273,13 +264,10 @@ const AdminLogin = () => {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* Footer Note */}
         <p className="text-center text-sm text-gray-600 mt-4">
           Don&apos;t have an account?{" "}
           <span className="font-medium text-[#003C84]">Contact Admin</span>
         </p>
-
-        
       </form>
     </AuthLayout>
   );

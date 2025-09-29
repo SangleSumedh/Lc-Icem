@@ -7,7 +7,6 @@ import {
   Megaphone,
   GraduationCap,
   Briefcase,
-  ClipboardList,
   FileText,
   Bus,
   Home,
@@ -15,7 +14,9 @@ import {
   ChevronRight,
   UserPlus,
   ShieldPlus,
-  Building2, // new icon for departments
+  Building2,
+  Info,
+  Clock,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -56,7 +57,6 @@ function AdminSidebar({ collapsed, setCollapsed }) {
       { deptName: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
     ];
   } else if (role === "superadmin") {
-    // 🔹 Show 4 items for superadmin
     filteredDepartments = [
       { deptName: "Admin Dashboard", path: "/admin-dashboard", icon: LayoutDashboard },
       { deptName: "Add Department", path: "/admin-dashboard/add-department", icon: Building2 },
@@ -65,13 +65,26 @@ function AdminSidebar({ collapsed, setCollapsed }) {
     ];
   } else if (role === "department") {
     const storedDept = deptName?.toLowerCase();
-    filteredDepartments = departments
-      .filter((d) => d.deptName.toLowerCase() === storedDept)
-      .map((d) => ({
-        deptName: d.deptName,
-        path: `/admin-dashboard/${slugify(d.deptName)}`,
-        icon: pickIcon(d.deptName),
-      }));
+    const matches = departments.filter((d) => d.deptName.toLowerCase() === storedDept);
+
+    // show 2 entries for department:
+    // 1) Pending Approvals
+    // 2) Requested Info
+    filteredDepartments = matches.flatMap((d) => {
+      const base = `/admin-dashboard/${slugify(d.deptName)}`;
+      return [
+        {
+          deptName: "Pending Approvals",
+          path: base,
+          icon: Clock,
+        },
+        {
+          deptName: "Requested Info",
+          path: `${base}/requested-info`,
+          icon: Info,
+        },
+      ];
+    });
   }
 
   useEffect(() => {
@@ -100,20 +113,20 @@ function AdminSidebar({ collapsed, setCollapsed }) {
 
       {/* Menu Items */}
       <div className="flex-1 px-2 space-y-2">
-        {filteredDepartments.map((dept) => {
-          const isActive = location.pathname === dept.path;
-          const Icon = dept.icon || Users;
+        {filteredDepartments.map((item) => {
+          const isActive = location.pathname === item.path;
+          const Icon = item.icon || Users;
           return (
             <div
-              key={dept.deptName}
-              ref={(el) => (itemRefs.current[dept.path] = el)}
+              key={item.path}
+              ref={(el) => (itemRefs.current[item.path] = el)}
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 cursor-pointer ${
                 isActive ? "text-blue-600 bg-blue-50 font-semibold" : "hover:text-blue-400"
               }`}
-              onClick={() => navigate(dept.path)}
+              onClick={() => navigate(item.path)}
             >
               <Icon className="w-6 h-6 text-[#00539C]" />
-              {!collapsed && <span className="font-medium">{dept.deptName}</span>}
+              {!collapsed && <span className="font-medium">{item.deptName}</span>}
             </div>
           );
         })}
@@ -123,7 +136,7 @@ function AdminSidebar({ collapsed, setCollapsed }) {
 }
 
 /**
- * 🔹 Map deptName → Icon
+ * 🔹 (kept for possible future use)
  */
 function pickIcon(name) {
   if (name.toLowerCase().includes("account")) return DollarSign;

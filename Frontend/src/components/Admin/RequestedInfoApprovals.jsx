@@ -2,39 +2,40 @@ import React, { useEffect, useState } from "react";
 import { SortAsc } from "lucide-react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
-function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
+function RequestedInfoApprovals() {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState(null);
-  const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
 
   const token = localStorage.getItem("token");
-  const deptName = localStorage.getItem("deptName"); // logged-in department name
+  const deptName = localStorage.getItem("deptName"); // for header only
 
-  // ✅ Fetch approvals
-  const fetchApprovals = async () => { 
+  const fetchUrl = "http://localhost:5000/departments/approvals/requested-info";
+  const updateUrl = "http://localhost:5000/departments/update-status";
+
+  // ✅ Fetch only REQUESTED_INFO approvals
+  const fetchApprovals = async () => {
     setLoading(true);
     try {
       const res = await fetch(fetchUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const text = await res.text();
       try {
         const data = JSON.parse(text);
-        if (res.ok) {
-          setApprovals(data.pendingApprovals || []);
+        if (res.ok && data.success) {
+          setApprovals(data.requestedInfoApprovals || []);
         } else {
           console.error("Fetch error:", data);
           setApprovals([]);
         }
       } catch {
-        console.error("Received non-JSON response:", text);
+        console.error("Non-JSON response:", text);
         setApprovals([]);
       }
     } catch (err) {
-      console.error("Error fetching approvals:", err);
+      console.error("Error fetching requested-info approvals:", err);
       setApprovals([]);
     } finally {
       setLoading(false);
@@ -46,12 +47,9 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Update approval status
-  const handleUpdateStatus = async () => {
-    if (!status) {
-      alert("Please select a status");
-      return;
-    }
+  // ✅ Only Approve action (REQUESTED_INFO -> APPROVED)
+  const handleApprove = async () => {
+    if (!selectedApproval) return;
     if (!remarks.trim()) {
       alert("Remarks are required");
       return;
@@ -66,24 +64,22 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
         },
         body: JSON.stringify({
           approvalId: Number(selectedApproval.approvalId),
-          status,
+          status: "APPROVED",
           remarks,
         }),
       });
-
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("✅ Approval updated successfully");
+        alert("✅ Request approved");
         setSelectedApproval(null);
-        setStatus("");
         setRemarks("");
         fetchApprovals();
       } else {
-        alert(data.error || "❌ Failed to update approval");
+        alert(data.error || "❌ Failed to approve");
       }
     } catch (err) {
-      console.error("Error updating approval:", err);
-      alert("❌ Error updating approval");
+      console.error("Approve error:", err);
+      alert("❌ Error approving request");
     }
   };
 
@@ -103,11 +99,13 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
       <div className="bg-white rounded-xl min-h-[90vh] w-full shadow-xl p-8">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">{title}</h2>
+          <h2 className="text-3xl font-bold text-gray-900">
+            {deptName ? `${deptName} Dashboard` : "Department Dashboard"}
+          </h2>
         </div>
 
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{subtitle}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Requests for More Info</h2>
           <button
             onClick={fetchApprovals}
             className="flex items-center gap-2 font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-5 transition"
@@ -119,7 +117,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
         {loading && <p>Loading approvals...</p>}
 
-        {/* Students Table */}
+        {/* Table */}
         <div className="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100/80">
@@ -144,10 +142,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
             <tbody className="divide-y divide-gray-200 bg-white">
               {approvals.map((a) => (
-                <tr
-                  key={a.approvalId}
-                  className="hover:bg-gray-50 transition-colors"
-                >
+                <tr key={a.approvalId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {a.student.studentName}
                   </td>
@@ -161,43 +156,15 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                     {a.student.phoneNo}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
-                      {/* Approve */}
-                      <button
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("APPROVED");
-                        }}
-                      >
-                        Approve
-                      </button>
-
-                      {/* Request Info */}
-                      <button
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("REQUESTED_INFO");
-                        }}
-                      >
-                        Request Info
-                      </button>
-
-                      {/* Reject (only for Account dept) */}
-                      {deptName &&
-                        deptName.toLowerCase() === "account" && (
-                          <button
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                            onClick={() => {
-                              setSelectedApproval(a);
-                              setStatus("REJECTED");
-                            }}
-                          >
-                            Reject
-                          </button>
-                        )}
-                    </div>
+                    <button
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      onClick={() => {
+                        setSelectedApproval(a);
+                        setRemarks("");
+                      }}
+                    >
+                      Approve
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -205,23 +172,17 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
           </table>
 
           {approvals.length === 0 && !loading && (
-            <p className="p-4 text-gray-500">No pending approvals</p>
+            <p className="p-4 text-gray-500">No requests pending for more info</p>
           )}
         </div>
 
-        {/* Modal for Remarks */}
+        {/* Modal for Approval Remarks */}
         {selectedApproval && (
           <div className="fixed inset-0 z-50 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-scaleIn">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-white">
-                  {status === "APPROVED"
-                    ? "Approve Application"
-                    : status === "REJECTED"
-                    ? "Reject Application"
-                    : "Request More Info"}
-                </h2>
+              <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-4 py-3 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-white">Approve Request</h2>
                 <button
                   onClick={() => setSelectedApproval(null)}
                   className="text-white hover:text-gray-200"
@@ -243,13 +204,13 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Remarks <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Enter remarks"
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-                  />
+                    <textarea
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      placeholder="Enter remarks"
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+                    />
                 </div>
               </div>
 
@@ -262,16 +223,10 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                   Cancel
                 </button>
                 <button
-                  onClick={handleUpdateStatus}
-                  className={`px-5 py-2 rounded-lg text-white font-medium ${
-                    status === "APPROVED"
-                      ? "bg-green-600 hover:bg-green-700"
-                      : status === "REJECTED"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-yellow-600 hover:bg-yellow-700"
-                  }`}
+                  onClick={handleApprove}
+                  className="px-5 py-2 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700"
                 >
-                  Save
+                  Approve
                 </button>
               </div>
             </div>
@@ -282,4 +237,4 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   );
 }
 
-export default PendingApprovals;
+export default RequestedInfoApprovals;
