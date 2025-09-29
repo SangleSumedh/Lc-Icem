@@ -1,6 +1,13 @@
 import prisma from "../prisma.js";
+import multer from "multer";
+import { uploadFile, getSignedFileUrl } from "../utils/s3.js";
 
-// GET all students whose LC is ready but not yet generated
+// Multer configuration for temporary file storage
+const upload = multer({ dest: "tmp/" });
+
+/**
+ * GET all students whose LC is ready but not yet generated
+ */
 export const getPendingLCs = async (req, res) => {
   try {
     const pendingLCs = await prisma.studentProfile.findMany({
@@ -29,7 +36,9 @@ export const getPendingLCs = async (req, res) => {
   }
 };
 
-// GET details of a single student's LC
+/**
+ * GET details of a single student's LC
+ */
 export const getLCDetails = async (req, res) => {
   const { prn } = req.params;
 
@@ -47,14 +56,23 @@ export const getLCDetails = async (req, res) => {
       return res.status(404).json({ error: "Student not found." });
     }
 
-    res.json({ success: true, studentProfile: profile });
+    // If lcUrl exists, generate signed URL valid for 15 days
+    let lcSignedUrl = null;
+    if (profile.lcUrl) {
+      lcSignedUrl = await getSignedFileUrl(profile.lcUrl, 1296000);
+    }
+
+    res.json({ success: true, studentProfile: profile, lcSignedUrl });
   } catch (err) {
     console.error("Error fetching LC details:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
-// POST /registrar/generate-lc/:prn - generate/update LC
+/**
+ * POST /registrar/generate-lc/:prn
+ * Update student profile fields (form data)
+ */
 export const generateLC = async (req, res) => {
   const { prn } = req.params;
 
@@ -72,12 +90,6 @@ export const generateLC = async (req, res) => {
       return res
         .status(400)
         .json({ error: "LC is not ready yet for this student." });
-    }
-
-    if (profile.lcGenerated) {
-      return res
-        .status(400)
-        .json({ error: "LC has already been generated for this student." });
     }
 
     // Whitelist of allowed fields to update
@@ -99,47 +111,81 @@ export const generateLC = async (req, res) => {
       "dateOfAdmission",
       "dateOfLeaving",
       "progressAndConduct",
-      "lcUrl",
     ];
 
     const updates = {};
 
-    // Copy only allowed fields from req.body
     for (let key of allowedFields) {
       if (req.body[key] !== undefined) {
-        // Convert date strings to Date objects
-        if (
-          [
-            "dateOfBirth",
-            "yearOfAdmission",
-            "dateOfAdmission",
-            "dateOfLeaving",
-          ].includes(key)
-        ) {
-          updates[key] = req.body[key] ? new Date(req.body[key]) : null;
-        } else {
-          updates[key] = req.body[key];
-        }
+        updates[key] = [
+          "dateOfBirth",
+          "yearOfAdmission",
+          "dateOfAdmission",
+          "dateOfLeaving",
+        ].includes(key)
+          ? req.body[key]
+            ? new Date(req.body[key])
+            : null
+          : req.body[key];
       }
     }
-
-    // Always mark LC as generated
-    updates.lcGenerated = true;
 
     const updatedProfile = await prisma.studentProfile.update({
       where: { prn },
       data: updates,
     });
 
-    console.log(`🎉 LC generated/updated for student ${prn}`);
-
     res.json({
       success: true,
-      message: `LC generated for ${profile.student.studentName}`,
-      student: updatedProfile,
+      message: `Profile updated for ${profile.student.studentName}`,
+      studentProfile: updatedProfile,
     });
   } catch (err) {
-    console.error("Error generating/updating LC:", err.message);
+    console.error("Error updating LC profile:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
+
+/**
+ * POST /registrar/upload-lc/:prn
+ * Upload finalized LC PDF to S3 and update lcUrl + lcGenerated
+ */
+export const uploadLC = [
+  upload.single("lcPdf"), // frontend must send field name as 'lcPdf'
+  async (req, res) => {
+    const { prn } = req.params;
+    if (!req.file) return res.status(400).json({ error: "No PDF uploaded" });
+
+    try {
+      const profile = await prisma.studentProfile.findUnique({
+        where: { prn },
+      });
+      if (!profile) return res.status(404).json({ error: "Student not found" });
+
+      // Upload PDF to S3
+      const s3Key = await uploadFile(req.file.path, prn);
+
+      // Update studentProfile: lcUrl and lcGenerated = true
+      const updatedProfile = await prisma.studentProfile.update({
+        where: { prn },
+        data: {
+          lcUrl: s3Key,
+          lcGenerated: true,
+        },
+      });
+
+      // Generate signed URL valid for 15 days for student download
+      const signedUrl = await getSignedFileUrl(s3Key, 1296000);
+
+      res.json({
+        success: true,
+        message: "LC uploaded to S3 successfully",
+        lcUrl: signedUrl,
+        studentProfile: updatedProfile,
+      });
+    } catch (err) {
+      console.error("Error uploading LC to S3:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+];

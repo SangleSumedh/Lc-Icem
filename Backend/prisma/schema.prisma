@@ -8,14 +8,16 @@ datasource db {
 }
 
 model Student {
-  prn         String            @id
+  prn         String  @id
   studentName String
-  email       String            @unique
-  phoneNo     String?           @db.VarChar(15)
-  password    String            @db.VarChar(255)
-  college     College           @default(ICEM)
-  approvals   ApprovalRequest[]
-  profile     StudentProfile?
+  email       String  @unique
+  phoneNo     String? @db.VarChar(15)
+  password    String  @db.VarChar(255)
+  college     College @default(ICEM)
+
+  // Relations
+  approvals ApprovalRequest[]
+  profile   StudentProfile?
 }
 
 model StudentProfile {
@@ -42,18 +44,22 @@ model StudentProfile {
   dateOfLeaving      DateTime?
   progressAndConduct String?
   isFormEditable     Boolean       @default(true)
-  student            Student       @relation(fields: [prn], references: [prn])
+
+  // Relations
+  student Student @relation(fields: [prn], references: [prn])
 }
 
 model Department {
-  deptId           Int               @id @default(autoincrement())
-  deptName         String
-  branchId         Int?
-  college          College           @default(ICEM)
+  deptId   Int     @id @default(autoincrement())
+  deptName String
+  branchId Int?
+  college  College @default(ICEM)
+
+  // Relations
+  staff            Staff[] // one-to-many staff
   deptHeadId       Int?              @unique
-  approvalRequests ApprovalRequest[]
   deptHead         Staff?            @relation("DepartmentHead", fields: [deptHeadId], references: [staffId])
-  staff            Staff[]
+  approvalRequests ApprovalRequest[]
 }
 
 model Staff {
@@ -76,19 +82,19 @@ model Staff {
 }
 
 model ApprovalRequest {
-  approvalId       Int              @id @default(autoincrement())
+  approvalId       Int            @id @default(autoincrement())
   deptId           Int
-  status           ApprovalStatus   @default(PENDING)
+  createdByStaffId Int? // staff who initiated request
+  status           ApprovalStatus @default(PENDING)
   approvedAt       DateTime?
   remarks          String?
   deptName         String?
   branch           String?
   studentName      String?
   yearOfAdmission  DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   studentPrn       String
-
 
   // Relations
   department     Department       @relation(fields: [deptId], references: [deptId])
@@ -100,16 +106,18 @@ model ApprovalRequest {
 }
 
 model ApprovalAction {
-  actionId   Int             @id @default(autoincrement())
+  actionId   Int        @id @default(autoincrement())
   approvalId Int
+  staffId    Int
   action     ActionType
   remarks    String?
-  actionAt   DateTime?       @default(now())
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  staffId    Int
-  approval   ApprovalRequest @relation(fields: [approvalId], references: [approvalId])
-  staff      Staff           @relation("StaffActions", fields: [staffId], references: [staffId])
+  actionAt   DateTime?  @default(now())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relations
+  approval ApprovalRequest @relation(fields: [approvalId], references: [approvalId])
+  staff    Staff           @relation("StaffActions", fields: [staffId], references: [staffId])
 }
 
 model SuperAdmin {
