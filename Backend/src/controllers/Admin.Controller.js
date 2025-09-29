@@ -375,9 +375,6 @@ export const deleteStudent = async (req, res) => {
    ================================ */
 
 // ➕ Create Staff
-import prisma from "../prisma.js";
-import bcrypt from "bcrypt";
-import { sendResponse } from "../utils/sendResponse.js"; // adjust path if needed
 
 // ➕ Add Staff
 export const addStaff = async (req, res) => {
