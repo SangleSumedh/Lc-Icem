@@ -14,6 +14,7 @@ import AddDepartmentForm from "./components/Admin/AddDepartmentForm";
 import AddUserForm from "./components/Admin/AddUserForm";
 import AddSuperAdmin from "./components/Admin/AddSuperAdmin";
 import DepartmentDashboard from "./components/Admin/DepartmentDashboard";
+import RequestedInfoApprovals from "./components/Admin/RequestedInfoApprovals";
 
 import Admin from "./Pages/Admin";
 import Student from "./Pages/Student";
@@ -37,11 +38,11 @@ function App() {
 
         {/* 🏢 Department Admin Dashboard */}
         <Route path="/admin-dashboard" element={<Admin />}>
+          {/* Department views */}
           <Route path=":deptKey" element={<DepartmentDashboard />} />
-        </Route>
+          <Route path=":deptKey/requested-info" element={<RequestedInfoApprovals />} />
 
-        {/* 👑 SuperAdmin Dashboard */}
-        <Route path="/admin-dashboard" element={<Admin />}>
+          {/* 👑 SuperAdmin views */}
           <Route index element={<AdminDashboard />} />
           <Route path="add-department" element={<AddDepartmentForm />} />
           <Route path="add-user" element={<AddUserForm />} />
