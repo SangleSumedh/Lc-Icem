@@ -41,7 +41,7 @@ export const registerStudent = async (req, res) => {
 };
 
 export const loginStudent = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password  } = req.body;
 
   try {
     const student = await prisma.student.findUnique({ where: { email } });
@@ -60,7 +60,7 @@ export const loginStudent = async (req, res) => {
       success: true,
       message: "Logged In",
       token,
-      user: { prn: student.prn, email: student.email },
+      user: { prn: student.prn, email: student.email, college: student.college },
     });
   } catch (err) {
     res.status(400).json({ error: err.message });

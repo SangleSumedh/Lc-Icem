@@ -13,7 +13,7 @@ const LeavingCertificateForm = ({
   initialFormData = {},
   loading = false,
   branches = [],
-  branchesLoading = false
+  branchesLoading = false,
 }) => {
   const [formData, setFormData] = useState({
     studentID: "",
@@ -31,7 +31,7 @@ const LeavingCertificateForm = ({
     branch: "",
     admissionMode: "",
     reasonForLeaving: "",
-    ...initialFormData
+    ...initialFormData,
   });
 
   const [dropdownOpen, setDropdownOpen] = useState({});
@@ -42,7 +42,14 @@ const LeavingCertificateForm = ({
   const toggleDropdown = (field) =>
     setDropdownOpen((prev) => ({ ...prev, [field]: !prev[field] }));
 
-  const CustomDropdown = ({ label, name, value, options, required, disabled }) => (
+  const CustomDropdown = ({
+    label,
+    name,
+    value,
+    options,
+    required,
+    disabled,
+  }) => (
     <div className="relative w-full">
       <label className="block text-sm font-medium text-gray-700 mb-0.5">
         {label} {required && <span className="text-red-500">*</span>}
@@ -56,10 +63,12 @@ const LeavingCertificateForm = ({
         <span
           className={value ? "text-gray-800 text-sm" : "text-gray-400 text-sm"}
         >
-          {value
-            ? options.find((opt) => opt.value === value)?.label
-            : branchesLoading
+          {branchesLoading
             ? "Loading..."
+            : options.length === 0
+            ? "No branches available"
+            : value
+            ? options.find((opt) => opt.value === value)?.label
             : "Select option"}
         </span>
         <ChevronDown
@@ -70,18 +79,24 @@ const LeavingCertificateForm = ({
       </div>
       {dropdownOpen[name] && !disabled && !branchesLoading && !viewMode && (
         <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
-          {options.map((opt) => (
-            <div
-              key={opt.value}
-              onClick={() => {
-                setFormData({ ...formData, [name]: opt.value });
-                setDropdownOpen({ ...dropdownOpen, [name]: false });
-              }}
-              className="px-3 py-2 cursor-pointer text-sm hover:bg-[#00539C] hover:text-white rounded-md"
-            >
-              {opt.label}
+          {options.length > 0 ? (
+            options.map((opt) => (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  setFormData({ ...formData, [name]: opt.value });
+                  setDropdownOpen({ ...dropdownOpen, [name]: false });
+                }}
+                className="px-3 py-2 cursor-pointer text-sm hover:bg-[#00539C] hover:text-white rounded-md"
+              >
+                {opt.label}
+              </div>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              No branches available
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -100,12 +115,13 @@ const LeavingCertificateForm = ({
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-white">
-            {viewMode ? "View LC Form" : editMode ? "Edit LC Form" : "Leaving Certificate Form"}
+            {viewMode
+              ? "View LC Form"
+              : editMode
+              ? "Edit LC Form"
+              : "Leaving Certificate Form"}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-white hover:text-gray-200"
-          >
+          <button onClick={onClose} className="text-white hover:text-gray-200">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -255,7 +271,8 @@ const LeavingCertificateForm = ({
             {/* Reason */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700">
-                Reason for Leaving College <span className="text-red-500">*</span>
+                Reason for Leaving College{" "}
+                <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="reasonForLeaving"

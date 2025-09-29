@@ -142,25 +142,39 @@ export const updateApprovalStatus = async (req, res) => {
 
 // Helper to create next approval
 async function createApprovalIfNotExists(studentPrn, dept, student) {
-  await prisma.approvalRequest.upsert({
+  // Check if approval request already exists
+  const existing = await prisma.approvalRequest.findFirst({
     where: {
-      studentPrn_deptId: {
-        studentPrn,
-        deptId: dept.deptId,
-      },
-    },
-    update: {},
-    create: {
-      status: "PENDING",
-      studentName: student.studentName,
-      yearOfAdmission: student.profile?.yearOfAdmission,
-      deptName: dept.deptName,
-      branch: student.profile?.branch,
-      student: { connect: { prn: studentPrn } },
-      department: { connect: { deptId: dept.deptId } },
+      studentPrn,
+      deptId: dept.deptId,
     },
   });
-  console.log(`✅ Ensured approval request exists for ${dept.deptName}`);
+
+  if (!existing) {
+    try {
+      await prisma.approvalRequest.create({
+        data: {
+          status: "PENDING",
+          studentName: student.studentName,
+          yearOfAdmission: student.profile?.yearOfAdmission,
+          deptName: dept.deptName,
+          branch: student.profile?.branch,
+          student: { connect: { prn: studentPrn } },
+          department: { connect: { deptId: dept.deptId } },
+        },
+      });
+      console.log(`✅ Created approval request for ${dept.deptName}`);
+    } catch (err) {
+      if (err.code === "P2002") {
+        // Unique constraint violation → another request already created it
+        console.log(`ℹ️ Approval request already exists for ${dept.deptName}`);
+      } else {
+        throw err; // Re-throw unexpected errors
+      }
+    }
+  } else {
+    console.log(`ℹ️ Approval request already exists for ${dept.deptName}`);
+  }
 }
 
 

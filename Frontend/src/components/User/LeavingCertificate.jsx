@@ -48,30 +48,30 @@ const LeavingCertificate = () => {
     const checkStatus = async () => {
       try {
         const token = localStorage.getItem("token");
-        
+
         // Check approval status
         const statusRes = await fetch("http://localhost:5000/lc-form/approval-status", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         // Fetch LC form data
         const formRes = await fetch("http://localhost:5000/lc-form/form", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           if (statusData.approvals && statusData.approvals.length > 0) {
             setSubmitted(true);
           }
         }
-        
+
         if (formRes.ok) {
           const formData = await formRes.json();
           if (formData.success && formData.lcForm) {
             setLcFormData(formData.lcForm);
             setIsFormEditable(formData.lcForm.profile?.isFormEditable || false);
-            
+
             // Prepopulate form data if exists
             if (formData.lcForm.profile) {
               const profile = formData.lcForm.profile;
@@ -83,11 +83,11 @@ const LeavingCertificate = () => {
                 subCaste: profile.subCaste || "",
                 nationality: profile.nationality || "",
                 placeOfBirth: profile.placeOfBirth || "",
-                dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : "",
+                dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split("T")[0] : "",
                 dobWords: profile.dobWords || "",
                 lastCollege: profile.lastCollege || "",
                 lcType: "LEAVING",
-                yearOfAdmission: profile.yearOfAdmission ? profile.yearOfAdmission.split('T')[0] : "",
+                yearOfAdmission: profile.yearOfAdmission ? profile.yearOfAdmission.split("T")[0] : "",
                 branch: profile.branch || "",
                 admissionMode: profile.admissionMode || "",
                 reasonForLeaving: profile.reasonForLeaving || "",
@@ -111,12 +111,20 @@ const LeavingCertificate = () => {
     const fetchBranches = async () => {
       try {
         const token = localStorage.getItem("token");
+        const studentCollege = localStorage.getItem("college"); // ✅ get student’s college
+
         const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = await res.json();
         if (data.success) {
-          const branchOptions = data.branches.map((b) => ({
+          // ✅ Filter branches for logged-in student’s college
+          const filteredBranches = data.branches.filter(
+            (b) => b.college === studentCollege
+          );
+
+          const branchOptions = filteredBranches.map((b) => ({
             value: b.branch,
             label: b.branch,
           }));
@@ -163,8 +171,8 @@ const LeavingCertificate = () => {
         alert(data.error || "❌ Failed to submit form");
       }
     } catch (err) {
-      console.log(lcFormData)
-      alert("Could not connect to backend.",err);
+      console.log(lcFormData);
+      alert("Could not connect to backend.", err);
     } finally {
       setLoading(false);
     }
@@ -215,7 +223,7 @@ const LeavingCertificate = () => {
           <p className="mt-2 text-gray-700">
             Your form has been submitted. Please wait for verification.
           </p>
-          
+
           {/* View and Edit Buttons */}
           <div className="flex gap-3 mt-4">
             <button
@@ -225,7 +233,7 @@ const LeavingCertificate = () => {
               <FaEye className="text-sm" />
               View Form
             </button>
-            
+
             {isFormEditable && (
               <button
                 onClick={handleEditClick}
@@ -236,7 +244,7 @@ const LeavingCertificate = () => {
               </button>
             )}
           </div>
-          
+
           {/* Editable Status Message */}
           {!isFormEditable && (
             <p className="mt-2 text-sm text-gray-600">

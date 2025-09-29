@@ -42,6 +42,11 @@ const Login = () => {
           const decoded = jwtDecode(data.token);
           localStorage.setItem("role", decoded.role);
 
+          // ✅ Save college to localStorage (always available now)
+          if (data.user && data.user.college) {
+            localStorage.setItem("college", data.user.college);
+          }
+
           navigate("/student");
         } else {
           alert(data.error || "❌ Login failed");
@@ -66,7 +71,6 @@ const Login = () => {
         "Track application status",
       ]}
     >
-      {/* Heading + Subtitle */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Student Login</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -141,12 +145,10 @@ const Login = () => {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* Footer Note */}
         <p className="text-center text-sm text-gray-600 mt-4">
           Don&apos;t have an account?{" "}
           <span className="font-medium text-[#003C84]">Contact Admin</span>
         </p>
-        
       </form>
     </AuthLayout>
   );
