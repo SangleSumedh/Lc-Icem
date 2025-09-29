@@ -142,25 +142,27 @@ export const updateApprovalStatus = async (req, res) => {
 
 // Helper to create next approval
 async function createApprovalIfNotExists(studentPrn, dept, student) {
-  const existing = await prisma.approvalRequest.findFirst({
-    where: { studentPrn, deptId: dept.deptId },
-  });
-
-  if (!existing) {
-    await prisma.approvalRequest.create({
-      data: {
-        status: "PENDING",
-        studentName: student.studentName,
-        yearOfAdmission: student.profile?.yearOfAdmission,
-        deptName: dept.deptName,
-        branch: student.profile?.branch,
-        student: { connect: { prn: studentPrn } },
-        department: { connect: { deptId: dept.deptId } },
+  await prisma.approvalRequest.upsert({
+    where: {
+      studentPrn_deptId: {
+        studentPrn,
+        deptId: dept.deptId,
       },
-    });
-    console.log(`✅ Created approval request for ${dept.deptName}`);
-  }
+    },
+    update: {},
+    create: {
+      status: "PENDING",
+      studentName: student.studentName,
+      yearOfAdmission: student.profile?.yearOfAdmission,
+      deptName: dept.deptName,
+      branch: student.profile?.branch,
+      student: { connect: { prn: studentPrn } },
+      department: { connect: { deptId: dept.deptId } },
+    },
+  });
+  console.log(`✅ Ensured approval request exists for ${dept.deptName}`);
 }
+
 
 // Fetch pending approvals
 export const getPendingApprovals = async (req, res) => {

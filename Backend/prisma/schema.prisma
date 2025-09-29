@@ -101,6 +101,8 @@ model ApprovalRequest {
   createdByStaff Staff?           @relation("StaffRequests", fields: [createdByStaffId], references: [staffId])
   student        Student          @relation(fields: [studentPrn], references: [prn])
   actions        ApprovalAction[]
+
+  @@unique([studentPrn, deptId])
 }
 
 model ApprovalAction {
