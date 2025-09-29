@@ -57,15 +57,22 @@ model Department {
 }
 
 model Staff {
-  staffId          Int               @id @default(autoincrement())
-  name             String
-  email            String            @unique
-  passwordHash     String
-  deptId           Int
-  performedActions ApprovalAction[]  @relation("StaffActions")
-  createdRequests  ApprovalRequest[] @relation("StaffRequests")
-  headedDepartment Department?       @relation("DepartmentHead")
-  department       Department        @relation(fields: [deptId], references: [deptId])
+  staffId      Int    @id @default(autoincrement())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  deptId     Int
+  department Department @relation(fields: [deptId], references: [deptId])
+
+  // HOD relation
+  headedDepartment Department? @relation("DepartmentHead")
+
+  // Relation for requests created by staff
+  createdRequests ApprovalRequest[] @relation("StaffRequests")
+
+  // Relation for actions performed by staff
+  performedActions ApprovalAction[] @relation("StaffActions")
 }
 
 model ApprovalRequest {

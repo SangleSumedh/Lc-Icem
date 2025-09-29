@@ -375,11 +375,13 @@ export const deleteStudent = async (req, res) => {
    ================================ */
 
 // ➕ Create Staff
+
+// ➕ Add Staff
 export const addStaff = async (req, res) => {
   try {
-    const { name, email, username, password, deptId } = req.body;
+    const { name, email, password, deptId } = req.body;
 
-    if (!name || !email || !username || !password || !deptId) {
+    if (!name || !email || !password || !deptId) {
       return sendResponse(res, false, "All fields are required", null, 400);
     }
 
@@ -389,18 +391,17 @@ export const addStaff = async (req, res) => {
       data: {
         name,
         email,
-        username,
         passwordHash: hashedPassword,
         deptId,
       },
-      select: { staffId: true, name: true, email: true, username: true, deptId: true },
+      select: { staffId: true, name: true, email: true, deptId: true },
     });
 
-    console.log(`✅ Staff created: ${name} | Username: ${username}`);
+    console.log(`✅ Staff created: ${name} | Email: ${email}`);
     return sendResponse(res, true, "Staff created successfully", staff);
   } catch (err) {
     if (err.code === "P2002") {
-      return sendResponse(res, false, "Email or Username already exists", null, 400);
+      return sendResponse(res, false, "Email already exists", null, 400);
     }
     return sendResponse(res, false, err.message, null, 500);
   }
@@ -410,7 +411,7 @@ export const addStaff = async (req, res) => {
 export const getStaff = async (req, res) => {
   try {
     const staffList = await prisma.staff.findMany({
-      select: { staffId: true, name: true, email: true, username: true, deptId: true },
+      select: { staffId: true, name: true, email: true, deptId: true },
     });
     return sendResponse(res, true, "Staff fetched successfully", staffList);
   } catch (err) {
@@ -424,7 +425,7 @@ export const getStaffById = async (req, res) => {
     const { staffId } = req.params;
     const staff = await prisma.staff.findUnique({
       where: { staffId: parseInt(staffId) },
-      select: { staffId: true, name: true, email: true, username: true, deptId: true },
+      select: { staffId: true, name: true, email: true, deptId: true },
     });
 
     if (!staff) return sendResponse(res, false, "Staff not found", null, 404);
@@ -438,56 +439,59 @@ export const getStaffById = async (req, res) => {
 export const updateStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
-    const { name, email, username, password, deptId } = req.body;
+    const { name, email, password, deptId } = req.body;
 
     const data = {};
     if (name) data.name = name;
     if (email) data.email = email;
-    if (username) data.username = username;
     if (deptId) data.deptId = deptId;
     if (password && password.trim().length > 0) {
       data.passwordHash = await bcrypt.hash(password, 10);
     }
 
     if (Object.keys(data).length === 0) {
-      return sendResponse(res, false, "No fields provided to update", null, 400);
+      return sendResponse(
+        res,
+        false,
+        "No fields provided to update",
+        null,
+        400
+      );
     }
 
     const staff = await prisma.staff.update({
       where: { staffId: parseInt(staffId) },
       data,
-      select: { staffId: true, name: true, email: true, username: true, deptId: true },
+      select: { staffId: true, name: true, email: true, deptId: true },
     });
 
     console.log(`✅ Staff updated: ID ${staffId}`);
     return sendResponse(res, true, "Staff updated successfully", staff);
   } catch (err) {
     if (err.code === "P2002") {
-      return sendResponse(res, false, "Email or Username already exists", null, 400);
+      return sendResponse(res, false, "Email already exists", null, 400);
     }
     return sendResponse(res, false, err.message, null, 500);
   }
 };
 
-// ❌ Delete Staff 
+// ❌ Delete Staff
 export const deleteStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
 
-    // ✅ Start transaction to handle dependent records if needed
     await prisma.$transaction(async (tx) => {
-      // Optionally, if there are ApprovalActions or ApprovalRequests linked
+      // Unlink staff from actions & requests before delete
       await tx.approvalAction.updateMany({
         where: { staffId: parseInt(staffId) },
-        data: { staffId: null }, // unlink staff from actions
+        data: { staffId: null },
       });
 
       await tx.approvalRequest.updateMany({
         where: { createdByStaffId: parseInt(staffId) },
-        data: { createdByStaffId: null }, // unlink staff from requests
+        data: { createdByStaffId: null },
       });
 
-      // Delete the staff
       await tx.staff.delete({
         where: { staffId: parseInt(staffId) },
       });
