@@ -88,11 +88,15 @@ model ApprovalRequest {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   studentPrn       String
-  createdByStaffId Int?
-  actions          ApprovalAction[]
-  createdByStaff   Staff?           @relation("StaffRequests", fields: [createdByStaffId], references: [staffId])
-  department       Department       @relation(fields: [deptId], references: [deptId])
-  student          Student          @relation(fields: [studentPrn], references: [prn])
+
+
+  // Relations
+  department     Department       @relation(fields: [deptId], references: [deptId])
+  createdByStaff Staff?           @relation("StaffRequests", fields: [createdByStaffId], references: [staffId])
+  student        Student          @relation(fields: [studentPrn], references: [prn])
+  actions        ApprovalAction[]
+
+  @@unique([studentPrn, deptId])
 }
 
 model ApprovalAction {
