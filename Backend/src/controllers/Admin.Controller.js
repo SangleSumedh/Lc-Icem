@@ -172,23 +172,49 @@ export const updateDepartment = async (req, res) => {
   }
 };
 
-// ❌ Delete Department
+// ❌ Delete Department (transactional, delete staff also)
 export const deleteDepartment = async (req, res) => {
   try {
     const { deptId } = req.params;
-    await prisma.department.delete({ where: { deptId: parseInt(deptId) } });
-    console.log(`🗑️ Department deleted: Dept ID ${deptId}`);
-    return sendResponse(res, true, "Department deleted successfully");
+    const id = parseInt(deptId);
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete approval actions linked to requests of this dept
+      await tx.approvalAction.deleteMany({
+        where: { approval: { deptId: id } },
+      });
+
+      // 2. Delete approval requests linked to this dept
+      await tx.approvalRequest.deleteMany({
+        where: { deptId: id },
+      });
+
+      // 3. Delete staff in this department
+      await tx.staff.deleteMany({
+        where: { deptId: id },
+      });
+
+      // 4. Finally delete the department
+      await tx.department.delete({
+        where: { deptId: id },
+      });
+    });
+
+    console.log(`🗑️ Department and staff deleted (Dept ID: ${deptId})`);
+    return sendResponse(res, true, "Department and staff deleted successfully");
   } catch (err) {
+    console.error("Delete Department error:", err);
     return sendResponse(res, false, err.message, null, 500);
   }
 };
+
+
 
 // 🔍 Get All Departments
 export const getDepartments = async (req, res) => {
   try {
     const departments = await prisma.department.findMany({
-      select: { deptId: true, deptName: true, deptHeadId: true, college: true },
+      select: { deptId: true, deptName: true, branchId: true, deptHeadId: true, college: true },
     });
     return sendResponse(
       res,
