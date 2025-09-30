@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
+import { sendEmail } from "../utils/mailer.js";
 
 /**
  * Utility: Standard response
@@ -208,13 +209,17 @@ export const deleteDepartment = async (req, res) => {
   }
 };
 
-
-
 // 🔍 Get All Departments
 export const getDepartments = async (req, res) => {
   try {
     const departments = await prisma.department.findMany({
-      select: { deptId: true, deptName: true, branchId: true, deptHeadId: true, college: true },
+      select: {
+        deptId: true,
+        deptName: true,
+        branchId: true,
+        deptHeadId: true,
+        college: true,
+      },
     });
     return sendResponse(
       res,
@@ -423,7 +428,65 @@ export const addStaff = async (req, res) => {
       select: { staffId: true, name: true, email: true, deptId: true },
     });
 
-    console.log(`✅ Staff created: ${name} | Email: ${email}`);
+    // -------------------------------
+    // Send HTML Email using sendEmail()
+    // -------------------------------
+    const htmlContent = `
+  <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6fa; padding: 30px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      
+      <!-- Header -->
+      <h1 style="text-align: center; color: #4f46e5; margin-bottom: 10px;">Welcome to LC-ICEM Portal</h1>
+      <p style="text-align: center; color: #6b7280; font-size: 16px; margin-bottom: 30px;">
+        Your staff account has been created successfully.
+      </p>
+
+      <!-- Greeting -->
+      <p style="font-size: 16px; color: #374151;">
+        Hi <strong>${name}</strong>,
+      </p>
+      <p style="font-size: 16px; color: #374151;">
+        Here are your login credentials:
+      </p>
+
+      <!-- Credentials Card -->
+      <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
+        <p style="margin: 0; font-weight: 600; color: #111827;">Email:</p>
+        <p style="margin: 5px 0 15px 0; color: #4b5563;">${email}</p>
+
+        <p style="margin: 0; font-weight: 600; color: #111827;">Password:</p>
+        <p style="margin: 5px 0 0 0; color: #4b5563;">${password}</p>
+      </div>
+
+      <!-- Call to Action -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://debug-den.vercel.app/login" 
+           style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+           Login to Portal
+        </a>
+      </div>
+
+      <!-- Footer -->
+      <p style="font-size: 14px; color: #9ca3af; text-align: center; margin-top: 30px;">
+        Please change your password after logging in for security purposes.<br/>
+        Best Regards, <br/>
+        <strong>LC-ICEM Admin Team</strong>
+      </p>
+      
+    </div>
+  </div>
+`;
+
+    await sendEmail({
+      to: email,
+      subject: "Your Staff Account Credentials",
+      text: `Hi ${name}, Your staff account has been created. Email: ${email} | Password: ${password}`,
+      html: htmlContent,
+    });
+
+    console.log(
+      `✅ Staff created: ${name} | Email: ${email}, Email sent successfully`
+    );
     return sendResponse(res, true, "Staff created successfully", staff);
   } catch (err) {
     if (err.code === "P2002") {
