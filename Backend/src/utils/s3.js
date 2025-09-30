@@ -36,7 +36,7 @@ export async function uploadFile(filePath, prn) {
   return key;
 }
 
-export async function getSignedFileUrl(key, expiresIn = 1296000) {
+export async function getSignedFileUrl(key, expiresIn = 604800) {
   // 15 days in seconds
   const command = new GetObjectCommand({
     Bucket: process.env.S3_BUCKET,
