@@ -89,6 +89,7 @@ export const updateApprovalStatus = async (req, res) => {
               contains: `HOD - ${studentBranch}`,
               mode: "insensitive",
             },
+            college: approval.student.college,
           },
         });
 
@@ -100,10 +101,16 @@ export const updateApprovalStatus = async (req, res) => {
           );
         }
       } else if (approval.department.deptName.includes("HOD")) {
+        const studentCollege = approval.student.college;
+
         const remainingDepts = await prisma.department.findMany({
           where: {
             NOT: { deptName: { in: ["Account", "Library", "Registrar"] } },
             branchId: null,
+            OR: [
+              { college: studentCollege }, // student's college-specific departments
+              { college: "ALL" }, // global/common departments
+            ],
           },
         });
 
@@ -111,6 +118,7 @@ export const updateApprovalStatus = async (req, res) => {
           await createApprovalIfNotExists(studentPrn, dept, approval.student);
         }
       }
+
     }
 
     // Check if all approvals are done
@@ -135,8 +143,20 @@ export const updateApprovalStatus = async (req, res) => {
       approval: updatedApproval,
     });
   } catch (err) {
-    console.error("Something went wrong while updating approval status", err);
-    res.status(400).json({ error: err.message });
+   console.error("❌ Error in updateApprovalStatus:", err);
+
+   if (err.code === "P2025") {
+     // Prisma: record not found
+     return res.status(404).json({ error: "Record not found" });
+   }
+
+   if (err.code === "P2002") {
+     // Prisma: unique constraint violation
+     return res.status(409).json({ error: "Duplicate approval request" });
+   }
+
+   // Anything else is server-side
+   res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -169,7 +189,7 @@ async function createApprovalIfNotExists(studentPrn, dept, student) {
         // Unique constraint violation → another request already created it
         console.log(`ℹ️ Approval request already exists for ${dept.deptName}`);
       } else {
-        throw err; // Re-throw unexpected errors
+        throw err; 
       }
     }
   } else {

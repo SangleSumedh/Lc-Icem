@@ -138,4 +138,5 @@ enum ActionType {
 enum College {
   ICEM
   IGSB
+  ALL
 }
