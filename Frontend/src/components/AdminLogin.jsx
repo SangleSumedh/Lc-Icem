@@ -17,9 +17,9 @@ const slugify = (str) =>
   str
     .toLowerCase()
     .trim()
-    .replace(/^hod[-_\s]*/i, "hod-")   // normalize HOD prefix
-    .replace(/[\s_/]+/g, "-")          // replace spaces, underscores, slashes → dash
-    .replace(/-+/g, "-");              // collapse multiple dashes
+    .replace(/^hod[-_\s]*/i, "hod-") // normalize HOD prefix
+    .replace(/[\s_/]+/g, "-") // replace spaces, underscores, slashes → dash
+    .replace(/-+/g, "-"); // collapse multiple dashes
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
 
   // Dropdown state
-  const [loginType, setLoginType] = useState("");
+  const [loginType, setLoginType] = useState("department"); // default = Department
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -208,7 +208,10 @@ const AdminLogin = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleLogin} className="space-y-6 w-full max-w-md mx-auto">
+      <form
+        onSubmit={handleLogin}
+        className="space-y-6 w-full max-w-md mx-auto"
+      >
         <div>
           <label className="block text-base font-medium text-gray-700 mb-1">
             Email
@@ -248,7 +251,11 @@ const AdminLogin = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 text-gray-500 hover:text-[#003C84] transition"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
           {formErrors.password && (
