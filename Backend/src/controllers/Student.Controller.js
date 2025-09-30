@@ -1,4 +1,5 @@
 import prisma from "../prisma.js";
+import { sendEmail } from "../utils/mailer.js";
 
 // Submit LC form
 export const submitLCForm = async (req, res) => {
@@ -87,6 +88,7 @@ export const submitLCForm = async (req, res) => {
 };
 
 // Get approval status for student
+
 export const getApprovalStatus = async (req, res) => {
   const prn = req.user.prn;
 
@@ -97,6 +99,12 @@ export const getApprovalStatus = async (req, res) => {
         department: {
           select: { deptId: true, deptName: true, deptHead: true },
         },
+        student: {
+          select: {
+            email: true,
+            profile: { select: { lcGenerated: true, lcUrl: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -104,19 +112,82 @@ export const getApprovalStatus = async (req, res) => {
     if (!approvals.length)
       return res.status(404).json({ error: "No approval requests found" });
 
-    const approvalsWithExtra = approvals.map((approval) => ({
-      approvalId: approval.approvalId,
-      status: approval.status,
-      approvedAt: approval.approvedAt,
-      remarks: approval.remarks,
-      createdAt: approval.createdAt,
-      updatedAt: approval.updatedAt,
-      deptName: approval.deptName || approval.department.deptName,
-      branch: approval.branch,
-      studentName: approval.studentName,
-      yearOfAdmission: approval.yearOfAdmission,
-      department: approval.department,
-    }));
+    const approvalsWithExtra = await Promise.all(
+      approvals.map(async (approval) => {
+        const lcUrl =
+          approval.student?.profile?.lcGenerated === true
+            ? approval.student.profile.lcUrl
+            : null;
+
+        if (lcUrl && approval.student?.email) {
+          try {
+            const htmlContent = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6fa; padding: 30px;">
+        <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+
+          <h1 style="text-align: center; color: #4f46e5; margin-bottom: 10px;">Your Leaving Certificate is Ready!</h1>
+          <p style="text-align: center; color: #6b7280; font-size: 16px; margin-bottom: 30px;">
+            Dear ${approval.studentName || "Student"},
+          </p>
+
+          <p style="font-size: 16px; color: #374151;">
+            Your Leaving Certificate (LC) has been generated successfully. You can open it by clicking the button below:
+          </p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${lcUrl}" 
+               target="_blank" 
+               style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+               Open LC
+            </a>
+          </div>
+
+          <p style="font-size: 14px; color: #9ca3af; text-align: center; margin-top: 30px;">
+            Generated on: ${new Date(
+              approval.updatedAt
+            ).toLocaleDateString()}<br/>
+            Regards, <br/>
+            <strong>LC-ICEM Admin Team</strong>
+          </p>
+
+        </div>
+      </div>
+    `;
+
+            await sendEmail({
+              to: approval.student.email,
+              subject: "Your Leaving Certificate is Generated!",
+              text: `Dear ${
+                approval.studentName || "Student"
+              }, your LC has been generated. Open it here: ${lcUrl}`,
+              html: htmlContent,
+            });
+
+            console.log(`✅ LC email sent to ${approval.student.email}`);
+          } catch (err) {
+            console.error(
+              `❌ Failed to send LC email to ${approval.student.email}:`,
+              err.message
+            );
+          }
+        }
+
+        return {
+          approvalId: approval.approvalId,
+          status: approval.status,
+          approvedAt: approval.approvedAt,
+          remarks: approval.remarks,
+          createdAt: approval.createdAt,
+          updatedAt: approval.updatedAt,
+          deptName: approval.deptName || approval.department.deptName,
+          branch: approval.branch,
+          studentName: approval.studentName,
+          yearOfAdmission: approval.yearOfAdmission,
+          department: approval.department,
+          lcUrl,
+        };
+      })
+    );
 
     res.json({ success: true, approvals: approvalsWithExtra });
   } catch (err) {
