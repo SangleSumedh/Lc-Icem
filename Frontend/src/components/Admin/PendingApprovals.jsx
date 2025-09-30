@@ -8,12 +8,14 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName"); // logged-in department name
 
   // ✅ Fetch approvals
-  const fetchApprovals = async () => { 
+  const fetchApprovals = async () => {
     setLoading(true);
     try {
       const res = await fetch(fetchUrl, {
@@ -57,6 +59,13 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       return;
     }
 
+    // ✅ Append phone/email if Request Info
+    let finalRemarks = remarks;
+    if (status === "REQUESTED_INFO") {
+      if (phone) finalRemarks += `\nPhone: ${phone}`;
+      if (email) finalRemarks += `\nEmail: ${email}`;
+    }
+
     try {
       const res = await fetch(updateUrl, {
         method: "POST",
@@ -67,7 +76,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
         body: JSON.stringify({
           approvalId: Number(selectedApproval.approvalId),
           status,
-          remarks,
+          remarks: finalRemarks,
         }),
       });
 
@@ -77,6 +86,8 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
         setSelectedApproval(null);
         setStatus("");
         setRemarks("");
+        setPhone("");
+        setEmail("");
         fetchApprovals();
       } else {
         alert(data.error || "❌ Failed to update approval");
@@ -239,6 +250,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                   </span>
                 </p>
 
+                {/* Remarks */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Remarks <span className="text-red-500">*</span>
@@ -251,6 +263,37 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                     className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+
+                {/* ✅ Extra fields only for Request Info */}
+                {status === "REQUESTED_INFO" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Enter phone number"
+                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email (optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter email address"
+                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Footer */}
