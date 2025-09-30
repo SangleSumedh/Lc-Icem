@@ -175,7 +175,7 @@ export const uploadLC = [
       });
 
       // Generate signed URL valid for 15 days for student download
-      const signedUrl = await getSignedFileUrl(s3Key, 1296000);
+      const signedUrl = await getSignedFileUrl(s3Key, 604800);
 
       res.json({
         success: true,
