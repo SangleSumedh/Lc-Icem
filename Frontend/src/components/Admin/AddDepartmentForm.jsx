@@ -39,6 +39,8 @@ const AddDepartmentForm = () => {
   const collegeOptions = [
     { value: "ICEM", label: "ICEM - Indira College of Engineering" },
     { value: "IGSB", label: "IGSB - Indira Global School of Business" },
+    { value: "ALL", label:  "All - Common Departments For ICEM & IGSB" },
+ 
   ];
 
   // Fetch departments
@@ -140,7 +142,10 @@ const AddDepartmentForm = () => {
           deptId: editingDept.deptId,
         };
 
-        if (editingDept.staff.password && editingDept.staff.password.trim() !== "") {
+        if (
+          editingDept.staff.password &&
+          editingDept.staff.password.trim() !== ""
+        ) {
           staffPayload.password = editingDept.staff.password;
         }
 
@@ -173,7 +178,9 @@ const AddDepartmentForm = () => {
       const staffData = await staffRes.json();
 
       if (staffData.success) {
-        const deptStaff = staffData.data.filter((s) => s.deptId === deleteDept.deptId);
+        const deptStaff = staffData.data.filter(
+          (s) => s.deptId === deleteDept.deptId
+        );
         for (const s of deptStaff) {
           await fetch(`${BASE_URL}/delete-staff/${s.staffId}`, {
             method: "DELETE",
@@ -238,7 +245,9 @@ const AddDepartmentForm = () => {
       >
         <div>
           <h1 className="text-lg font-bold text-gray-900">Departments</h1>
-          <p className="text-gray-500 mt-1 text-xs">Manage system departments</p>
+          <p className="text-gray-500 mt-1 text-xs">
+            Manage system departments
+          </p>
         </div>
         <div>
           <button
@@ -253,7 +262,10 @@ const AddDepartmentForm = () => {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 text-xs">
         <div className="relative flex-1">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+          <FiSearch
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={14}
+          />
           <input
             type="text"
             placeholder="Search by ID or Name..."
@@ -275,7 +287,9 @@ const AddDepartmentForm = () => {
         >
           <option value="">All Colleges</option>
           {[...new Set(departments.map((d) => d.college))].map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
         <button
@@ -315,7 +329,10 @@ const AddDepartmentForm = () => {
                   </button>
                   <button
                     onClick={() => {
-                      setEditingDept({ ...dept, staff: { name: "", email: "", password: "" } });
+                      setEditingDept({
+                        ...dept,
+                        staff: { name: "", email: "", password: "" },
+                      });
                       setShowEditModal(true);
                     }}
                     className="px-2 py-1 bg-yellow-400 text-white rounded text-xs hover:bg-yellow-500"
@@ -344,29 +361,36 @@ const AddDepartmentForm = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-4 text-xs">
+        <div className="flex justify-center items-center gap-3 mt-6 text-sm">
+          {/* Prev button */}
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-6 h-8 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Prev
           </button>
+
+          {/* Page number buttons */}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 border rounded ${
-                currentPage === page ? "bg-indigo-600 text-white" : "hover:bg-gray-50"
+              className={`w-8 h-8 flex items-center justify-center border rounded-full text-xs ${
+                currentPage === page
+                  ? "bg-indigo-600 text-white"
+                  : "hover:bg-gray-100"
               }`}
             >
               {page}
             </button>
           ))}
+
+          {/* Next button */}
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-6 h-8 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Next
           </button>
@@ -378,17 +402,26 @@ const AddDepartmentForm = () => {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-y-auto max-h-[85vh]">
             <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Add Department & Staff</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-white">
+              <h2 className="text-lg font-semibold text-white">
+                Add Department & Staff
+              </h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-white"
+              >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <form onSubmit={handleAdd} className="p-6 space-y-6">
               {/* Dept Section */}
-              <h3 className="font-semibold text-gray-700">Department Details</h3>
+              <h3 className="font-semibold text-gray-700">
+                Department Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Department Name</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Department Name
+                  </label>
                   <input
                     name="deptName"
                     value={formData.deptName}
@@ -398,7 +431,9 @@ const AddDepartmentForm = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Branch ID</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Branch ID
+                  </label>
                   <input
                     name="branchId"
                     value={formData.branchId}
@@ -407,7 +442,9 @@ const AddDepartmentForm = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">College</label>
+                  <label className="block text-sm font-medium mb-1">
+                    College
+                  </label>
                   <select
                     name="college"
                     value={formData.college}
@@ -415,7 +452,9 @@ const AddDepartmentForm = () => {
                     className="w-full border p-2 rounded-md text-sm"
                   >
                     {collegeOptions.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -425,7 +464,9 @@ const AddDepartmentForm = () => {
               <h3 className="font-semibold text-gray-700">Staff Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Staff Name</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Staff Name
+                  </label>
                   <input
                     name="name"
                     value={staffData.name}
@@ -434,7 +475,9 @@ const AddDepartmentForm = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
                   <input
                     type="email"
                     name="email"
@@ -444,7 +487,9 @@ const AddDepartmentForm = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Password</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Password
+                  </label>
                   <input
                     type="password"
                     name="password"
@@ -456,8 +501,19 @@ const AddDepartmentForm = () => {
               </div>
 
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border rounded-md">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md">Add</button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                >
+                  Add
+                </button>
               </div>
             </form>
           </div>
@@ -469,37 +525,68 @@ const AddDepartmentForm = () => {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-y-auto max-h-[85vh]">
             <div className="bg-yellow-500 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Edit Department & Staff</h2>
-              <button onClick={() => setShowEditModal(false)} className="text-white">
+              <h2 className="text-lg font-semibold text-white">
+                Edit Department & Staff
+              </h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-white"
+              >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <form onSubmit={handleUpdate} className="p-6 space-y-6">
               {/* Department Section */}
-              <h3 className="font-semibold text-gray-700">Department Details</h3>
+              <h3 className="font-semibold text-gray-700">
+                Department Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Department ID</label>
-                  <input value={editingDept.deptId} disabled className="w-full border p-2 rounded-md text-sm bg-gray-100" />
+                  <label className="block text-sm font-medium mb-1">
+                    Department ID
+                  </label>
+                  <input
+                    value={editingDept.deptId}
+                    disabled
+                    className="w-full border p-2 rounded-md text-sm bg-gray-100"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Department Name</label>
-                  <input value={editingDept.deptName} disabled className="w-full border p-2 rounded-md text-sm bg-gray-100" />
+                  <label className="block text-sm font-medium mb-1">
+                    Department Name
+                  </label>
+                  <input
+                    value={editingDept.deptName}
+                    disabled
+                    className="w-full border p-2 rounded-md text-sm bg-gray-100"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Branch ID</label>
-                  <input value={editingDept.branchId || 0} disabled className="w-full border p-2 rounded-md text-sm bg-gray-100" />
+                  <label className="block text-sm font-medium mb-1">
+                    Branch ID
+                  </label>
+                  <input
+                    value={editingDept.branchId || 0}
+                    disabled
+                    className="w-full border p-2 rounded-md text-sm bg-gray-100"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">College</label>
+                  <label className="block text-sm font-medium mb-1">
+                    College
+                  </label>
                   <select
                     name="college"
                     value={editingDept.college}
-                    onChange={(e) => setEditingDept((p) => ({ ...p, college: e.target.value }))}
+                    onChange={(e) =>
+                      setEditingDept((p) => ({ ...p, college: e.target.value }))
+                    }
                     className="w-full border p-2 rounded-md text-sm"
                   >
                     {collegeOptions.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -513,39 +600,75 @@ const AddDepartmentForm = () => {
                   <input
                     name="name"
                     value={editingDept.staff?.name || ""}
-                    onChange={(e) => setEditingDept((p) => ({ ...p, staff: { ...p.staff, name: e.target.value } }))}
+                    onChange={(e) =>
+                      setEditingDept((p) => ({
+                        ...p,
+                        staff: { ...p.staff, name: e.target.value },
+                      }))
+                    }
                     className="w-full border p-2 rounded-md text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
                   <input
                     type="email"
                     name="email"
                     value={editingDept.staff?.email || ""}
-                    onChange={(e) => setEditingDept((p) => ({ ...p, staff: { ...p.staff, email: e.target.value } }))}
+                    onChange={(e) =>
+                      setEditingDept((p) => ({
+                        ...p,
+                        staff: { ...p.staff, email: e.target.value },
+                      }))
+                    }
                     className="w-full border p-2 rounded-md text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Password (optional)</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Password (optional)
+                  </label>
                   <input
                     type="password"
                     name="password"
                     value={editingDept.staff?.password || ""}
-                    onChange={(e) => setEditingDept((p) => ({ ...p, staff: { ...p.staff, password: e.target.value } }))}
+                    onChange={(e) =>
+                      setEditingDept((p) => ({
+                        ...p,
+                        staff: { ...p.staff, password: e.target.value },
+                      }))
+                    }
                     className="w-full border p-2 rounded-md text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Dept ID</label>
-                  <input value={editingDept.deptId} disabled className="w-full border p-2 rounded-md text-sm bg-gray-100" />
+                  <label className="block text-sm font-medium mb-1">
+                    Dept ID
+                  </label>
+                  <input
+                    value={editingDept.deptId}
+                    disabled
+                    className="w-full border p-2 rounded-md text-sm bg-gray-100"
+                  />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded-md">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-md">Save</button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md"
+                >
+                  Save
+                </button>
               </div>
             </form>
           </div>
@@ -557,8 +680,13 @@ const AddDepartmentForm = () => {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-y-auto max-h-[80vh]">
             <div className="bg-blue-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Staff of {staffDept.deptName}</h2>
-              <button onClick={() => setShowStaffModal(false)} className="text-white">
+              <h2 className="text-lg font-semibold text-white">
+                Staff of {staffDept.deptName}
+              </h2>
+              <button
+                onClick={() => setShowStaffModal(false)}
+                className="text-white"
+              >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -566,15 +694,26 @@ const AddDepartmentForm = () => {
               {staffList.length > 0 ? (
                 <ul className="space-y-2 text-sm">
                   {staffList.map((s) => (
-                    <li key={s.staffId} className="p-3 border rounded-md bg-gray-50">
-                      <p><strong>Name:</strong> {s.name}</p>
-                      <p><strong>Email:</strong> {s.email}</p>
-                      <p><strong>Staff ID:</strong> {s.staffId}</p>
+                    <li
+                      key={s.staffId}
+                      className="p-3 border rounded-md bg-gray-50"
+                    >
+                      <p>
+                        <strong>Name:</strong> {s.name}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {s.email}
+                      </p>
+                      <p>
+                        <strong>Staff ID:</strong> {s.staffId}
+                      </p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-500 text-sm">No staff found for this department</p>
+                <p className="text-gray-500 text-sm">
+                  No staff found for this department
+                </p>
               )}
             </div>
           </div>
@@ -586,16 +725,34 @@ const AddDepartmentForm = () => {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl">
             <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Confirm Delete</h2>
-              <button onClick={() => setDeleteDept(null)} className="text-white">
+              <h2 className="text-lg font-semibold text-white">
+                Confirm Delete
+              </h2>
+              <button
+                onClick={() => setDeleteDept(null)}
+                className="text-white"
+              >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <p>Are you sure you want to delete <span className="font-semibold">{deleteDept.deptName}</span>?</p>
+              <p>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">{deleteDept.deptName}</span>?
+              </p>
               <div className="flex justify-end gap-3">
-                <button onClick={() => setDeleteDept(null)} className="px-4 py-2 border rounded-md">Cancel</button>
-                <button onClick={handleDeleteConfirm} className="px-4 py-2 bg-red-600 text-white rounded-md">Delete</button>
+                <button
+                  onClick={() => setDeleteDept(null)}
+                  className="px-4 py-2 border rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

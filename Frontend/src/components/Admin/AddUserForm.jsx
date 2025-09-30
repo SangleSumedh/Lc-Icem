@@ -27,7 +27,7 @@ function AddUserForm() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
 
   const navigate = useNavigate();
 
@@ -276,31 +276,36 @@ function AddUserForm() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-4 text-xs">
+        <div className="flex justify-center items-center gap-3 mt-6 text-sm">
+          {/* Prev button */}
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-6 h-8 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Prev
           </button>
+
+          {/* Page number buttons */}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 border rounded ${
+              className={`w-8 h-8 flex items-center justify-center border rounded-full ${
                 currentPage === page
                   ? "bg-indigo-600 text-white"
-                  : "hover:bg-gray-50"
+                  : "hover:bg-gray-100"
               }`}
             >
               {page}
             </button>
           ))}
+
+          {/* Next button */}
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-6 h-8 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Next
           </button>
@@ -406,7 +411,9 @@ function AddUserForm() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-yellow-500 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Update Student</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Update Student
+              </h2>
               <button
                 onClick={() => setEditing(null)}
                 className="text-white hover:text-gray-200"
@@ -486,7 +493,9 @@ function AddUserForm() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Confirm Delete</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Confirm Delete
+              </h2>
               <button
                 onClick={() => setDeleteUser(null)}
                 className="text-white hover:text-gray-200"

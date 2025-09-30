@@ -251,31 +251,20 @@ const LeavingCertificateForm = ({
                   }`}
                 />
               </div>
-
-              <CustomDropdown
-                label="Leaving Certificate Type"
-                name="lcType"
-                value={formData.lcType}
-                disabled={true}
-                options={[
-                  {
-                    value: "LEAVING",
-                    label: "Leaving / Transfer Certificate",
-                  },
-                  {
-                    value: "MIGRATION",
-                    label: "Migration (Change University)",
-                  },
-                ]}
-              />
             </div>
 
             {/* Reason */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700">
-                Reason for Leaving College{" "}
-                <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Reason for Leaving College{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <span className="text-xs text-gray-500 italic ml-2">
+                  Note: Mention the type of Leaving Certificate – Migration or
+                  Leaving / Transfer
+                </span>
+              </div>
               <textarea
                 name="reasonForLeaving"
                 placeholder="Explain your reason for leaving"

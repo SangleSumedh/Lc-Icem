@@ -24,7 +24,7 @@ function AddSuperAdmin() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
 
   // Fetch SuperAdmins
   const fetchSuperAdmins = async () => {
@@ -111,10 +111,13 @@ function AddSuperAdmin() {
   const handleDeleteConfirm = async () => {
     if (!deleteAdmin) return;
     try {
-      const res = await fetch(`${BASE_URL}/delete-superadmin/${deleteAdmin.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${BASE_URL}/delete-superadmin/${deleteAdmin.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (data.success) {
         fetchSuperAdmins();
@@ -149,7 +152,9 @@ function AddSuperAdmin() {
       >
         <div>
           <h1 className="text-lg font-bold text-gray-900">SuperAdmins</h1>
-          <p className="text-gray-500 mt-1 text-xs">Manage system superadmins</p>
+          <p className="text-gray-500 mt-1 text-xs">
+            Manage system superadmins
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -199,8 +204,8 @@ function AddSuperAdmin() {
       </div>
 
       {/* Table */}
-      <div className="bg-white p-6 rounded-xl shadow text-xs">
-        <table className="w-full text-xs border">
+      <div className="bg-white rounded-xl shadow-sm border overflow-x-auto text-xs">
+        <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-500 uppercase">
             <tr>
               <th className="px-4 py-2 font-medium">ID</th>
@@ -244,31 +249,36 @@ function AddSuperAdmin() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-4 text-xs">
+        <div className="flex justify-center items-center gap-3 mt-6 text-sm">
+          {/* Prev button */}
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-4 h-10 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Prev
           </button>
+
+          {/* Page number buttons */}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 border rounded ${
+              className={`w-10 h-10 flex items-center justify-center border rounded-full ${
                 currentPage === page
                   ? "bg-indigo-600 text-white"
-                  : "hover:bg-gray-50"
+                  : "hover:bg-gray-100"
               }`}
             >
               {page}
             </button>
           ))}
+
+          {/* Next button */}
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            className="px-4 h-10 flex items-center justify-center border rounded-full disabled:opacity-50 hover:bg-gray-100"
           >
             Next
           </button>
@@ -280,7 +290,9 @@ function AddSuperAdmin() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-purple-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Add SuperAdmin</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Add SuperAdmin
+              </h2>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-white hover:text-gray-200"
@@ -344,7 +356,9 @@ function AddSuperAdmin() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-yellow-500 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Update SuperAdmin</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Update SuperAdmin
+              </h2>
               <button
                 onClick={() => setEditing(null)}
                 className="text-white hover:text-gray-200"
@@ -405,7 +419,9 @@ function AddSuperAdmin() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-white">Confirm Delete</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Confirm Delete
+              </h2>
               <button
                 onClick={() => setDeleteAdmin(null)}
                 className="text-white hover:text-gray-200"
