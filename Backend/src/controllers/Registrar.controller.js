@@ -165,23 +165,26 @@ export const uploadLC = [
       // Upload PDF to S3
       const s3Key = await uploadFile(req.file.path, prn);
 
+       // Generate signed URL valid for 7 days for student download
+      
+      const signedUrl = await getSignedFileUrl(s3Key, 604800);
+      console.log(signedUrl);
+
       // Update studentProfile: lcUrl and lcGenerated = true
       const updatedProfile = await prisma.studentProfile.update({
         where: { prn },
         data: {
-          lcUrl: s3Key,
+          lcUrl: signedUrl,
           lcGenerated: true,
         },
       });
-
-      // Generate signed URL valid for 15 days for student download
-      const signedUrl = await getSignedFileUrl(s3Key, 604800);
 
       res.json({
         success: true,
         message: "LC uploaded to S3 successfully",
         lcUrl: signedUrl,
         studentProfile: updatedProfile,
+
       });
     } catch (err) {
       console.error("Error uploading LC to S3:", err);
