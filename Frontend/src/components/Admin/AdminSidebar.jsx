@@ -55,6 +55,7 @@ function AdminSidebar({ collapsed, setCollapsed }) {
     filteredDepartments = [
       { deptName: "Student Dashboard", path: "/student", icon: Home },
       { deptName: "Leaving Certificate", path: "/student/leaving-certificate", icon: FileText },
+      { deptName: "Raise Tickets", path: "/student/raise-tickets", icon: Megaphone }, // ✅ Added
     ];
   } else if (role === "superadmin") {
     filteredDepartments = [
@@ -67,11 +68,26 @@ function AdminSidebar({ collapsed, setCollapsed }) {
     const storedDept = deptName?.toLowerCase();
     const matches = departments.filter((d) => d.deptName.toLowerCase() === storedDept);
 
-    // show 2 entries for department:
-    // 1) Pending Approvals
-    // 2) Requested Info
     filteredDepartments = matches.flatMap((d) => {
       const base = `/admin-dashboard/${slugify(d.deptName)}`;
+
+      // Registrar special case
+      if (d.deptName.toLowerCase() === "registrar") {
+        return [
+          {
+            deptName: "Pending Approvals",
+            path: base,
+            icon: Clock,
+          },
+          {
+            deptName: "Raised Tickets",
+            path: `${base}/raised-tickets`,
+            icon: Megaphone,
+          },
+        ];
+      }
+
+      // Other departments
       return [
         {
           deptName: "Pending Approvals",
@@ -133,22 +149,6 @@ function AdminSidebar({ collapsed, setCollapsed }) {
       </div>
     </div>
   );
-}
-
-/**
- * 🔹 (kept for possible future use)
- */
-function pickIcon(name) {
-  if (name.toLowerCase().includes("account")) return DollarSign;
-  if (name.toLowerCase().includes("library")) return Megaphone;
-  if (name.toLowerCase().includes("hostel")) return ShoppingCart;
-  if (name.toLowerCase().includes("alumni")) return GraduationCap;
-  if (name.toLowerCase().includes("placement")) return Briefcase;
-  if (name.toLowerCase().includes("scholarship")) return DollarSign;
-  if (name.toLowerCase().includes("exam")) return FileText;
-  if (name.toLowerCase().includes("bus")) return Bus;
-  if (name.toLowerCase().includes("hod")) return Users;
-  return Users;
 }
 
 export default AdminSidebar;
