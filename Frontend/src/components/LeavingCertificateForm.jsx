@@ -146,7 +146,11 @@ const LeavingCertificateForm = ({
                 { label: "Caste", name: "caste", required: true },
                 { label: "Sub-Caste", name: "subCaste", required: true },
                 { label: "Nationality", name: "nationality", required: true },
-                { label: "Place of Birth", name: "placeOfBirth", required: true },
+                {
+                  label: "Place of Birth",
+                  name: "placeOfBirth",
+                  required: true,
+                },
                 {
                   label: "Date of Birth",
                   name: "dateOfBirth",
@@ -158,9 +162,7 @@ const LeavingCertificateForm = ({
                 <div key={idx} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     {field.label}{" "}
-                    {field.required && (
-                      <span className="text-red-500">*</span>
-                    )}
+                    {field.required && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type={field.type || "text"}

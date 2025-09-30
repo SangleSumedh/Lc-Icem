@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaWpforms, FaEye, FaEdit } from "react-icons/fa";
 import { FaFileWaveform } from "react-icons/fa6";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
-import LeavingCertificateForm from "../LeavingCertificateform"; // Import the reusable component
+import LeavingCertificateForm from "../LeavingCertificateForm"; // Import the reusable component
 
 const LeavingCertificate = () => {
   const [showModal, setShowModal] = useState(false);
