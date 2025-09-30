@@ -39,8 +39,7 @@ const AddDepartmentForm = () => {
   const collegeOptions = [
     { value: "ICEM", label: "ICEM - Indira College of Engineering" },
     { value: "IGSB", label: "IGSB - Indira Global School of Business" },
-    { value: "ALL", label:  "All - Common Departments For ICEM & IGSB" },
- 
+    { value: "ALL", label: "All - Common Departments For ICEM & IGSB" },
   ];
 
   // Fetch departments
@@ -75,6 +74,12 @@ const AddDepartmentForm = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
+      // Convert branchId to int or null
+      const deptPayload = {
+        ...formData,
+        branchId: formData.branchId ? parseInt(formData.branchId) : null,
+      };
+
       // 1. Add department
       const deptRes = await fetch(`${BASE_URL}/add-department`, {
         method: "POST",
@@ -82,7 +87,7 @@ const AddDepartmentForm = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(deptPayload),
       });
       const deptData = await deptRes.json();
 
@@ -123,6 +128,7 @@ const AddDepartmentForm = () => {
       const deptPayload = {
         deptId: editingDept.deptId,
         college: editingDept.college,
+        branchId: editingDept.branchId ? parseInt(editingDept.branchId) : null,
       };
 
       await fetch(`${BASE_URL}/update-department`, {
@@ -566,9 +572,14 @@ const AddDepartmentForm = () => {
                     Branch ID
                   </label>
                   <input
-                    value={editingDept.branchId || 0}
-                    disabled
-                    className="w-full border p-2 rounded-md text-sm bg-gray-100"
+                    value={editingDept.branchId || ""}
+                    onChange={(e) =>
+                      setEditingDept((p) => ({
+                        ...p,
+                        branchId: e.target.value,
+                      }))
+                    }
+                    className="w-full border p-2 rounded-md text-sm"
                   />
                 </div>
                 <div>
