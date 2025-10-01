@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiRefreshCw, FiMoreVertical, FiDownload } from "react-icons/fi";
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiDownload,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+} from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
@@ -77,26 +90,35 @@ function RequestedInfoApprovals() {
   // Export Functions
   const exportToExcel = () => {
     try {
-      const exportData = approvals.map(approval => ({
+      const exportData = approvals.map((approval) => ({
         "Approval ID": approval.approvalId,
         "Student Name": approval.student.studentName,
-        "PRN": approval.student.prn,
-        "Email": approval.student.email,
-        "Phone": approval.student.phoneNo || "N/A",
-        "Department": approval.deptName || "N/A",
-        "Branch": approval.branch || "N/A",
+        PRN: approval.student.prn,
+        Email: approval.student.email,
+        Phone: approval.student.phoneNo || "N/A",
+        Department: approval.deptName || "N/A",
+        Branch: approval.branch || "N/A",
         "Year of Admission": approval.yearOfAdmission || "N/A",
-        "Status": approval.status,
-        "Remarks": approval.remarks || "N/A",
-        "Created At": approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : "N/A",
-        "Requested Info At": approval.updatedAt ? new Date(approval.updatedAt).toLocaleDateString() : "N/A"
+        Status: approval.status,
+        Remarks: approval.remarks || "N/A",
+        "Created At": approval.createdAt
+          ? new Date(approval.createdAt).toLocaleDateString()
+          : "N/A",
+        "Requested Info At": approval.updatedAt
+          ? new Date(approval.updatedAt).toLocaleDateString()
+          : "N/A",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "RequestedInfoApprovals");
 
-      XLSX.writeFile(wb, `requested_info_approvals_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `requested_info_approvals_export_${
+          new Date().toISOString().split("T")[0]
+        }.xlsx`
+      );
       alert("✅ Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -110,54 +132,92 @@ function RequestedInfoApprovals() {
       const tableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Student Name")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("PRN")], width: { size: 30, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Email")], width: { size: 50, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Phone")], width: { size: 35, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Department")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Branch")], width: { size: 30, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("Student Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("PRN")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Email")],
+              width: { size: 50, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Phone")],
+              width: { size: 35, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Department")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Branch")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...approvals.map(approval => 
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph(approval.student.studentName)] }),
-              new TableCell({ children: [new Paragraph(approval.student.prn)] }),
-              new TableCell({ children: [new Paragraph(approval.student.email)] }),
-              new TableCell({ children: [new Paragraph(approval.student.phoneNo || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.deptName || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.branch || "N/A")] }),
-            ],
-          })
+        ...approvals.map(
+          (approval) =>
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph(approval.student.studentName)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.prn)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.email)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.phoneNo || "N/A")],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.deptName || "N/A")],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.branch || "N/A")],
+                }),
+              ],
+            })
         ),
       ];
 
       const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              text: "Requested Information Approvals Report",
-              heading: "Heading1",
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Generated on: ${new Date().toLocaleDateString()}`,
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Total Records: ${approvals.length}`,
-              spacing: { after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: tableRows,
-            }),
-          ],
-        }],
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: "Requested Information Approvals Report",
+                heading: "Heading1",
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Generated on: ${new Date().toLocaleDateString()}`,
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Total Records: ${approvals.length}`,
+                spacing: { after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: tableRows,
+              }),
+            ],
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `requested_info_approvals_report_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(
+        blob,
+        `requested_info_approvals_report_${
+          new Date().toISOString().split("T")[0]
+        }.docx`
+      );
       alert("✅ Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -169,31 +229,39 @@ function RequestedInfoApprovals() {
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
+
       // Title
       doc.setFontSize(20);
       doc.setTextColor(40, 53, 147);
-      doc.text("Requested Information Approvals Report", 105, 15, { align: "center" });
-      
+      doc.text("Requested Information Approvals Report", 105, 15, {
+        align: "center",
+      });
+
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
-      doc.text(`Total Records: ${approvals.length}`, 105, 28, { align: "center" });
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, {
+        align: "center",
+      });
+      doc.text(`Total Records: ${approvals.length}`, 105, 28, {
+        align: "center",
+      });
 
-      const tableData = approvals.map(approval => [
+      const tableData = approvals.map((approval) => [
         approval.student.studentName,
         approval.student.prn,
         approval.student.email,
         approval.student.phoneNo || "N/A",
         approval.deptName || "N/A",
-        approval.branch || "N/A"
+        approval.branch || "N/A",
       ]);
 
       doc.autoTable({
         startY: 35,
-        head: [['Student Name', 'PRN', 'Email', 'Phone', 'Department', 'Branch']],
+        head: [
+          ["Student Name", "PRN", "Email", "Phone", "Department", "Branch"],
+        ],
         body: tableData,
-        theme: 'grid',
+        theme: "grid",
         headStyles: { fillColor: [0, 83, 156] },
         styles: { fontSize: 7, cellPadding: 2 },
         columnStyles: {
@@ -202,11 +270,15 @@ function RequestedInfoApprovals() {
           2: { cellWidth: 40 },
           3: { cellWidth: 25 },
           4: { cellWidth: 30 },
-          5: { cellWidth: 25 }
-        }
+          5: { cellWidth: 25 },
+        },
       });
 
-      doc.save(`requested_info_approvals_report_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(
+        `requested_info_approvals_report_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
       alert("✅ Exported to PDF successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -282,7 +354,7 @@ function RequestedInfoApprovals() {
             Requests for More Information
           </p>
         </div>
-        
+
         {/* Export Button */}
         {approvals.length > 0 && (
           <div className="relative">
@@ -352,72 +424,104 @@ function RequestedInfoApprovals() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#00539C] text-white">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
-              <th className="px-6 py-4 font-semibold text-sm">PRN</th>
-              <th className="px-6 py-4 font-semibold text-sm">Email</th>
-              <th className="px-6 py-4 font-semibold text-sm">Phone</th>
-              <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginatedApprovals.map((a) => (
-              <tr key={a.approvalId} className="hover:bg-gray-50 transition-colors duration-150">
-                <td className="px-6 py-4 font-medium text-gray-900">{a.student.studentName}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.phoneNo || "—"}</td>
-                <td className="px-6 py-4 relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveDropdown(activeDropdown === a.approvalId ? null : a.approvalId);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+<div className="bg-white rounded-xl shadow-sm border relative">
+  <table className="w-full text-left">
+    <thead className="bg-[#00539C] text-white">
+      <tr>
+        <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
+        <th className="px-6 py-4 font-semibold text-sm">PRN</th>
+        <th className="px-6 py-4 font-semibold text-sm">Email</th>
+        <th className="px-6 py-4 font-semibold text-sm">Phone</th>
+        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {paginatedApprovals.map((a, index) => (
+        <tr
+          key={a.approvalId}
+          className=" transition-colors duration-150 rounded-lg"
+        >
+          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
+            {a.student.studentName}
+          </td>
+          <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
+          <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
+          <td className="px-6 py-4 text-gray-700">
+            {a.student.phoneNo || "—"}
+          </td>
+          <td className="px-6 py-4 relative rounded-r-lg">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(
+                  activeDropdown === a.approvalId ? null : a.approvalId
+                );
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <FiMoreVertical size={18} className="text-gray-600" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {activeDropdown === a.approvalId && (
+              <div
+                className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]"
+              >
+                <button
+                  onClick={() => {
+                    setSelectedApproval(a);
+                    setRemarks("");
+                    setActiveDropdown(null);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <FiMoreVertical size={18} className="text-gray-600" />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {activeDropdown === a.approvalId && (
-                    <div className="absolute right-6 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 min-w-[140px]">
-                      <button
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setRemarks("");
-                          setActiveDropdown(null);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Approve
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {paginatedApprovals.length === 0 && !loading && (
-              <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center">
-                    <svg className="h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p className="text-sm">No requests pending for more information</p>
-                  </div>
-                </td>
-              </tr>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Approve
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
-
+          </td>
+        </tr>
+      ))}
+      {paginatedApprovals.length === 0 && !loading && (
+        <tr>
+          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center">
+              <svg
+                className="h-12 w-12 text-gray-300 mb-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <p className="text-sm">
+                No requests pending for more information
+              </p>
+            </div>
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>  
+</div>
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
@@ -478,10 +582,12 @@ function RequestedInfoApprovals() {
                   {selectedApproval.student.studentName}
                 </p>
                 <p className="text-sm text-gray-700">
-                  <span className="font-medium">PRN:</span> {selectedApproval.student.prn}
+                  <span className="font-medium">PRN:</span>{" "}
+                  {selectedApproval.student.prn}
                 </p>
                 <p className="text-sm text-gray-700">
-                  <span className="font-medium">Email:</span> {selectedApproval.student.email}
+                  <span className="font-medium">Email:</span>{" "}
+                  {selectedApproval.student.email}
                 </p>
               </div>
 

@@ -371,99 +371,101 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#00539C] text-white">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
-              <th className="px-6 py-4 font-semibold text-sm">PRN</th>
-              <th className="px-6 py-4 font-semibold text-sm">Email</th>
-              <th className="px-6 py-4 font-semibold text-sm">Phone</th>
-              <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginatedApprovals.map((a) => (
-              <tr key={a.approvalId} className="hover:bg-gray-50 transition-colors duration-150">
-                <td className="px-6 py-4 font-medium text-gray-900">{a.student.studentName}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
-                <td className="px-6 py-4 text-gray-700">{a.student.phoneNo || "—"}</td>
-                <td className="px-6 py-4 relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveDropdown(activeDropdown === a.approvalId ? null : a.approvalId);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                  >
-                    <FiMoreVertical size={18} className="text-gray-600" />
-                  </button>
+<div className="bg-white rounded-xl shadow-sm border relative">
+  <table className="w-full text-left">
+    <thead className="bg-[#00539C] text-white">
+      <tr>
+        <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
+        <th className="px-6 py-4 font-semibold text-sm">PRN</th>
+        <th className="px-6 py-4 font-semibold text-sm">Email</th>
+        <th className="px-6 py-4 font-semibold text-sm">Phone</th>
+        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {paginatedApprovals.map((a, index) => (
+        <tr key={a.approvalId} className="transition-colors duration-150 rounded-lg">
+          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">{a.student.studentName}</td>
+          <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
+          <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
+          <td className="px-6 py-4 text-gray-700">{a.student.phoneNo || "—"}</td>
+          <td className="px-6 py-4 relative rounded-r-lg">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === a.approvalId ? null : a.approvalId);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <FiMoreVertical size={18} className="text-gray-600" />
+            </button>
 
-                  {/* Dropdown Menu */}
-                  {activeDropdown === a.approvalId && (
-                    <div className="absolute right-6 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
-                      <button
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("APPROVED");
-                          setActiveDropdown(null);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedApproval(a);
-                          setStatus("REQUESTED_INFO");
-                          setActiveDropdown(null);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Request Info
-                      </button>
-                      {deptName && deptName.toLowerCase() === "account" && (
-                        <button
-                          onClick={() => {
-                            setSelectedApproval(a);
-                            setStatus("REJECTED");
-                            setActiveDropdown(null);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors duration-150"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Reject
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {paginatedApprovals.length === 0 && !loading && (
-              <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center">
-                    <svg className="h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            {/* Dropdown Menu */}
+            {activeDropdown === a.approvalId && (
+              <div 
+                className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[160px]"
+              >
+                <button
+                  onClick={() => {
+                    setSelectedApproval(a);
+                    setStatus("APPROVED");
+                    setActiveDropdown(null);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Approve
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedApproval(a);
+                    setStatus("REQUESTED_INFO");
+                    setActiveDropdown(null);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Request Info
+                </button>
+                {deptName && deptName.toLowerCase() === "account" && (
+                  <button
+                    onClick={() => {
+                      setSelectedApproval(a);
+                      setStatus("REJECTED");
+                      setActiveDropdown(null);
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors duration-150"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    <p className="text-sm">No pending approvals</p>
-                  </div>
-                </td>
-              </tr>
+                    Reject
+                  </button>
+                )}
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </td>
+        </tr>
+      ))}
+      {paginatedApprovals.length === 0 && !loading && (
+        <tr>
+          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center">
+              <svg className="h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-sm">No pending approvals</p>
+            </div>
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 
       {/* Pagination */}
       {totalPages > 1 && (
