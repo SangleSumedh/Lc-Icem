@@ -188,8 +188,9 @@ const StudentDashboard = () => {
   };
 
   // Check if all departments have approved
-  const allApproved = approvals.length > 0 && 
-    approvals.every(approval => approval.status === "APPROVED");
+  const allApproved =
+    approvals.length > 0 &&
+    approvals.every((approval) => approval.status === "APPROVED");
 
   // Find LC card (if LC is already generated)
   const lcCard = approvals.find((a) => a.lcUrl);
@@ -204,8 +205,24 @@ const StudentDashboard = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500 text-center">{error}</div>
+      <div className="px-4 py-6">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-yellow-800 mb-3">
+            Instructions
+          </h2>
+          <ul className="list-disc pl-5 text-gray-700 space-y-2">
+            <li>Ensure all details are accurate before submission.</li>
+            <li>
+              Mandatory fields are marked with{" "}
+              <span className="text-red-500">*</span>.
+            </li>
+            <li>The application will be processed within 7 working days.</li>
+            <li>Contact the admin office in case of discrepancies.</li>
+          </ul>
+          <div className="mt-4 p-3 bg-red-50 rounded-md">
+            <p className="text-red-600">{error}</p>
+          </div>
+        </div>
       </div>
     );
   }
