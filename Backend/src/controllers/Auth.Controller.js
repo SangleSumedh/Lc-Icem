@@ -137,3 +137,127 @@ export const superAdminLogin = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+/**
+ * Change Staff Password
+ * Expects: { oldPassword, newPassword }
+ * Requires: staffId from JWT (req.user.staffId)
+ */
+export const changeStaffPassword = async (req, res) => {
+  const staffId = req.user.staffId; // Ensure you have auth middleware
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Both old and new passwords are required" });
+  }
+
+  try {
+    // 1️⃣ Get staff
+    const staff = await prisma.staff.findUnique({ where: { staffId } });
+    if (!staff) return res.status(404).json({ error: "Staff not found" });
+
+    // 2️⃣ Check old password
+    const isValid = await bcrypt.compare(oldPassword, staff.passwordHash);
+    if (!isValid) return res.status(401).json({ error: "Old password is incorrect" });
+
+    // 3️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 4️⃣ Update password in DB
+    await prisma.staff.update({
+      where: { staffId },
+      data: { passwordHash: hashedPassword },
+    });
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Error changing staff password:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Change Student Password
+ * Expects: { oldPassword, newPassword }
+ * Requires: prn from JWT (req.user.prn)
+ */
+export const changeStudentPassword = async (req, res) => {
+  const prn = req.user.prn; // Ensure you have auth middleware
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Both old and new passwords are required" });
+  }
+
+  try {
+    // 1️⃣ Get student
+    const student = await prisma.student.findUnique({ where: { prn } });
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    // 2️⃣ Check old password
+    const isValid = await bcrypt.compare(oldPassword, student.password);
+    if (!isValid) return res.status(401).json({ error: "Old password is incorrect" });
+
+    // 3️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 4️⃣ Update password in DB
+    await prisma.student.update({
+      where: { prn },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Error changing student password:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+/**
+ * Change SuperAdmin Password
+ * Expects: { oldPassword, newPassword }
+ * Requires: prn from JWT (req.user.prn)
+ */
+export const changeSuperAdminPassword = async (req, res) => {
+  const adminId = req.user.id; // Comes from JWT
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Both old and new passwords are required" });
+  }
+
+  try {
+    // 1️⃣ Get super admin
+    const admin = await prisma.superAdmin.findUnique({
+      where: { id: adminId },
+    });
+    if (!admin) return res.status(404).json({ error: "Super Admin not found" });
+
+    // 2️⃣ Check old password
+    const isValid = await bcrypt.compare(oldPassword, admin.password);
+    if (!isValid)
+      return res.status(401).json({ error: "Old password is incorrect" });
+
+    // 3️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 4️⃣ Update password in DB
+    await prisma.superAdmin.update({
+      where: { id: adminId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Error changing super admin password:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
