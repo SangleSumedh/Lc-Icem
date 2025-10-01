@@ -16,6 +16,7 @@ const LeavingCertificateForm = ({
   branchesLoading = false,
 }) => {
   const [formData, setFormData] = useState({
+    studentName: "",
     studentID: "",
     fatherName: "",
     motherName: "",
@@ -139,6 +140,25 @@ const LeavingCertificateForm = ({
             </h3>
             <hr className="border-gray-300 my-2" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Student Name - Added this field */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Student Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="studentName"
+                  value={formData.studentName}
+                  onChange={handleChange}
+                  required={!viewMode}
+                  disabled={viewMode}
+                  readOnly={viewMode}
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
+
               {[
                 { label: "Student ID", name: "studentID", required: false },
                 { label: "Father's Name", name: "fatherName", required: true },
@@ -203,7 +223,7 @@ const LeavingCertificateForm = ({
                   Year of Admission <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
+                  type="number"
                   name="yearOfAdmission"
                   value={formData.yearOfAdmission}
                   onChange={handleChange}
