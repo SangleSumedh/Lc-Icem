@@ -1,5 +1,4 @@
 import prisma from "../prisma.js";
-import { sendEmail } from "../utils/mailer.js";
 
 // Submit LC form
 export const submitLCForm = async (req, res) => {
@@ -23,6 +22,22 @@ export const submitLCForm = async (req, res) => {
   } = req.body;
 
   try {
+    // Date handling utility function
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+      // If it's already a Date object or timestamp, convert to ISO string first
+      if (dateString instanceof Date) {
+        return new Date(dateString);
+      }
+      // If it's a timestamp number, convert to Date
+      if (typeof dateString === 'number') {
+        return new Date(dateString);
+      }
+      // If it's ISO string or date string, parse normally
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date;
+    };
+
     const profileData = {
       fatherName,
       motherName,
@@ -30,14 +45,16 @@ export const submitLCForm = async (req, res) => {
       subCaste,
       nationality,
       placeOfBirth,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      dateOfBirth: parseDate(dateOfBirth),
       dobWords,
       lastCollege,
-      yearOfAdmission: yearOfAdmission ? new Date(yearOfAdmission) : null,
+      yearOfAdmission: yearOfAdmission ? parseInt(yearOfAdmission) : null,
       branch,
       admissionMode,
       reasonForLeaving,
+      forMigrationFlag: req.body.forMigrationFlag || false,
     };
+    
     if (studentID) profileData.studentID = studentID;
 
     // Upsert student profile
@@ -95,8 +112,28 @@ export const submitLCForm = async (req, res) => {
   }
 };
 
-// Get approval status for student
+// Get all HOD branches
+export const getHodBranches = async (req, res) => {
+  try {
+    const hodDepartments = await prisma.department.findMany({
+      where: { deptName: { contains: "HOD -", mode: "insensitive" } },
+      select: { deptId: true, deptName: true, college: true },
+    });
 
+    const branches = hodDepartments.map((dept) => ({
+      deptId: dept.deptId,
+      branch: dept.deptName.replace(/^HOD\s*-\s*/i, ""),
+      college: dept.college,
+    }));
+
+    res.json({ success: true, branches });
+  } catch (err) {
+    console.error("Error fetching HOD branches:", err.message);
+    res.status(500).json({ error: "Failed to fetch HOD branches" });
+  }
+};
+
+// Get approval status for student
 export const getApprovalStatus = async (req, res) => {
   const prn = req.user.prn;
 
@@ -108,9 +145,7 @@ export const getApprovalStatus = async (req, res) => {
           select: { deptId: true, deptName: true, deptHead: true },
         },
         student: {
-          select: {
-            profile: { select: { lcGenerated: true, lcUrl: true } },
-          },
+          select: { profile: { select: { lcGenerated: true, lcUrl: true } } },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -144,27 +179,6 @@ export const getApprovalStatus = async (req, res) => {
   }
 };
 
-// Get all HOD branches
-export const getHodBranches = async (req, res) => {
-  try {
-    const hodDepartments = await prisma.department.findMany({
-      where: { deptName: { contains: "HOD -", mode: "insensitive" } },
-      select: { deptId: true, deptName: true, college: true },
-    });
-
-    const branches = hodDepartments.map((dept) => ({
-      deptId: dept.deptId,
-      branch: dept.deptName.replace(/^HOD\s*-\s*/i, ""),
-      college: dept.college,
-    }));
-
-    res.json({ success: true, branches });
-  } catch (err) {
-    console.error("Error fetching HOD branches:", err.message);
-    res.status(500).json({ error: "Failed to fetch HOD branches" });
-  }
-};
-
 // Get REQUESTED_INFO approvals for student
 export const getRequestedInfoApprovals = async (req, res) => {
   const prn = req.user.prn;
@@ -188,10 +202,11 @@ export const getRequestedInfoApprovals = async (req, res) => {
   }
 };
 
-//resubmitLCForm
+
+// Resubmit LC form
 export const resubmitLCForm = async (req, res) => {
   const prn = req.user.prn;
-  const { approvalId, updates, studentName } = req.body; // allow studentName update
+  const { approvalId, updates, studentName, forMigrationFlag } = req.body;
 
   if (!approvalId || !updates)
     return res
@@ -214,10 +229,35 @@ export const resubmitLCForm = async (req, res) => {
         .status(400)
         .json({ error: "Approval request is not requesting more info" });
 
-    // Update student profile
+    // Handle date parsing for updates
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+      if (dateString instanceof Date) return new Date(dateString);
+      if (typeof dateString === 'number') return new Date(dateString);
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date;
+    };
+
+    const profileUpdates = { ...updates };
+    
+    // Convert dateOfBirth if present in updates
+    if (updates.dateOfBirth !== undefined) {
+      profileUpdates.dateOfBirth = parseDate(updates.dateOfBirth);
+    }
+    
+    // Ensure yearOfAdmission remains integer
+    if (updates.yearOfAdmission !== undefined) {
+      profileUpdates.yearOfAdmission = parseInt(updates.yearOfAdmission) || null;
+    }
+
+    if (forMigrationFlag !== undefined) {
+      profileUpdates.forMigrationFlag = forMigrationFlag;
+    }
+
+    // Update student profile with profileUpdates
     const updatedProfile = await prisma.studentProfile.update({
       where: { prn },
-      data: updates,
+      data: profileUpdates,
     });
 
     // Update student name if provided
@@ -229,10 +269,10 @@ export const resubmitLCForm = async (req, res) => {
       });
     }
 
-    // Update approval request status
+    // Update approval status back to PENDING
     const updatedApproval = await prisma.approvalRequest.update({
       where: { approvalId },
-      data: { status: "PENDING", remarks: null, updatedAt: new Date() },
+      data: { status: "PENDING" },
     });
 
     res.json({
@@ -272,7 +312,7 @@ export const getLCForm = async (req, res) => {
             dateOfBirth: true,
             dobWords: true,
             lastCollege: true,
-            yearOfAdmission: true,
+            yearOfAdmission: true, // This remains as integer
             branch: true,
             admissionMode: true,
             reasonForLeaving: true,
@@ -280,6 +320,9 @@ export const getLCForm = async (req, res) => {
             lcGenerated: true,
             lcUrl: true,
             isFormEditable: true,
+            forMigrationFlag: true,
+            deletedRequests: true,
+            createdAt: true,
           },
         },
       },
@@ -290,15 +333,29 @@ export const getLCForm = async (req, res) => {
         .status(404)
         .json({ error: "LC form not found for this student" });
 
-    // Add studentName inside profile
-    const profileWithName = {
+    // Format dates for frontend - convert to ISO string without timezone issues
+    const formatDateForFrontend = (date) => {
+      if (!date) return null;
+      // For date-only fields, return YYYY-MM-DD format
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString().split('T')[0]; // Returns "YYYY-MM-DD"
+    };
+
+    const profileWithFormattedDates = {
       ...studentWithProfile.profile,
       studentName: studentWithProfile.studentName,
+      // Format date fields for frontend
+      dateOfBirth: formatDateForFrontend(studentWithProfile.profile.dateOfBirth),
+      // yearOfAdmission remains as integer - no formatting needed
     };
 
     res.json({
       success: true,
-      lcForm: { ...studentWithProfile, profile: profileWithName },
+      lcForm: { 
+        ...studentWithProfile, 
+        profile: profileWithFormattedDates 
+      },
     });
   } catch (err) {
     console.error("Error fetching LC form:", err.message);

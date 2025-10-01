@@ -8,6 +8,30 @@ import { sendEmail } from "../utils/mailer.js";
 // Multer configuration for temporary file storage
 const upload = multer({ dest: path.join(process.cwd(), "tmp") });
 
+// Date handling utility functions
+const parseDate = (dateString) => {
+  if (!dateString) return null;
+  // If it's already a Date object or timestamp, convert to ISO string first
+  if (dateString instanceof Date) {
+    return new Date(dateString);
+  }
+  // If it's a timestamp number, convert to Date
+  if (typeof dateString === "number") {
+    return new Date(dateString);
+  }
+  // If it's ISO string or date string, parse normally
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const formatDateForFrontend = (date) => {
+  if (!date) return null;
+  // For date-only fields, return YYYY-MM-DD format
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+};
+
 /**
  * GET all students whose LC is ready but not yet generated
  */
@@ -27,7 +51,16 @@ export const getPendingLCs = async (req, res) => {
       return res.status(404).json({ message: "No pending LCs found." });
     }
 
-    res.json({ success: true, pendingLCs });
+    // Format dates for frontend
+    const formattedPendingLCs = pendingLCs.map((lc) => ({
+      ...lc,
+      dateOfBirth: formatDateForFrontend(lc.dateOfBirth),
+      dateOfAdmission: formatDateForFrontend(lc.dateOfAdmission),
+      dateOfLeaving: formatDateForFrontend(lc.dateOfLeaving),
+      // yearOfAdmission remains as integer
+    }));
+
+    res.json({ success: true, pendingLCs: formattedPendingLCs });
   } catch (err) {
     console.error("Error fetching pending LCs:", err.message);
     res.status(500).json({ error: err.message });
@@ -57,7 +90,16 @@ export const getLCDetails = async (req, res) => {
       lcSignedUrl = await getSignedFileUrl(profile.lcUrl, 1296000); // 15 days
     }
 
-    res.json({ success: true, studentProfile: profile, lcSignedUrl });
+    // Format dates for frontend
+    const formattedProfile = {
+      ...profile,
+      dateOfBirth: formatDateForFrontend(profile.dateOfBirth),
+      dateOfAdmission: formatDateForFrontend(profile.dateOfAdmission),
+      dateOfLeaving: formatDateForFrontend(profile.dateOfLeaving),
+      // yearOfAdmission remains as integer
+    };
+
+    res.json({ success: true, studentProfile: formattedProfile, lcSignedUrl });
   } catch (err) {
     console.error("Error fetching LC details:", err.message);
     res.status(500).json({ error: err.message });
@@ -66,7 +108,7 @@ export const getLCDetails = async (req, res) => {
 
 /**
  * POST /registrar/generate-lc/:prn
- * Update student profile fields
+ * Update student profile fields with proper date handling
  */
 export const generateLC = async (req, res) => {
   const { prn } = req.params;
@@ -104,16 +146,16 @@ export const generateLC = async (req, res) => {
     const profileUpdates = {};
     for (let key of allowedFields) {
       if (req.body[key] !== undefined) {
-        profileUpdates[key] = [
-          "dateOfBirth",
-          "yearOfAdmission",
-          "dateOfAdmission",
-          "dateOfLeaving",
-        ].includes(key)
-          ? req.body[key]
-            ? new Date(req.body[key])
-            : null
-          : req.body[key];
+        if (["dateOfBirth", "dateOfAdmission", "dateOfLeaving"].includes(key)) {
+          // Handle date fields
+          profileUpdates[key] = req.body[key] ? parseDate(req.body[key]) : null;
+        } else if (key === "yearOfAdmission") {
+          // Handle yearOfAdmission as integer
+          profileUpdates[key] = req.body[key] ? parseInt(req.body[key]) : null;
+        } else {
+          // Handle all other fields
+          profileUpdates[key] = req.body[key];
+        }
       }
     }
 
@@ -130,15 +172,19 @@ export const generateLC = async (req, res) => {
       data: profileUpdates,
     });
 
-    const mergedProfile = {
+    // Format dates for response
+    const formattedProfile = {
       ...updatedProfile,
       studentName: updatedStudent?.studentName || profile.student.studentName,
+      dateOfBirth: formatDateForFrontend(updatedProfile.dateOfBirth),
+      dateOfAdmission: formatDateForFrontend(updatedProfile.dateOfAdmission),
+      dateOfLeaving: formatDateForFrontend(updatedProfile.dateOfLeaving),
     };
 
     res.json({
       success: true,
-      message: `Profile updated for ${mergedProfile.studentName}`,
-      studentProfile: mergedProfile,
+      message: `Profile updated for ${formattedProfile.studentName}`,
+      studentProfile: formattedProfile,
     });
   } catch (err) {
     console.error("Error updating LC profile:", err.message);
