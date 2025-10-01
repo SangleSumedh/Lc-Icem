@@ -9,17 +9,19 @@ import {
   ChevronDown,
   Building2,
   Shield,
+  X,
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
+import toast, { Toaster } from "react-hot-toast";
 
 // ✅ Utility to generate safe slugs
 const slugify = (str) =>
   str
     .toLowerCase()
     .trim()
-    .replace(/^hod[-_\s]*/i, "hod-") // normalize HOD prefix
-    .replace(/[\s_/]+/g, "-") // replace spaces, underscores, slashes → dash
-    .replace(/-+/g, "-"); // collapse multiple dashes
+    .replace(/^hod[-_\s]*/i, "hod-")
+    .replace(/[\s_/]+/g, "-")
+    .replace(/-+/g, "-");
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -29,9 +31,13 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
 
   // Dropdown state
-  const [loginType, setLoginType] = useState("department"); // default = Department
+  const [loginType, setLoginType] = useState("department");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Modals
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const loginOptions = [
     {
@@ -107,20 +113,22 @@ const AdminLogin = () => {
           localStorage.setItem("role", decoded.role);
 
           if (decoded.role === "superadmin") {
+            toast.success("✅ Admin login successful!");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
             const deptName = decoded.deptName;
             localStorage.setItem("deptName", deptName);
 
             const slug = slugify(deptName);
+            toast.success(`✅ Welcome ${deptName} Department!`);
             navigate(`/admin-dashboard/${slug}`);
           }
         } else {
-          alert(data.error || "❌ Login failed");
+          toast.error(data.error || "❌ Login failed");
         }
       } catch (err) {
         console.error("❌ Network error:", err);
-        alert("Could not connect to backend.");
+        toast.error("⚠️ Could not connect to backend.");
       } finally {
         setLoading(false);
       }
@@ -138,6 +146,9 @@ const AdminLogin = () => {
         "Application management dashboard",
       ]}
     >
+      {/* 🔥 Toaster */}
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Admin Login</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -232,10 +243,20 @@ const AdminLogin = () => {
           )}
         </div>
 
+        {/* Password + Forget Password */}
         <div>
-          <label className="block text-base font-medium text-gray-700 mb-1">
-            Password
-          </label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-base font-medium text-gray-700">
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(true)}
+              className="text-sm font-medium text-[#003C84] hover:underline"
+            >
+              Forget Password?
+            </button>
+          </div>
           <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 relative">
             <Lock className="w-5 h-5 text-gray-500 mr-3" />
             <input
@@ -273,9 +294,84 @@ const AdminLogin = () => {
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Don&apos;t have an account?{" "}
-          <span className="font-medium text-[#003C84]">Contact Admin</span>
+          <button
+            type="button"
+            onClick={() => setShowContactModal(true)}
+            className="font-medium text-[#003C84] "
+          >
+            Contact Admin
+          </button>
         </p>
       </form>
+
+      {/* 🔹 Forget Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <button
+              onClick={() => setShowForgotModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-gray-900 mb-3">
+              Password Reset Assistance
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              For password reset requests, please contact the IT Team or email
+              us at:
+            </p>
+            <div className="bg-gray-100 px-3 py-2 rounded-md text-sm font-medium text-[#003C84] mb-3">
+              connect@gryphonacademy.co.in
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Our team will assist you with resetting your password.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowForgotModal(false)}
+                className="bg-[#003C84] text-white px-4 py-2 rounded-md hover:bg-[#00539C] transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔹 Contact Admin Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <button
+              onClick={() => setShowContactModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-gray-900 mb-3">
+              Contact Administrator
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              For account-related queries or access issues, please reach out at:
+            </p>
+            <div className="bg-gray-100 px-3 py-2 rounded-md text-sm font-medium text-[#003C84] mb-3">
+              gaurav@gryphonacademy.co.in
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Our admin team will assist you further.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="bg-[#003C84] text-white px-4 py-2 rounded-md hover:bg-[#00539C] transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthLayout>
   );
 };
