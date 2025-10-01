@@ -37,7 +37,7 @@ const main = async () => {
         data: {
           deptName,
           branchId: null,
-          college: "ICEM",
+          college: "ALL",
         },
       });
 
@@ -54,11 +54,11 @@ const main = async () => {
         data: {
           name: `Head ${department.deptName}`,
           email: hodEmail,
-          username: hodUsername,
           passwordHash: hodPasswordHash,
           deptId: department.deptId,
         },
       });
+
 
       // 3️⃣ Update department with HOD reference
       await prisma.department.update({

@@ -36,7 +36,6 @@ const main = async () => {
         .toLowerCase()
         .replace(/\s+/g, "_")
         .replace(/[^a-z0-9_]/g, "");
-      const username = `hod_${safeName}`;
       const email = `${safeName}@example.com`;
       const passwordHash = await bcrypt.hash("password123", 10);
 
@@ -44,7 +43,6 @@ const main = async () => {
         data: {
           name: `HOD ${dept}`,
           email,
-          username,
           passwordHash,
           deptId: department.deptId,
         },
@@ -62,7 +60,39 @@ const main = async () => {
       branchId++;
     }
 
-    console.log("🎉 HOD Departments seeding complete!");
+    // --- Add HOD - MBA for IGSB ---
+    const igsbDeptName = "HOD - MBA";
+    const igsbDepartment = await prisma.department.create({
+      data: {
+        deptName: igsbDeptName,
+        branchId: branchId, // incremented branchId
+        college: "IGSB",
+      },
+    });
+
+    const igsbSafeName = "mba_igsb";
+    const igsbEmail = `${igsbSafeName}@example.com`;
+    const igsbPasswordHash = await bcrypt.hash("password123", 10);
+
+    const igsbHodStaff = await prisma.staff.create({
+      data: {
+        name: igsbDeptName,
+        email: igsbEmail,
+        passwordHash: igsbPasswordHash,
+        deptId: igsbDepartment.deptId,
+      },
+    });
+
+    await prisma.department.update({
+      where: { deptId: igsbDepartment.deptId },
+      data: { deptHeadId: igsbHodStaff.staffId },
+    });
+
+    console.log(
+      `✅ HOD Department: ${igsbDepartment.deptName} | Head: ${igsbHodStaff.name}`
+    );
+
+    console.log("🎉 All HOD Departments seeding complete!");
   } catch (err) {
     console.error("❌ Error seeding HOD departments:", err);
   } finally {
