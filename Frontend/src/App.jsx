@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast"; // ✅ Add Toaster for notifications
 
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -22,11 +23,35 @@ import Admin from "./Pages/Admin";
 import Student from "./Pages/Student";
 import NotFound from "./components/NotFound";
 
-import ProtectedRoutes from "./components/ProtectedRoutes"; // ✅ Import wrapper
+import ProtectedRoutes from "./components/ProtectedRoutes";
 
 function App() {
   return (
     <Router>
+      {/* ✅ Global Toast Notifications */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#000',
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: '#fff',
+            },
+          },
+          error: {
+            duration: 5000,
+            style: {
+              background: '#fff',
+            },
+          },
+        }}
+      />
+      
       <Routes>
         {/* 🌍 Public Routes */}
         <Route path="/" element={<Login />} />
@@ -70,6 +95,7 @@ function App() {
             <Route path="add-department" element={<AddDepartmentForm />} />
             <Route path="add-user" element={<AddUserForm />} />
             <Route path="add-superadmin" element={<AddSuperAdmin />} />
+            <Route path="forget-password" element={<ForgetPassword />} /> 
           </Route>
         </Route>
 
