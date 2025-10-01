@@ -72,13 +72,37 @@ const ApprovalTimeline = ({ approvals }) => {
     },
   ];
 
+  // Improved department matching function
+  const findMatchingDepartment = (approval) => {
+    const approvalDeptName = approval.department.deptName.toLowerCase();
+
+    // Try exact match first
+    let dept = allDepartments.find(
+      (dept) =>
+        approvalDeptName === dept.name.toLowerCase() ||
+        approvalDeptName === dept.id.toLowerCase()
+    );
+
+    // If no exact match, try partial matching
+    if (!dept) {
+      dept = allDepartments.find(
+        (dept) =>
+          approvalDeptName.includes(dept.id.toLowerCase()) ||
+          dept.name.toLowerCase().includes(approvalDeptName) ||
+          approvalDeptName.includes(dept.name.toLowerCase())
+      );
+    }
+
+    return dept;
+  };
+
   // Create department status array with all departments
   const departmentStatuses = allDepartments.map((dept) => {
-    const approval = approvals.find(
-      (app) =>
-        app.department.deptName.toLowerCase().includes(dept.id.toLowerCase()) ||
-        dept.name.toLowerCase().includes(app.department.deptName.toLowerCase())
-    );
+    // Find approval that matches this department
+    const approval = approvals.find((approval) => {
+      const matchingDept = findMatchingDepartment(approval);
+      return matchingDept && matchingDept.id === dept.id;
+    });
 
     return {
       ...dept,
@@ -86,6 +110,10 @@ const ApprovalTimeline = ({ approvals }) => {
       approvalData: approval || null,
     };
   });
+
+  // Debug: Log the matching results
+  console.log("All approvals:", approvals);
+  console.log("Department statuses:", departmentStatuses);
 
   // Sort departments: Approved first, then Requested Info, then Rejected, then Pending
   const sortedDepartmentStatuses = [...departmentStatuses].sort((a, b) => {
@@ -131,7 +159,7 @@ const ApprovalTimeline = ({ approvals }) => {
 
         {/* Department dots - using sorted array */}
         <div className="relative flex justify-between">
-          {sortedDepartmentStatuses.map((dept, index) => (
+          {sortedDepartmentStatuses.map((dept) => (
             <div key={dept.id} className="flex flex-col items-center z-10">
               <div
                 className={`relative flex items-center justify-center w-10 h-10 rounded-full border-2 ${
@@ -208,6 +236,22 @@ const ApprovalTimeline = ({ approvals }) => {
           <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
           <span className="text-gray-600">Pending</span>
         </div>
+      </div>
+
+      {/* Debug information - remove in production */}
+      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+        <p className="font-semibold">Debug Info:</p>
+        <p>Approvals from API: {approvals.length}</p>
+        <p>Approved departments: {approvedCount}</p>
+        <p>Department matches:</p>
+        <ul className="mt-1">
+          {departmentStatuses.map((dept) => (
+            <li key={dept.id}>
+              {dept.name}: {dept.status}{" "}
+              {dept.approvalData ? `(Matched)` : `(No match)`}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

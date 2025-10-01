@@ -4,11 +4,23 @@ import logo from "../../../assets/logo.jpg";
 
 export const REQUIRED_FIELDS = [
   "studentID",
-  "dateOfLeaving",
+  "dateOfLeaving", 
   "dateOfAdmission",
-  "progressAndConduct","fatherName", "motherName", "caste", "subCaste", "nationality", 
-  "placeOfBirth", "dateOfBirth", "dobWords", "branch", "yearOfAdmission", 
-  "admissionMode", "lastCollege", "reasonForLeaving"
+  "progressAndConduct",
+  "fatherName", 
+  "motherName", 
+  "caste", 
+  "subCaste", 
+  "nationality", 
+  "placeOfBirth", 
+  "dateOfBirth", 
+  "dobWords", 
+  "branch", 
+  "yearOfAdmission", 
+  "admissionMode", 
+  "lastCollege", 
+  "reasonForLeaving",
+  //"yearAndBranch" // Add this line
 ];
 
 export const generatePDF = (studentData, formData) => {
