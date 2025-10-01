@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import ApprovalTimeline from "./ApprovalTimeline";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -149,28 +150,33 @@ const StudentDashboard = () => {
   };
 
   const extractContactInfo = (remarks) => {
-    if (!remarks) return { phone: null, email: null, message: remarks };
+  if (!remarks) return { phone: null, email: null, message: remarks };
 
-    const phoneRegex =
-      /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
-    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+  const phoneRegex = /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
+  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 
-    const phones = remarks.match(phoneRegex) || [];
-    const emails = remarks.match(emailRegex) || [];
+  // Extract phone and email
+  const phones = remarks.match(phoneRegex) || [];
+  const emails = remarks.match(emailRegex) || [];
 
-    let message = remarks;
-    phones.forEach((phone) => (message = message.replace(phone, "")));
-    emails.forEach((email) => (message = message.replace(email, "")));
+  // Remove the "Phone: " and "Email: " labels along with the actual numbers/emails
+  let message = remarks
+    .replace(/Phone:\s*[^\n]*/gi, '')  // Remove "Phone: xxx" lines
+    .replace(/Email:\s*[^\n]*/gi, '')  // Remove "Email: xxx" lines
+    .replace(/\n\s*\n/g, '\n')         // Clean up extra newlines
+    .trim();
 
-    message = message.replace(/\s+/g, " ").trim();
-    message = message.replace(/[.,;]+$/, "").trim();
+  // If message is empty after removal, provide a default
+  if (!message) {
+    message = "Additional information required";
+  }
 
-    return {
-      phone: phones[0] || null,
-      email: emails[0] || null,
-      message: message || "Additional information required",
-    };
+  return {
+    phone: phones[0] || null,
+    email: emails[0] || null,
+    message: message,
   };
+};
 
   const handleRemarksClick = (approval) => {
     if (approval.remarks && approval.status === "REQUESTED_INFO") {
@@ -234,6 +240,9 @@ const StudentDashboard = () => {
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
         LC Form Approval Status
       </h2>
+
+      {/* Approval Timeline Component */}
+      <ApprovalTimeline approvals={approvals} />
 
       {/* LC Generated Card - Show when LC is actually generated */}
       {lcCard && (
