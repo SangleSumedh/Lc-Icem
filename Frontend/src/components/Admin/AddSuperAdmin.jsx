@@ -10,6 +10,7 @@ import { saveAs } from "file-saver";
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 function AddSuperAdmin() {
   const token = localStorage.getItem("token");
@@ -156,48 +157,59 @@ function AddSuperAdmin() {
     }
   };
 
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text("SuperAdmins Report", 105, 15, { align: "center" });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
-      doc.text(`Total SuperAdmins: ${superAdmins.length}`, 105, 28, { align: "center" });
 
-      const tableData = superAdmins.map(admin => [
-        admin.id.toString(),
-        admin.username,
-        admin.email
-      ]);
 
-      doc.autoTable({
-        startY: 35,
-        head: [['ID', 'Username', 'Email']],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [0, 83, 156] },
-        styles: { fontSize: 9, cellPadding: 4 },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 80 }
-        }
-      });
+const exportToPDF = () => {
+  try {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(40, 53, 147);
+    doc.text("SuperAdmins Report", 105, 15, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
+    doc.text(`Total SuperAdmins: ${superAdmins.length}`, 105, 28, { align: "center" });
 
-      doc.save(`superadmins_report_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("Exported to PDF successfully!");
-      setShowExportDropdown(false);
-    } catch (error) {
-      console.error("PDF export error:", error);
-      toast.error("Error exporting to PDF");
-    }
-  };
+    const tableData = superAdmins.map(admin => [
+      admin.id.toString(),
+      admin.username,
+      admin.email
+    ]);
+
+    // Use autoTable as a function, passing doc as first parameter
+    autoTable(doc, {
+      startY: 35,
+      head: [['ID', 'Username', 'Email']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [0, 83, 156],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        halign: 'left'
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 80 }
+      }
+    });
+
+    doc.save(`superadmins_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Exported to PDF successfully!");
+    setShowExportDropdown(false);
+  } catch (error) {
+    console.error("PDF export error:", error);
+    toast.error("Error exporting to PDF");
+  }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -419,81 +431,81 @@ function AddSuperAdmin() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#00539C] text-white">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-sm">ID</th>
-              <th className="px-6 py-4 font-semibold text-sm">Username</th>
-              <th className="px-6 py-4 font-semibold text-sm">Email</th>
-              <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginatedAdmins.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50 transition-colors duration-150">
-                <td className="px-6 py-4 font-medium text-gray-900">{s.id}</td>
-                <td className="px-6 py-4 text-gray-700">{s.username}</td>
-                <td className="px-6 py-4 text-gray-700">{s.email}</td>
-                <td className="px-6 py-4 relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveDropdown(activeDropdown === s.id ? null : s.id);
-                    }}
-                    disabled={loading}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <FiMoreVertical size={18} className="text-gray-600" />
-                  </button>
+<div className="bg-white rounded-xl shadow-sm border relative">
+  <table className="w-full text-left">
+    <thead className="bg-[#00539C] text-white">
+      <tr>
+        <th className="px-6 py-4 font-semibold text-sm">ID</th>
+        <th className="px-6 py-4 font-semibold text-sm">Username</th>
+        <th className="px-6 py-4 font-semibold text-sm">Email</th>
+        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {paginatedAdmins.map((s, index) => (
+        <tr key={s.id} className="transition-colors duration-150 rounded-lg">
+          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">{s.id}</td>
+          <td className="px-6 py-4 text-gray-700">{s.username}</td>
+          <td className="px-6 py-4 text-gray-700">{s.email}</td>
+          <td className="px-6 py-4 relative rounded-r-lg">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === s.id ? null : s.id);
+              }}
+              disabled={loading}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              <FiMoreVertical size={18} className="text-gray-600" />
+            </button>
 
-                  {/* Dropdown Menu */}
-                  {activeDropdown === s.id && (
-                    <div className="absolute right-6 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 min-w-[140px]">
-                      <button
-                        onClick={() => {
-                          setEditing({ ...s, password: "" });
-                          setActiveDropdown(null);
-                        }}
-                        disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Update
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDeleteAdmin(s);
-                          setActiveDropdown(null);
-                        }}
-                        disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {paginatedAdmins.length === 0 && (
-              <tr>
-                <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center">
-                    <FiShield className="h-12 w-12 text-gray-300 mb-2" />
-                    <p className="text-sm">No superadmins found</p>
-                  </div>
-                </td>
-              </tr>
+            {/* Dropdown Menu */}
+            {activeDropdown === s.id && (
+              <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
+                <button
+                  onClick={() => {
+                    setEditing({ ...s, password: "" });
+                    setActiveDropdown(null);
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Update
+                </button>
+                <button
+                  onClick={() => {
+                    setDeleteAdmin(s);
+                    setActiveDropdown(null);
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </td>
+        </tr>
+      ))}
+      {paginatedAdmins.length === 0 && (
+        <tr>
+          <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center">
+              <FiShield className="h-12 w-12 text-gray-300 mb-2" />
+              <p className="text-sm">No superadmins found</p>
+            </div>
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 
       {/* Pagination */}
       {totalPages > 1 && (

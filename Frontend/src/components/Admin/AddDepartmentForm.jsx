@@ -10,6 +10,7 @@ import { saveAs } from "file-saver";
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 const AddDepartmentForm = () => {
   const token = localStorage.getItem("token");
@@ -258,94 +259,113 @@ const AddDepartmentForm = () => {
     }
   };
 
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text("Departments and Staff Report", 105, 15, { align: "center" });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
 
-      let yPosition = 35;
 
-      // Departments table
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Departments", 14, yPosition);
-      yPosition += 8;
+const exportToPDF = () => {
+  try {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(40, 53, 147);
+    doc.text("Departments and Staff Report", 105, 15, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
 
-      const deptData = departments.map(dept => {
-        const deptStaff = allStaff.filter(staff => staff.deptId === dept.deptId);
-        return [
-          dept.deptId.toString(),
-          dept.deptName,
-          dept.branchId?.toString() || "N/A",
-          dept.college,
-          deptStaff.length.toString()
-        ];
-      });
+    let yPosition = 35;
 
-      doc.autoTable({
-        startY: yPosition,
-        head: [['Dept ID', 'Dept Name', 'Branch ID', 'College', 'Staff Count']],
-        body: deptData,
-        theme: 'grid',
-        headStyles: { fillColor: [0, 83, 156] },
-        styles: { fontSize: 8, cellPadding: 3 },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 45 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 }
-        }
-      });
+    // Departments table
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Departments", 14, yPosition);
+    yPosition += 8;
 
-      // Staff table
-      const finalY = doc.lastAutoTable.finalY + 15;
-      doc.setFontSize(14);
-      doc.text("Staff Members", 14, finalY);
+    const deptData = departments.map(dept => {
+      const deptStaff = allStaff.filter(staff => staff.deptId === dept.deptId);
+      return [
+        dept.deptId.toString(),
+        dept.deptName,
+        dept.branchId?.toString() || "N/A",
+        dept.college,
+        deptStaff.length.toString()
+      ];
+    });
 
-      const staffData = allStaff.map(staff => {
-        const dept = departments.find(d => d.deptId === staff.deptId);
-        return [
-          staff.staffId.toString(),
-          staff.name,
-          staff.email,
-          staff.deptId.toString(),
-          dept?.deptName || "N/A"
-        ];
-      });
+    // Use autoTable as a function, not as doc.autoTable
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Dept ID', 'Dept Name', 'Branch ID', 'College', 'Staff Count']],
+      body: deptData,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [0, 83, 156],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 3,
+        halign: 'left'
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 25 }
+      }
+    });
 
-      doc.autoTable({
-        startY: finalY + 8,
-        head: [['Staff ID', 'Staff Name', 'Email', 'Dept ID', 'Department Name']],
-        body: staffData,
-        theme: 'grid',
-        headStyles: { fillColor: [0, 83, 156] },
-        styles: { fontSize: 7, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 40 }
-        }
-      });
+    // Staff table
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("Staff Members", 14, finalY);
 
-      doc.save(`departments_report_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("Exported to PDF successfully!");
-      setShowExportDropdown(false);
-    } catch (error) {
-      console.error("PDF export error:", error);
-      toast.error("Error exporting to PDF");
-    }
-  };
+    const staffData = allStaff.map(staff => {
+      const dept = departments.find(d => d.deptId === staff.deptId);
+      return [
+        staff.staffId.toString(),
+        staff.name,
+        staff.email,
+        staff.deptId.toString(),
+        dept?.deptName || "N/A"
+      ];
+    });
+
+    autoTable(doc, {
+      startY: finalY + 8,
+      head: [['Staff ID', 'Staff Name', 'Email', 'Dept ID', 'Department Name']],
+      body: staffData,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [0, 83, 156],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 7, 
+        cellPadding: 2,
+        halign: 'left'
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 40 }
+      }
+    });
+
+    doc.save(`departments_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Exported to PDF successfully!");
+    setShowExportDropdown(false);
+  } catch (error) {
+    console.error("PDF export error:", error);
+    toast.error("Error exporting to PDF");
+  }
+};
 
   // Add Department + Staff
   const handleAdd = async (e) => {
@@ -448,20 +468,7 @@ const AddDepartmentForm = () => {
     const toastId = toast.loading("Deleting department...");
 
     try {
-      // Delete staff first
-      const staffResponse = await axios.get(`${BASE_URL}/staff`);
-
-      if (staffResponse.data.success) {
-        const deptStaff = staffResponse.data.data.filter(
-          (s) => s.deptId === deleteDept.deptId
-        );
-
-        // Delete all staff members for this department
-        const deleteStaffPromises = deptStaff.map((s) =>
-          axios.delete(`${BASE_URL}/delete-staff/${s.staffId}`)
-        );
-        await Promise.all(deleteStaffPromises);
-      }
+  
 
       // Delete department
       await axios.delete(`${BASE_URL}/delete-department/${deleteDept.deptId}`);
@@ -652,98 +659,98 @@ const AddDepartmentForm = () => {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#00539C] text-white">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-sm">Dept ID</th>
-              <th className="px-6 py-4 font-semibold text-sm">Dept Name</th>
-              <th className="px-6 py-4 font-semibold text-sm">Branch ID</th>
-              <th className="px-6 py-4 font-semibold text-sm">College</th>
-              <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginatedDepts.map((dept) => (
-              <tr key={dept.deptId} className="hover:bg-gray-50 transition-colors duration-150">
-                <td className="px-6 py-4 text-md font-medium text-gray-900">{dept.deptId}</td>
-                <td className="px-6 py-4 text-md text-gray-700">{dept.deptName}</td>
-                <td className="px-6 py-4 text-md text-gray-700">{dept.branchId || 0}</td>
-                <td className="px-6 py-4 text-md text-gray-700">{dept.college}</td>
-                <td className="px-6 py-4 text-md relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveDropdown(activeDropdown === dept.deptId ? null : dept.deptId);
-                    }}
-                    disabled={loading}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <FiMoreVertical size={18} className="text-gray-600" />
-                  </button>
+<div className="bg-white rounded-xl shadow-sm border relative">
+  <table className="w-full text-left">
+    <thead className="bg-[#00539C] text-white">
+      <tr>
+        <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">Dept ID</th>
+        <th className="px-6 py-4 font-semibold text-sm">Dept Name</th>
+        <th className="px-6 py-4 font-semibold text-sm">Branch ID</th>
+        <th className="px-6 py-4 font-semibold text-sm">College</th>
+        <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl"></th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {paginatedDepts.map((dept, index) => (
+        <tr key={dept.deptId} className="transition-colors duration-150 rounded-lg">
+          <td className="px-6 py-4 text-md font-medium text-gray-900 rounded-l-lg">{dept.deptId}</td>
+          <td className="px-6 py-4 text-md text-gray-700">{dept.deptName}</td>
+          <td className="px-6 py-4 text-md text-gray-700">{dept.branchId || 0}</td>
+          <td className="px-6 py-4 text-md text-gray-700">{dept.college}</td>
+          <td className="px-6 py-4 text-md relative rounded-r-lg">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === dept.deptId ? null : dept.deptId);
+              }}
+              disabled={loading}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              <FiMoreVertical size={18} className="text-gray-600" />
+            </button>
 
-                  {/* Dropdown Menu */}
-                  {activeDropdown === dept.deptId && (
-                    <div className="absolute right-6 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 min-w-[140px]">
-                      <button
-                        onClick={() => {
-                          handleViewStaff(dept);
-                          setActiveDropdown(null);
-                        }}
-                        disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <Users size={14} />
-                        View Staff
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingDept({
-                            ...dept,
-                            staff: { name: "", email: "", password: "" },
-                          });
-                          setShowEditModal(true);
-                          setActiveDropdown(null);
-                        }}
-                        disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Update
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDeleteDept(dept);
-                          setActiveDropdown(null);
-                        }}
-                        disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {paginatedDepts.length === 0 && (
-              <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center">
-                    <Building2 className="h-12 w-12 text-gray-300 mb-2" />
-                    <p className="text-sm">No departments found</p>
-                  </div>
-                </td>
-              </tr>
+            {/* Dropdown Menu */}
+            {activeDropdown === dept.deptId && (
+              <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
+                <button
+                  onClick={() => {
+                    handleViewStaff(dept);
+                    setActiveDropdown(null);
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <Users size={14} />
+                  View Staff
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingDept({
+                      ...dept,
+                      staff: { name: "", email: "", password: "" },
+                    });
+                    setShowEditModal(true);
+                    setActiveDropdown(null);
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Update
+                </button>
+                <button
+                  onClick={() => {
+                    setDeleteDept(dept);
+                    setActiveDropdown(null);
+                  }}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </td>
+        </tr>
+      ))}
+      {paginatedDepts.length === 0 && (
+        <tr>
+          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center">
+              <Building2 className="h-12 w-12 text-gray-300 mb-2" />
+              <p className="text-sm">No departments found</p>
+            </div>
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 
       {/* Pagination */}
       {totalPages > 1 && (
