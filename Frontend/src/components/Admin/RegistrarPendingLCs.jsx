@@ -262,8 +262,12 @@ const RegistrarPendingLCs = () => {
 
   // Check if all required fields are filled
   const isFormComplete = () =>
-    REQUIRED_FIELDS.every((field) => formData[field] && formData[field].trim());
-
+    REQUIRED_FIELDS.every((field) => {
+      const value = formData[field];
+      return (
+        value !== undefined && value !== null && String(value).trim() !== ""
+      );
+    });
   // Helper function to format field names for display
   const formatFieldName = (field) => {
     return field
@@ -652,11 +656,7 @@ const RegistrarPendingLCs = () => {
                           name: "dateOfBirth",
                           type: "date",
                           required: true,
-                          value: formData.dateOfBirth
-                            ? new Date(formData.dateOfBirth)
-                                .toISOString()
-                                .split("T")[0]
-                            : "",
+                          value: formData.dateOfBirth || "",
                         },
                         {
                           label: "DOB (in words)",
@@ -718,15 +718,9 @@ const RegistrarPendingLCs = () => {
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          type="date"
+                          type="number"
                           name="yearOfAdmission"
-                          value={
-                            formData.yearOfAdmission
-                              ? new Date(formData.yearOfAdmission)
-                                  .toISOString()
-                                  .split("T")[0]
-                              : ""
-                          }
+                          value={formData.yearOfAdmission || ""}
                           onChange={handleChange}
                           required
                           className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"

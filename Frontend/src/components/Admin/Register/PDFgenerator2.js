@@ -4,23 +4,11 @@ import logo from "../../../assets/logo.jpg";
 
 export const REQUIRED_FIELDS = [
   "studentID",
-  "dateOfLeaving", 
+  "dateOfLeaving",
   "dateOfAdmission",
-  "progressAndConduct",
-  "fatherName", 
-  "motherName", 
-  "caste", 
-  "subCaste", 
-  "nationality", 
-  "placeOfBirth", 
-  "dateOfBirth", 
-  "dobWords", 
-  "branch", 
-  "yearOfAdmission", 
-  "admissionMode", 
-  "lastCollege", 
-  "reasonForLeaving",
-  //"yearAndBranch" // Add this line
+  "progressAndConduct","fatherName", "motherName", "caste", "subCaste", "nationality", 
+  "placeOfBirth", "dateOfBirth", "dobWords", "branch", "yearOfAdmission", 
+  "admissionMode", "lastCollege", "reasonForLeaving"
 ];
 
 export const generatePDF = (studentData, formData) => {
@@ -41,7 +29,7 @@ export const generatePDF = (studentData, formData) => {
   // Small top-left text
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("Indira College of Engineering & Management", margin, margin);
+  doc.text("Indira Global School of Business", margin, margin);
 
   //upper line
   doc.setLineWidth(0.3);
@@ -68,7 +56,7 @@ export const generatePDF = (studentData, formData) => {
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text(
-    "INDIRA COLLEGE OF ENGINEERING AND MANAGEMENT",
+    "INDIRA GLOBAL SCHOOL OF BUSINESS",
     pageWidth / 2 - textSpacing,
     margin + 16,
     { align: "center" }
@@ -104,7 +92,7 @@ export const generatePDF = (studentData, formData) => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
   doc.text(
-    `Ref: ${formData.refNo || "ICEM/Registrar/TC/2025/ ____"}`,
+    `Ref: ${formData.refNo || "IGSB/Registrar/TC/2025/ ____"}`,
     margin + 10,
     margin + 38
   );

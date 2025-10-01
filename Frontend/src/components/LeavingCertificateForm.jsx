@@ -16,6 +16,7 @@ const LeavingCertificateForm = ({
   branchesLoading = false,
 }) => {
   const [formData, setFormData] = useState({
+    studentName: "",
     studentID: "",
     fatherName: "",
     motherName: "",
@@ -31,13 +32,19 @@ const LeavingCertificateForm = ({
     branch: "",
     admissionMode: "",
     reasonForLeaving: "",
+    forMigrationFlag: false, // Added migration flag
     ...initialFormData,
   });
 
   const [dropdownOpen, setDropdownOpen] = useState({});
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({ 
+      ...formData, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
+  };
 
   const toggleDropdown = (field) =>
     setDropdownOpen((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -139,6 +146,25 @@ const LeavingCertificateForm = ({
             </h3>
             <hr className="border-gray-300 my-2" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Student Name */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Student Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="studentName"
+                  value={formData.studentName}
+                  onChange={handleChange}
+                  required={!viewMode}
+                  disabled={viewMode}
+                  readOnly={viewMode}
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
+
               {[
                 { label: "Student ID", name: "studentID", required: false },
                 { label: "Father's Name", name: "fatherName", required: true },
@@ -188,6 +214,31 @@ const LeavingCertificateForm = ({
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
+            
+            {/* Migration Flag - Added this section */}
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="forMigrationFlag"
+                  name="forMigrationFlag"
+                  checked={formData.forMigrationFlag}
+                  onChange={handleChange}
+                  disabled={viewMode}
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label 
+                  htmlFor="forMigrationFlag" 
+                  className="text-sm font-medium text-gray-700"
+                >
+                  This is a Migration Certificate
+                </label>
+              </div>
+              <p className="text-xs text-gray-600 mt-1 ml-7">
+                Check this box if you need a Migration Certificate instead of a regular Leaving Certificate
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <CustomDropdown
                 label="Branch"
@@ -203,7 +254,7 @@ const LeavingCertificateForm = ({
                   Year of Admission <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
+                  type="number"
                   name="yearOfAdmission"
                   value={formData.yearOfAdmission}
                   onChange={handleChange}
@@ -261,13 +312,19 @@ const LeavingCertificateForm = ({
                   <span className="text-red-500">*</span>
                 </label>
                 <span className="text-xs text-gray-500 italic ml-2">
-                  Note: Mention the type of Leaving Certificate – Migration or
-                  Leaving / Transfer
+                  {formData.forMigrationFlag 
+                    ? "Note: This is a Migration Certificate application"
+                    : "Note: Mention the type of Leaving Certificate – Migration or Leaving / Transfer"
+                  }
                 </span>
               </div>
               <textarea
                 name="reasonForLeaving"
-                placeholder="Explain your reason for leaving"
+                placeholder={
+                  formData.forMigrationFlag 
+                    ? "Explain your reason for migration..." 
+                    : "Explain your reason for leaving..."
+                }
                 rows={3}
                 value={formData.reasonForLeaving}
                 onChange={handleChange}

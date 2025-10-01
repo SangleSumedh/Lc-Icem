@@ -9,6 +9,7 @@ const LeavingCertificate = () => {
   const [viewMode, setViewMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
+    studentName: "",
     studentID: "",
     fatherName: "",
     motherName: "",
@@ -50,9 +51,12 @@ const LeavingCertificate = () => {
         const token = localStorage.getItem("token");
 
         // Check approval status
-        const statusRes = await fetch("http://localhost:5000/lc-form/approval-status", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const statusRes = await fetch(
+          "http://localhost:5000/lc-form/approval-status",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         // Fetch LC form data
         const formRes = await fetch("http://localhost:5000/lc-form/form", {
@@ -76,6 +80,7 @@ const LeavingCertificate = () => {
             if (formData.lcForm.profile) {
               const profile = formData.lcForm.profile;
               const newFormData = {
+                studentName: profile.studentName || "",
                 studentID: profile.studentID || "",
                 fatherName: profile.fatherName || "",
                 motherName: profile.motherName || "",
@@ -83,11 +88,11 @@ const LeavingCertificate = () => {
                 subCaste: profile.subCaste || "",
                 nationality: profile.nationality || "",
                 placeOfBirth: profile.placeOfBirth || "",
-                dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split("T")[0] : "",
+                dateOfBirth: profile.dateOfBirth || "",
                 dobWords: profile.dobWords || "",
                 lastCollege: profile.lastCollege || "",
                 lcType: "LEAVING",
-                yearOfAdmission: profile.yearOfAdmission ? profile.yearOfAdmission.split("T")[0] : "",
+                yearOfAdmission: profile.yearOfAdmission || "",
                 branch: profile.branch || "",
                 admissionMode: profile.admissionMode || "",
                 reasonForLeaving: profile.reasonForLeaving || "",
