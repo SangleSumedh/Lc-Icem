@@ -6,7 +6,9 @@ export const REQUIRED_FIELDS = [
   "studentID",
   "dateOfLeaving",
   "dateOfAdmission",
-  "progressAndConduct",
+  "progressAndConduct","fatherName", "motherName", "caste", "subCaste", "nationality", 
+  "placeOfBirth", "dateOfBirth", "dobWords", "branch", "yearOfAdmission", 
+  "admissionMode", "lastCollege", "reasonForLeaving"
 ];
 
 export const generatePDF = (studentData, formData) => {

@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { 
-  XMarkIcon, 
-  CheckIcon, 
-  ExclamationTriangleIcon, 
+import {
+  XMarkIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
   InformationCircleIcon,
   DocumentArrowUpIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  UserCircleIcon,
+  AcademicCapIcon,
 } from "@heroicons/react/24/outline";
-import { FiSearch, FiRefreshCw, FiUser, FiMail, FiPhone, FiFileText } from "react-icons/fi";
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiFileText,
+} from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { generatePDF, REQUIRED_FIELDS } from "./Register/PDFgenerator";
 
@@ -263,18 +272,16 @@ const RegistrarPendingLCs = () => {
   };
 
   // Filter and paginate data
-  const filteredLCs = pendingLCs.filter(
-    (student) => {
-      const studentData = student.studentProfile || student;
-      const basicInfo = studentData.student || studentData;
-      return (
-        !search ||
-        basicInfo.studentName.toLowerCase().includes(search.toLowerCase()) ||
-        basicInfo.email.toLowerCase().includes(search.toLowerCase()) ||
-        basicInfo.prn.toString().includes(search)
-      );
-    }
-  );
+  const filteredLCs = pendingLCs.filter((student) => {
+    const studentData = student.studentProfile || student;
+    const basicInfo = studentData.student || studentData;
+    return (
+      !search ||
+      basicInfo.studentName.toLowerCase().includes(search.toLowerCase()) ||
+      basicInfo.email.toLowerCase().includes(search.toLowerCase()) ||
+      basicInfo.prn.toString().includes(search)
+    );
+  });
 
   const totalPages = Math.ceil(filteredLCs.length / itemsPerPage);
   const paginatedLCs = filteredLCs.slice(
@@ -297,11 +304,12 @@ const RegistrarPendingLCs = () => {
         >
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
                 Registrar Dashboard
               </h1>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Pending Leaving Certificates - Review and process student leaving certificate applications
+                Pending Leaving Certificates - Review and process student
+                leaving certificate applications
               </p>
             </div>
             <div className="flex items-center gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
@@ -320,7 +328,10 @@ const RegistrarPendingLCs = () => {
         >
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <FiSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
               <input
                 type="text"
                 placeholder="Search by Name, Email, or PRN..."
@@ -339,7 +350,10 @@ const RegistrarPendingLCs = () => {
               disabled={loading}
               className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              <FiRefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <FiRefreshCw
+                size={16}
+                className={loading ? "animate-spin" : ""}
+              />
               {loading ? "Refreshing..." : "Refresh"}
             </motion.button>
           </div>
@@ -377,7 +391,8 @@ const RegistrarPendingLCs = () => {
               No Pending Leaving Certificates
             </h3>
             <p className="text-gray-500 mb-4 max-w-md mx-auto">
-              There are currently no students waiting for leaving certificate approval.
+              There are currently no students waiting for leaving certificate
+              approval.
             </p>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -433,7 +448,9 @@ const RegistrarPendingLCs = () => {
                               {basicInfo.studentName.charAt(0)}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900">{basicInfo.studentName}</div>
+                              <div className="font-medium text-gray-900">
+                                {basicInfo.studentName}
+                              </div>
                               <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                                 <FiUser size={12} />
                                 PRN: {basicInfo.prn}
@@ -464,7 +481,7 @@ const RegistrarPendingLCs = () => {
                               <DocumentTextIcon className="h-4 w-4" />
                               Edit LC
                             </motion.button>
-                            
+
                             <input
                               type="file"
                               accept="application/pdf"
@@ -474,8 +491,12 @@ const RegistrarPendingLCs = () => {
                             />
 
                             <motion.label
-                              whileHover={{ scale: pdfDownloaded[basicInfo.prn] ? 1.05 : 1 }}
-                              whileTap={{ scale: pdfDownloaded[basicInfo.prn] ? 0.95 : 1 }}
+                              whileHover={{
+                                scale: pdfDownloaded[basicInfo.prn] ? 1.05 : 1,
+                              }}
+                              whileTap={{
+                                scale: pdfDownloaded[basicInfo.prn] ? 0.95 : 1,
+                              }}
                               htmlFor={`uploadLC-${basicInfo.prn}`}
                               className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer ${
                                 pdfDownloaded[basicInfo.prn]
@@ -485,7 +506,9 @@ const RegistrarPendingLCs = () => {
                               onClick={(e) => {
                                 if (!pdfDownloaded[basicInfo.prn]) {
                                   e.preventDefault();
-                                  alert("Please download the PDF first before uploading.");
+                                  alert(
+                                    "Please download the PDF first before uploading."
+                                  );
                                 }
                               }}
                             >
@@ -522,21 +545,23 @@ const RegistrarPendingLCs = () => {
             </motion.button>
 
             <div className="flex gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <motion.button
-                  key={page}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 flex items-center justify-center border rounded-lg text-sm font-medium transition-all duration-200 ${
-                    currentPage === page
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent shadow-sm"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  {page}
-                </motion.button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <motion.button
+                    key={page}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 flex items-center justify-center border rounded-lg text-sm font-medium transition-all duration-200 ${
+                      currentPage === page
+                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent shadow-sm"
+                        : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </motion.button>
+                )
+              )}
             </div>
 
             <motion.button
@@ -551,7 +576,7 @@ const RegistrarPendingLCs = () => {
           </motion.div>
         )}
 
-        {/* Edit LC Modal */}
+        {/* Edit LC Modal - UPDATED WITH NEW UI */}
         <AnimatePresence>
           {showModal && selectedStudent && (
             <motion.div
@@ -564,88 +589,269 @@ const RegistrarPendingLCs = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+                className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <DocumentTextIcon className="h-6 w-6 text-white" />
-                    <h2 className="text-lg font-semibold text-white">
-                      Edit LC – {formData.studentName || selectedStudent.studentProfile?.student?.studentName}
-                    </h2>
-                  </div>
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-white">
+                    Edit LC Form
+                  </h2>
                   <button
                     onClick={handleCloseModal}
-                    className="text-white hover:text-gray-200 transition-colors"
+                    className="text-white hover:text-gray-200"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 space-y-6">
-                  {/* Student Info Card */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <InformationCircleIcon className="h-5 w-5 text-blue-500" />
-                      Student Information
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <strong className="text-gray-600">PRN:</strong>{" "}
-                        {formData.prn || selectedStudent.studentProfile?.prn}
-                      </div>
-                      <div>
-                        <strong className="text-gray-600">Email:</strong>{" "}
-                        {formData.email || selectedStudent.studentProfile?.student?.email}
-                      </div>
-                      <div>
-                        <strong className="text-gray-600">Phone:</strong>{" "}
-                        {formData.phoneNo || selectedStudent.studentProfile?.student?.phoneNo}
-                      </div>
-                      <div>
-                        <strong className="text-gray-600">Student ID:</strong>{" "}
-                        {formData.studentID || "Not found"}
-                      </div>
+                {/* Form */}
+                <div className="p-8 max-h-[80vh] overflow-y-auto space-y-8">
+                  {/* Personal Details */}
+                  {/* Personal Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                      <UserCircleIcon className="h-5 w-5 text-blue-600" />
+                      Personal Details
+                    </h3>
+                    <hr className="border-gray-300 my-2" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        {
+                          label: "Student ID",
+                          name: "studentID",
+                          required: true,
+                        },
+                        {
+                          label: "Father's Name",
+                          name: "fatherName",
+                          required: true,
+                        },
+                        {
+                          label: "Mother's Name",
+                          name: "motherName",
+                          required: true,
+                        },
+                        { label: "Caste", name: "caste", required: true },
+                        {
+                          label: "Sub-Caste",
+                          name: "subCaste",
+                          required: false,
+                        },
+                        {
+                          label: "Nationality",
+                          name: "nationality",
+                          required: true,
+                        },
+                        {
+                          label: "Place of Birth",
+                          name: "placeOfBirth",
+                          required: true,
+                        },
+                        {
+                          label: "Date of Birth",
+                          name: "dateOfBirth",
+                          type: "date",
+                          required: true,
+                          value: formData.dateOfBirth
+                            ? new Date(formData.dateOfBirth)
+                                .toISOString()
+                                .split("T")[0]
+                            : "",
+                        },
+                        {
+                          label: "DOB (in words)",
+                          name: "dobWords",
+                          required: true,
+                        },
+                      ].map((field, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">
+                            {field.label}
+                            {field.required && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type={field.type || "text"}
+                            name={field.name}
+                            value={
+                              field.type === "date" && formData[field.name]
+                                ? new Date(formData[field.name])
+                                    .toISOString()
+                                    .split("T")[0]
+                                : formData[field.name] || ""
+                            }
+                            onChange={handleChange}
+                            required={field.required}
+                            className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Form Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
-                    {[
-                      "studentID", "fatherName", "motherName", "caste", "subCaste", 
-                      "nationality", "placeOfBirth", "dateOfBirth", "dobWords", 
-                      "lastCollege", "yearOfAdmission", "branch", "admissionMode", 
-                      "reasonForLeaving", "dateOfAdmission", "dateOfLeaving", 
-                      "progressAndConduct", "certificateNo", "remarks"
-                    ].map((field) => (
-                      <div key={field} className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-2">
-                          {formatFieldName(field)}
-                          {REQUIRED_FIELDS.includes(field) && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
+                  {/* College Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                      <AcademicCapIcon className="h-5 w-5 text-blue-600" />
+                      College Details
+                    </h3>
+                    <hr className="border-gray-300 my-2" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Branch <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
-                          name={field}
-                          value={formData[field] || ""}
+                          name="branch"
+                          value={formData.branch || ""}
                           onChange={handleChange}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                          placeholder={`Enter ${formatFieldName(field).toLowerCase()}`}
+                          required
+                          className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                        {formData[field] && (
-                          <span className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                            <CheckIcon className="h-3 w-3" />
-                            Current value: {formData[field]}
-                          </span>
-                        )}
                       </div>
-                    ))}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Year of Admission{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="yearOfAdmission"
+                          value={
+                            formData.yearOfAdmission
+                              ? new Date(formData.yearOfAdmission)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
+                          }
+                          onChange={handleChange}
+                          required
+                          className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Admission Mode <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="admissionMode"
+                          value={formData.admissionMode || ""}
+                          onChange={handleChange}
+                          required
+                          className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Select Mode</option>
+                          <option value="FIRSTYEAR">First Year</option>
+                          <option value="DIRECTSECONDYEAR">
+                            Direct Second Year
+                          </option>
+                          <option value="MBA">MBA</option>
+                          <option value="MCA">MCA</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Last College */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Last College Attended{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="lastCollege"
+                          placeholder="Enter last college"
+                          value={formData.lastCollege || ""}
+                          onChange={handleChange}
+                          required
+                          className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Reason */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Reason for Leaving College{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <span className="text-xs text-gray-500 italic ml-2">
+                          Note: Mention the type of Leaving Certificate –
+                          Migration or Leaving / Transfer
+                        </span>
+                      </div>
+                      <textarea
+                        name="reasonForLeaving"
+                        placeholder="Explain your reason for leaving"
+                        rows={3}
+                        value={formData.reasonForLeaving || ""}
+                        onChange={handleChange}
+                        required
+                        className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Additional Fields */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                      <InformationCircleIcon className="h-5 w-5 text-blue-600" />
+                      Additional Information
+                    </h3>
+                    <hr className="border-gray-300 my-2" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
+                      {[
+                        {
+                          name: "dateOfAdmission",
+                          type: "date",
+                          required: true,
+                        },
+                        { name: "dateOfLeaving", type: "date", required: true },
+                        {
+                          name: "progressAndConduct",
+                          type: "text",
+                          required: true,
+                        },
+                        { name: "certificateNo", type: "text", required: true },
+                        { name: "remarks", type: "text", required: false },
+                      ].map((field) => (
+                        <div key={field.name} className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">
+                            {formatFieldName(field.name)}{" "}
+                            {field.required && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type={field.type}
+                            name={field.name}
+                            value={
+                              field.type === "date" && formData[field.name]
+                                ? new Date(formData[field.name])
+                                    .toISOString()
+                                    .split("T")[0]
+                                : formData[field.name] || ""
+                            }
+                            onChange={handleChange}
+                            required={field.required}
+                            className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder={`Enter ${formatFieldName(
+                              field.name
+                            ).toLowerCase()}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200">
+                  <div className="bg-gray-50 px-6 py-3 flex justify-between items-center rounded-lg">
                     <div className="text-sm">
                       {isFormComplete() ? (
                         <span className="text-green-600 flex items-center gap-2">
@@ -659,25 +865,24 @@ const RegistrarPendingLCs = () => {
                         </span>
                       )}
                     </div>
+
                     <div className="flex gap-3">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
+                        type="button"
                         onClick={handleCloseModal}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
                       >
                         Cancel
-                      </motion.button>
+                      </button>
 
                       {!showDownloadButton ? (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
+                          type="button"
                           onClick={handleGenerateLC}
                           disabled={!isFormComplete() || generating}
                           className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 flex items-center gap-2 ${
                             isFormComplete() && !generating
-                              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                              ? "bg-blue-600 hover:bg-blue-700"
                               : "bg-gray-400 cursor-not-allowed"
                           }`}
                         >
@@ -692,17 +897,16 @@ const RegistrarPendingLCs = () => {
                               Generate LC
                             </>
                           )}
-                        </motion.button>
+                        </button>
                       ) : (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
+                          type="button"
                           onClick={handleDownloadPDF}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium flex items-center gap-2"
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 font-medium flex items-center gap-2"
                         >
                           <DocumentArrowUpIcon className="h-4 w-4" />
                           Download PDF
-                        </motion.button>
+                        </button>
                       )}
                     </div>
                   </div>
