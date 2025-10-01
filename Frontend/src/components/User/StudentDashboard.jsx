@@ -187,6 +187,13 @@ const StudentDashboard = () => {
     setSelectedRemarks(null);
   };
 
+  // Check if all departments have approved
+  const allApproved = approvals.length > 0 && 
+    approvals.every(approval => approval.status === "APPROVED");
+
+  // Find LC card (if LC is already generated)
+  const lcCard = approvals.find((a) => a.lcUrl);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -195,9 +202,15 @@ const StudentDashboard = () => {
     );
   }
 
-  const lcCard = approvals.find((a) => a.lcUrl);
-  const approvalsToRender = [...approvals];
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 text-center">{error}</div>
+      </div>
+    );
+  }
 
+  const approvalsToRender = [...approvals];
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -205,7 +218,7 @@ const StudentDashboard = () => {
         LC Form Approval Status
       </h2>
 
-      {/* LC Generated Card */}
+      {/* LC Generated Card - Show when LC is actually generated */}
       {lcCard && (
         <div className="max-w-md mx-auto bg-green-50 border-2 border-green-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
           <CheckCircleIcon className="h-8 w-8 text-green-600 mb-2" />
@@ -220,6 +233,27 @@ const StudentDashboard = () => {
           </button>
           <p className="text-xs text-gray-400 mt-2 text-center">
             Generated on: {new Date(lcCard.updatedAt).toLocaleDateString()}
+          </p>
+        </div>
+      )}
+
+      {/* LC Being Generated Card - Show when all approved but LC not generated yet */}
+      {allApproved && !lcCard && (
+        <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
+          <div className="flex items-center justify-center mb-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+            Your LC is Being Generated!
+          </h3>
+          <p className="text-sm text-gray-600 text-center mb-3">
+            All departments have approved. Your LC will be available shortly.
+          </p>
+          <div className="px-4 py-2 bg-blue-500 text-white rounded cursor-not-allowed opacity-75">
+            Generating LC...
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Please check back later
           </p>
         </div>
       )}
