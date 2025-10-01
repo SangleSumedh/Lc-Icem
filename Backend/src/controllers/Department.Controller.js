@@ -63,7 +63,7 @@ export const updateApprovalStatus = async (req, res) => {
     } else if (status === "REQUESTED_INFO") {
       await prisma.studentProfile.update({
         where: { prn: studentPrn },
-        data: { isFormEditable: true },
+        data: { isFormEditable: true },     
       });
     }
 

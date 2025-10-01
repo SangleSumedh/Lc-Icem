@@ -7,12 +7,18 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false, // TLS
   auth: {
-    user: process.env.COLLEGE_EMAIL, 
-    pass: process.env.COLLEGE_PASS, 
+    user: process.env.COLLEGE_EMAIL,
+    pass: process.env.COLLEGE_PASS,
   },
 });
 
-export const sendEmail = async ({ to, subject, text, html }) => {
+export const sendEmail = async ({
+  to,
+  subject,
+  text,
+  html,
+  attachments = [],
+}) => {
   try {
     const info = await transporter.sendMail({
       from: `"LC-ICEM" <${process.env.COLLEGE_EMAIL}>`,
@@ -20,6 +26,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
       subject,
       text,
       html,
+      attachments, // optional, default empty
     });
     console.log("Email sent: ", info.messageId);
     return info;
