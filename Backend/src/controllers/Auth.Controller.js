@@ -80,6 +80,7 @@ export const staffLogin = async (req, res) => {
     const valid = await bcrypt.compare(password, staff.passwordHash);
     if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
+    // 🔹 Generate JWT
     const token = jwt.sign(
       {
         role: "department",
@@ -92,6 +93,22 @@ export const staffLogin = async (req, res) => {
       JWT_SECRET,
       { expiresIn: "8h" }
     );
+
+    // 🔹 Create staff login log
+    try {
+      await prisma.staffLoginLog.create({
+        data: {
+          staffId: staff.staffId,
+          staffName: staff.name,
+          ipAddress: req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+        },
+      });
+      console.log(`✅ Staff login logged for ${staff.name}`);
+    } catch (logErr) {
+      console.error("⚠️ Failed to create staff login log:", logErr.message);
+      // Do not block login if logging fails
+    }
 
     res.json({
       success: true,
@@ -109,6 +126,7 @@ export const staffLogin = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
 
 export const superAdminLogin = async (req, res) => {
   const { email, password } = req.body;

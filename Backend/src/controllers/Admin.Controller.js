@@ -432,49 +432,173 @@ export const addStaff = async (req, res) => {
     // Send HTML Email using sendEmail()
     // -------------------------------
     const htmlContent = `
-  <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6fa; padding: 30px;">
-    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-      
-      <!-- Header -->
-      <h1 style="text-align: center; color: #4f46e5; margin-bottom: 10px;">Welcome to LC-ICEM Portal</h1>
-      <p style="text-align: center; color: #6b7280; font-size: 16px; margin-bottom: 30px;">
-        Your staff account has been created successfully.
-      </p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Account Created - LC-ICEM Portal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <!-- Header with Branding -->
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0; padding: 30px;">
+                    <tr>
+                        <td align="center">
+                            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">LC-ICEM Portal</h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Staff Account Activation</p>
+                        </td>
+                    </tr>
+                </table>
 
-      <!-- Greeting -->
-      <p style="font-size: 16px; color: #374151;">
-        Hi <strong>${name}</strong>,
-      </p>
-      <p style="font-size: 16px; color: #374151;">
-        Here are your login credentials:
-      </p>
+                <!-- Main Content Card -->
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff; border-radius: 0 0 12px 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 40px;">
+                            <!-- Welcome Icon -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 30px;">
+                                        <div style="background: #10b981; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                                <path d="M9 12l2 2 4-4"/>
+                                            </svg>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
 
-      <!-- Credentials Card -->
-      <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
-        <p style="margin: 0; font-weight: 600; color: #111827;">Email:</p>
-        <p style="margin: 5px 0 15px 0; color: #4b5563;">${email}</p>
+                            <!-- Title -->
+                            <h2 style="color: #1f2937; text-align: center; margin: 0 0 16px 0; font-size: 24px; font-weight: 700;">
+                                Staff Account Created Successfully
+                            </h2>
 
-        <p style="margin: 0; font-weight: 600; color: #111827;">Password:</p>
-        <p style="margin: 5px 0 0 0; color: #4b5563;">${password}</p>
-      </div>
+                            <!-- Greeting -->
+                            <p style="color: #6b7280; text-align: center; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                                Welcome to the <strong style="color: #374151;">LC-ICEM Portal</strong>, 
+                                <strong style="color: #4f46e5;">${name}</strong>
+                            </p>
 
-      <!-- Call to Action -->
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="https://debug-den.vercel.app/login" 
-           style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-           Login to Portal
-        </a>
-      </div>
+                            <!-- Introduction -->
+                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                                Your staff account has been successfully created. You now have access to the Leaving Certificate management system of Indira College of Engineering and Management.
+                            </p>
 
-      <!-- Footer -->
-      <p style="font-size: 14px; color: #9ca3af; text-align: center; margin-top: 30px;">
-        Please change your password after logging in for security purposes.<br/>
-        Best Regards, <br/>
-        <strong>LC-ICEM Admin Team</strong>
-      </p>
-      
-    </div>
-  </div>
+                            <!-- Credentials Card -->
+                            <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 8px; padding: 25px; margin: 25px 0;">
+                                <h3 style="color: #0369a1; margin: 0 0 20px 0; font-size: 18px; text-align: center;">
+                                    🔐 Your Login Credentials
+                                </h3>
+                                
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td width="30%" style="padding: 8px 0;">
+                                            <strong style="color: #075985;">Email:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0;">
+                                            <code style="background: #ffffff; padding: 6px 12px; border-radius: 4px; color: #0c4a6e; font-weight: 600; border: 1px solid #bae6fd;">
+                                                ${email}
+                                            </code>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="30%" style="padding: 8px 0;">
+                                            <strong style="color: #075985;">Password:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0;">
+                                            <code style="background: #ffffff; padding: 6px 12px; border-radius: 4px; color: #0c4a6e; font-weight: 600; border: 1px solid #bae6fd;">
+                                                ${password}
+                                            </code>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Security Notice -->
+                            <div style="background: #fefce8; border: 1px solid #fef08a; padding: 16px; border-radius: 8px; margin: 25px 0;">
+                                <p style="color: #854d0e; margin: 0; font-size: 14px; text-align: center;">
+                                    <strong>🔒 Security Notice:</strong> For security reasons, please change your password immediately after first login.
+                                </p>
+                            </div>
+
+                            <!-- Action Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="https://debug-den.vercel.app/login" 
+                                           target="_blank"
+                                           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                                  color: white; 
+                                                  text-decoration: none; 
+                                                  padding: 16px 32px; 
+                                                  border-radius: 8px; 
+                                                  font-weight: 600; 
+                                                  font-size: 16px;
+                                                  display: inline-block;
+                                                  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                                                  transition: all 0.3s ease;">
+                                            🚀 Access LC-ICEM Portal
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Portal Features -->
+                            <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                <h4 style="color: #374151; margin: 0 0 15px 0; font-size: 16px; text-align: center;">
+                                    📋 Portal Features Available:
+                                </h4>
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td align="center" width="33%" style="padding: 10px;">
+                                            <div style="color: #059669; font-size: 14px;">• Student Management</div>
+                                        </td>
+                                        <td align="center" width="33%" style="padding: 10px;">
+                                            <div style="color: #059669; font-size: 14px;">• LC Generation</div>
+                                        </td>
+                                        <td align="center" width="33%" style="padding: 10px;">
+                                            <div style="color: #059669; font-size: 14px;">• Document Tracking</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Support Information -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+                                <tr>
+                                    <td align="center">
+                                        <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0;">
+                                            Need assistance? Contact the admin team:
+                                        </p>
+                                        <p style="color: #374151; font-size: 14px; margin: 0; font-weight: 600;">
+                                            📧 admin@indiraicem.ac.in | 📞 System Administrator
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Footer -->
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+                    <tr>
+                        <td align="center">
+                            <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0;">
+                                This account provides access to the LC-ICEM Portal for official college use only.<br>
+                                &copy; ${new Date().getFullYear()} Indira College of Engineering and Management. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
 `;
 
     await sendEmail({
