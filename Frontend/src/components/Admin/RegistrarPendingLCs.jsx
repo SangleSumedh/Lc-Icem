@@ -621,6 +621,11 @@ const RegistrarPendingLCs = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {[
                         {
+                          label: "Student Full Name",
+                          name: "studentName",
+                          required: true,
+                        },
+                        {
                           label: "Student ID",
                           name: "studentID",
                           required: true,

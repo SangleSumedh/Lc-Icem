@@ -242,7 +242,7 @@ const StudentDashboard = () => {
       </h2>
 
       {/* Approval Timeline Component */}
-      <ApprovalTimeline approvals={approvals} />
+      {!allApproved && <ApprovalTimeline approvals={approvals} />}
 
       {/* LC Generated Card - Show when LC is actually generated */}
       {lcCard && (
