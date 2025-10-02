@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { generatePDF, REQUIRED_FIELDS } from "./Register/PDFgenerator";
+import { generatePDF2 } from "./Register/PDFgenerator2";
 
 const RegistrarPendingLCs = () => {
   const [pendingLCs, setPendingLCs] = useState([]);
@@ -182,6 +183,14 @@ const RegistrarPendingLCs = () => {
     }
   };
 
+  //Helper function for checking migration
+  const isForMigration = (student) => {
+    return (
+      student?.studentProfile?.forMigrationFlag ||
+      student?.forMigrationFlag ||
+      false
+    );
+  };
   // Handle Generate LC (Save to backend and prepare PDF)
   const handleGenerateLC = async () => {
     if (!selectedStudent) return;
@@ -205,7 +214,32 @@ const RegistrarPendingLCs = () => {
           selectedStudent.studentProfile?.student ||
           selectedStudent.student ||
           selectedStudent;
-        const pdfDoc = generatePDF(studentData, formData);
+
+        // FIX: Get college from selectedStudent (which comes from GET /lc-details)
+        const college =
+          selectedStudent.studentProfile?.student?.college ||
+          selectedStudent.student?.college ||
+          "Unknown";
+
+        console.log("📋 College detected:", college);
+        console.log("🔍 selectedStudent structure:", selectedStudent);
+
+        // Generate appropriate PDF based on college
+        let pdfDoc;
+        if (college === "IGSB") {
+          // Use IGSB-specific PDF generator
+          pdfDoc = generatePDF2(studentData, formData);
+          console.log("📘 IGSB College - Special PDF format generated");
+        } else if (college === "ICEM") {
+          // Use ICEM-specific PDF generator
+          pdfDoc = generatePDF(studentData, formData);
+          console.log("📗 ICEM College - Special PDF format generated");
+        } else {
+          // Use default PDF generator for other colleges
+          pdfDoc = generatePDF(studentData, formData);
+          console.log("📙 Default College - Standard PDF format generated");
+        }
+
         setGeneratedPDF(pdfDoc);
         setShowDownloadButton(true);
       } else {
@@ -226,7 +260,26 @@ const RegistrarPendingLCs = () => {
     if (generatedPDF) {
       try {
         const prn = selectedStudent.studentProfile?.prn || selectedStudent.prn;
-        generatedPDF.save(`Leaving_Certificate_${prn || "student"}.pdf`);
+
+        // FIX: Use the same college detection logic
+        const college =
+          selectedStudent.studentProfile?.student?.college ||
+          selectedStudent.student?.college ||
+          "Unknown";
+
+        console.log("📋 Filename college detection:", college);
+
+        // Create appropriate filename based on college
+        let fileName;
+        if (college === "IGSB") {
+          fileName = `IGSB_Leaving_Certificate_${prn || "student"}.pdf`;
+        } else if (college === "ICEM") {
+          fileName = `ICEM_Leaving_Certificate_${prn || "student"}.pdf`;
+        } else {
+          fileName = `Leaving_Certificate_${prn || "student"}.pdf`;
+        }
+
+        generatedPDF.save(fileName);
 
         setPdfDownloaded((prev) => ({
           ...prev,
@@ -610,6 +663,27 @@ const RegistrarPendingLCs = () => {
 
                 {/* Form */}
                 <div className="p-8 max-h-[80vh] overflow-y-auto space-y-8">
+                  {/* Migration Alert Banner */}
+                  {isForMigration(selectedStudent) && (
+                    <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <ExclamationTriangleIcon className="h-5 w-5 text-orange-400 mt-0.5" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-semibold text-orange-800">
+                            Migration Certificate Request
+                          </h3>
+                          <p className="text-sm text-orange-700 mt-1">
+                            <strong>Note for Registrar:</strong> This student is
+                            requesting a <strong>Migration Certificate</strong>.
+                            Please ensure all migration-specific details are
+                            properly filled and verified.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* Personal Details */}
                   {/* Personal Details */}
                   <div>

@@ -322,8 +322,8 @@ const LeavingCertificateForm = ({
                 name="reasonForLeaving"
                 placeholder={
                   formData.forMigrationFlag 
-                    ? "Explain your reason for migration..." 
-                    : "Explain your reason for leaving..."
+                    ? "Mention your reason for migration(Course Name and year)" 
+                    : "Mention your reason for leaving(Course Name and year)"
                 }
                 rows={3}
                 value={formData.reasonForLeaving}

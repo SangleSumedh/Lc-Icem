@@ -41,7 +41,7 @@ export const getPendingLCs = async (req, res) => {
       where: { lcReady: true, lcGenerated: false },
       include: {
         student: {
-          select: { prn: true, studentName: true, email: true, phoneNo: true },
+          select: { prn: true, studentName: true, email: true, phoneNo: true ,college:true},
         },
       },
       orderBy: { prn: "asc" },
@@ -78,7 +78,7 @@ export const getLCDetails = async (req, res) => {
       where: { prn },
       include: {
         student: {
-          select: { prn: true, studentName: true, email: true, phoneNo: true },
+          select: { prn: true, studentName: true, email: true, phoneNo: true, college: true },
         },
       },
     });
