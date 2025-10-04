@@ -18,7 +18,7 @@ import {
   FiPhone,
   FiFileText,
 } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { generatePDF, REQUIRED_FIELDS } from "./Register/PDFgenerator";
 import { generatePDF2 } from "./Register/PDFgenerator2";
 

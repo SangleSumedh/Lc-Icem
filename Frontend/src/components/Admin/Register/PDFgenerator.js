@@ -156,7 +156,7 @@ export const generatePDF = (studentData, formData) => {
   doc.text(
     "[No change in any entry in this certificate should be made except by the authority issuing it and infringement to the rule",
     pageWidth / 2,
-    margin + 67,
+    margin + 60,
     { align: "center" }
   );
   doc.text("will be punished with rustication]", pageWidth / 2, margin + 70, {
@@ -183,7 +183,7 @@ export const generatePDF = (studentData, formData) => {
     ["10", "Date of Admission", formData.dateOfAdmission || ""],
     ["11", "Progress & Conduct", formData.progressAndConduct || ""],
     ["12", "Date of Leaving College", formData.dateOfLeaving || ""],
-    ["13", "Year in which studying & since when",  `${formData.branch || ""} From ${formData.yearOfAdmission || ""}`],
+    ["13", "Year in which studying & since when",   `${formData.admissionMode ||  "No "} ${formData.branch || ""}  ${formData.yearOfAdmission || ""}`],
     ["14", "Reason for Leaving College", formData.reasonForLeaving || ""],
     ["15", "Remarks", formData.remarks || "_______"],
   ];
