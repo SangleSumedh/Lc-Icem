@@ -1,3 +1,4 @@
+//pdf generator for IGBS
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import logo from "../../../assets/logo.jpg";
@@ -11,7 +12,7 @@ export const REQUIRED_FIELDS = [
   "admissionMode", "lastCollege", "reasonForLeaving"
 ];
 
-export const generatePDF = (studentData, formData) => {
+export const generatePDF2 = (studentData, formData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -78,7 +79,7 @@ export const generatePDF = (studentData, formData) => {
     { align: "center" }
   );
   doc.text(
-    "Id No. :PU/PN/Engg./282/2007",
+    "Id No. :PU/PN/Engg./282/2007", //change this for mba
     pageWidth / 2 - textSpacing,
     margin + 30,
     { align: "center" }
@@ -171,7 +172,7 @@ export const generatePDF = (studentData, formData) => {
     ["10", "Date of Admission", formData.dateOfAdmission || ""],
     ["11", "Progress & Conduct", formData.progressAndConduct || ""],
     ["12", "Date of Leaving College", formData.dateOfLeaving || ""],
-    ["13", "Year in which studying & since when", formData.yearAndBranch || ""],
+    ["13", "Year in which studying & since when",  `${formData.branch || ""} From ${formData.yearOfAdmission || ""}`],
     ["14", "Reason for Leaving College", formData.reasonForLeaving || ""],
     ["15", "Remarks", formData.remarks || "_______"],
   ];

@@ -46,8 +46,8 @@ const ApprovalTimeline = ({ approvals }) => {
       icon: <BriefcaseIcon className="h-5 w-5" />,
     },
     {
-      id: "dept_placement",
-      name: "Department Placement Dept",
+      id: "dept._placement_coordinator",
+      name: "Dept. Placement Coordinator",
       icon: <BriefcaseIcon className="h-5 w-5" />,
     },
     {
@@ -61,12 +61,12 @@ const ApprovalTimeline = ({ approvals }) => {
       icon: <ClipboardDocumentListIcon className="h-5 w-5" />,
     },
     {
-      id: "hostel_mess",
-      name: "Hostel Mess",
+      id: "hostel/mess",
+      name: "Hostel/Mess",
       icon: <HomeIcon className="h-5 w-5" />,
     },
     {
-      id: "bus_transport",
+      id: "bus/transport",
       name: "Bus Transport",
       icon: <TruckIcon className="h-5 w-5" />,
     },
@@ -110,10 +110,6 @@ const ApprovalTimeline = ({ approvals }) => {
       approvalData: approval || null,
     };
   });
-
-  // Debug: Log the matching results
-  console.log("All approvals:", approvals);
-  console.log("Department statuses:", departmentStatuses);
 
   // Sort departments: Approved first, then Requested Info, then Rejected, then Pending
   const sortedDepartmentStatuses = [...departmentStatuses].sort((a, b) => {
@@ -236,22 +232,6 @@ const ApprovalTimeline = ({ approvals }) => {
           <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
           <span className="text-gray-600">Pending</span>
         </div>
-      </div>
-
-      {/* Debug information - remove in production */}
-      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-        <p className="font-semibold">Debug Info:</p>
-        <p>Approvals from API: {approvals.length}</p>
-        <p>Approved departments: {approvedCount}</p>
-        <p>Department matches:</p>
-        <ul className="mt-1">
-          {departmentStatuses.map((dept) => (
-            <li key={dept.id}>
-              {dept.name}: {dept.status}{" "}
-              {dept.approvalData ? `(Matched)` : `(No match)`}
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );
