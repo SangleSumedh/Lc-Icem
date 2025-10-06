@@ -133,6 +133,21 @@ export const getHodBranches = async (req, res) => {
   }
 };
 
+export const getDepartments = async (req, res) => {
+  try {
+    const Departments = await prisma.department.findMany({
+      select: { deptId: true, deptName: true, college: true },
+    });
+
+    res.json({ success: true, Departments });
+  } catch (err) {
+    console.error("Error fetching Departments:", err.message);
+    res.status(500).json({ error: "Failed to fetch Departments" });
+  }
+};
+
+
+
 // Get approval status for student
 export const getApprovalStatus = async (req, res) => {
   const prn = req.user.prn;

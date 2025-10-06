@@ -695,9 +695,8 @@ export const deleteStaff = async (req, res) => {
 
     await prisma.$transaction(async (tx) => {
       // Unlink staff from actions & requests before delete
-      await tx.approvalAction.updateMany({
+      await tx.approvalAction.deleteMany({
         where: { staffId: parseInt(staffId) },
-        data: { staffId: null },
       });
 
       await tx.approvalRequest.updateMany({
@@ -713,6 +712,31 @@ export const deleteStaff = async (req, res) => {
     console.log(`🗑️ Staff deleted: ID ${staffId}`);
     return sendResponse(res, true, "Staff deleted successfully");
   } catch (err) {
+    return sendResponse(res, false, err.message, null, 500);
+  }
+};
+
+// 🔍 Get All Staff Login Logs (Sorted by latest first)
+export const getStaffLoginLogs = async (req, res) => {
+  try {
+    const loginLogs = await prisma.staffLoginLog.findMany({
+      orderBy: {
+        loginAt: 'desc' // Latest logs first
+      },
+      select: {
+        id: true,
+        staffId: true,
+        staffName: true,
+        loginAt: true,
+        ipAddress: true,
+        userAgent: true
+      }
+    });
+    console.log("Staff log called")
+
+    return sendResponse(res, true, "Staff login logs fetched successfully", loginLogs);
+  } catch (err) {
+    console.error("Get staff login logs error:", err);
     return sendResponse(res, false, err.message, null, 500);
   }
 };
