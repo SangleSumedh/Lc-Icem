@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 import toast from "react-hot-toast";
+import ENV from "../env";
 
 // ✅ Utility to generate safe slugs
 const slugify = (str) =>

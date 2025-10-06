@@ -10,6 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
+import ENV from "../env";
 
 const Register = () => {
   const navigate = useNavigate();

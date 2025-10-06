@@ -8,6 +8,7 @@ import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } fr
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import toast from "react-hot-toast";
+import ENV from "../../env";
 
 function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [approvals, setApprovals] = useState([]);

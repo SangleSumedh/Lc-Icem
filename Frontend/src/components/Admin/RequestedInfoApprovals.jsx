@@ -20,6 +20,7 @@ import {
 } from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import ENV from "../../env";
 
 function RequestedInfoApprovals() {
   const [approvals, setApprovals] = useState([]);

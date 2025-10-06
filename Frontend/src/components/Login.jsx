@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 import toast from "react-hot-toast";
+import ENV from "../env";
 
 const Login = () => {
   const navigate = useNavigate();
