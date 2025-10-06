@@ -212,7 +212,7 @@ const AdminLogin = () => {
           </div>
         )}
         {formErrors.loginType && (
-          <p className="text-xs text-red-500 mt-1">
+          <p className="text-xs text-rose-500 mt-1">
             Please select a login type
           </p>
         )}
@@ -239,7 +239,7 @@ const AdminLogin = () => {
             />
           </div>
           {formErrors.email && (
-            <p className="text-sm text-red-500 mt-1">Email id is required</p>
+            <p className="text-sm text-rose-500 mt-1">Email id is required</p>
           )}
         </div>
 
@@ -280,7 +280,7 @@ const AdminLogin = () => {
             </button>
           </div>
           {formErrors.password && (
-            <p className="text-sm text-red-500 mt-1">Password is required</p>
+            <p className="text-sm text-rose-500 mt-1">Password is required</p>
           )}
         </div>
 

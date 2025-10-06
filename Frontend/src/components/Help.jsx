@@ -52,7 +52,7 @@ const Help = () => {
 
         {/* Contact Support */}
         <div className="bg-white shadow-md rounded-xl p-6 hover:shadow-lg transition">
-          <LifeBuoy className="w-8 h-8 text-red-500 mb-3" />
+          <LifeBuoy className="w-8 h-8 text-rose-500 mb-3" />
           <h2 className="text-xl font-semibold mb-2">Contact Support</h2>
           <p className="text-gray-600 text-sm mb-3">
             Need personalized help? Reach out to our support team directly.
@@ -161,7 +161,7 @@ const Help = () => {
               </div>
             </form>
           ) : (
-            <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg shadow mb-6 w-full">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-lg shadow mb-6 w-full">
               <h2 className="text-lg font-semibold mb-2">
                 ✅ Ticket Submitted!
               </h2>
@@ -199,7 +199,7 @@ const Help = () => {
                   </div>
                   <button
                     onClick={() => deleteTicket(t.id)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-rose-500 hover:text-rose-700"
                   >
                     ✕
                   </button>

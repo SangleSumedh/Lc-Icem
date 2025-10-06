@@ -149,7 +149,7 @@ const ApprovalTimeline = ({ approvals }) => {
 
         {/* Filled progress line */}
         <div
-          className="absolute top-5 h-1 bg-green-500 transition-all duration-500"
+          className="absolute top-5 h-1 bg-emerald-500 transition-all duration-500"
           style={{ width: `${progressPercentage}%` }}
         ></div>
 
@@ -160,9 +160,9 @@ const ApprovalTimeline = ({ approvals }) => {
               <div
                 className={`relative flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                   dept.status === "APPROVED"
-                    ? "bg-green-500 border-green-600 text-white"
+                    ? "bg-emerald-500 border-emerald-600 text-white"
                     : dept.status === "REJECTED"
-                    ? "bg-red-500 border-red-600 text-white"
+                    ? "bg-rose-500 border-red-600 text-white"
                     : dept.status === "REQUESTED_INFO"
                     ? "bg-orange-500 border-orange-600 text-white"
                     : "bg-white border-gray-300 text-gray-400"
@@ -185,9 +185,9 @@ const ApprovalTimeline = ({ approvals }) => {
                 <p
                   className={`text-xs mt-1 ${
                     dept.status === "APPROVED"
-                      ? "text-green-600"
+                      ? "text-emerald-600"
                       : dept.status === "REJECTED"
-                      ? "text-red-600"
+                      ? "text-rose-600"
                       : dept.status === "REQUESTED_INFO"
                       ? "text-orange-600"
                       : "text-gray-500"
@@ -208,7 +208,7 @@ const ApprovalTimeline = ({ approvals }) => {
         </p>
         <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
           <div
-            className="bg-green-600 h-2.5 rounded-full transition-all duration-500"
+            className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
@@ -217,7 +217,7 @@ const ApprovalTimeline = ({ approvals }) => {
       {/* Status Legend */}
       <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
           <span className="text-gray-600">Approved ({approvedCount})</span>
         </div>
         <div className="flex items-center gap-1">
@@ -225,7 +225,7 @@ const ApprovalTimeline = ({ approvals }) => {
           <span className="text-gray-600">Info Needed</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
           <span className="text-gray-600">Rejected</span>
         </div>
         <div className="flex items-center gap-1">

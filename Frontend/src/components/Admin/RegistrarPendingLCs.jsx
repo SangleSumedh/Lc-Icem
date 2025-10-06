@@ -443,14 +443,14 @@ const RegistrarPendingLCs = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 bg-red-50 border border-red-200 rounded-xl"
+            className="p-4 bg-rose-50 border border-red-200 rounded-xl"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                <ExclamationTriangleIcon className="h-5 w-5 text-rose-400" />
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                <h3 className="text-sm font-medium text-rose-800">{error}</h3>
               </div>
             </div>
           </motion.div>
@@ -788,7 +788,7 @@ const RegistrarPendingLCs = () => {
                           <label className="block text-sm font-medium text-gray-700">
                             {field.label}
                             {field.required && (
-                              <span className="text-red-500">*</span>
+                              <span className="text-rose-500">*</span>
                             )}
                           </label>
                           <input
@@ -820,7 +820,7 @@ const RegistrarPendingLCs = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Branch <span className="text-red-500">*</span>
+                          Branch <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -835,7 +835,7 @@ const RegistrarPendingLCs = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Year of Admission{" "}
-                          <span className="text-red-500">*</span>
+                          <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -849,7 +849,7 @@ const RegistrarPendingLCs = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Admission Mode <span className="text-red-500">*</span>
+                          Admission Mode <span className="text-rose-500">*</span>
                         </label>
                         <select
                           name="admissionMode"
@@ -874,7 +874,7 @@ const RegistrarPendingLCs = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Last College Attended{" "}
-                          <span className="text-red-500">*</span>
+                          <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -893,7 +893,7 @@ const RegistrarPendingLCs = () => {
                       <div className="flex items-center justify-between">
                         <label className="block text-sm font-medium text-gray-700">
                           Reason for Leaving College{" "}
-                          <span className="text-red-500">*</span>
+                          <span className="text-rose-500">*</span>
                         </label>
                         <span className="text-xs text-gray-500 italic ml-2">
                           Note: Mention the type of Leaving Certificate –
@@ -939,7 +939,7 @@ const RegistrarPendingLCs = () => {
                           <label className="block text-sm font-medium text-gray-700">
                             {formatFieldName(field.name)}{" "}
                             {field.required && (
-                              <span className="text-red-500">*</span>
+                              <span className="text-rose-500">*</span>
                             )}
                           </label>
                           <input
@@ -968,12 +968,12 @@ const RegistrarPendingLCs = () => {
                   <div className="bg-gray-50 px-6 py-3 flex justify-between items-center rounded-lg">
                     <div className="text-sm">
                       {isFormComplete() ? (
-                        <span className="text-green-600 flex items-center gap-2">
+                        <span className="text-emerald-600 flex items-center gap-2">
                           <CheckIcon className="h-4 w-4" />
                           All required fields are filled
                         </span>
                       ) : (
-                        <span className="text-red-600 flex items-center gap-2">
+                        <span className="text-rose-600 flex items-center gap-2">
                           <ExclamationTriangleIcon className="h-4 w-4" />
                           Please fill all required fields (*)
                         </span>
@@ -1016,7 +1016,7 @@ const RegistrarPendingLCs = () => {
                         <button
                           type="button"
                           onClick={handleDownloadPDF}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 font-medium flex items-center gap-2"
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 font-medium flex items-center gap-2"
                         >
                           <DocumentArrowUpIcon className="h-4 w-4" />
                           Download PDF
@@ -1102,7 +1102,7 @@ const RegistrarPendingLCs = () => {
                           </p>
                           <button
                             onClick={() => setUploadFile(null)}
-                            className="text-xs text-red-600 hover:text-red-700"
+                            className="text-xs text-rose-600 hover:text-rose-700"
                           >
                             Remove file
                           </button>

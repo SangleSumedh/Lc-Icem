@@ -154,11 +154,11 @@ function Profile() {
   const getRoleColor = () => {
     switch (user.role) {
       case "superadmin":
-        return "bg-red-100 text-red-800";
+        return "bg-rose-100 text-red-800";
       case "department":
-        return "bg-blue-100 text-blue-800";
+        return "bg-sky-100 text-blue-800";
       case "student":
-        return "bg-green-100 text-green-800";
+        return "bg-emerald-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -314,7 +314,8 @@ function Profile() {
                     isLoading ||
                     !oldPassword ||
                     !newPassword ||
-                    !confirmPassword
+                    !confirmPassword ||
+                    newPassword !== confirmPassword
                   }
                   className="w-full bg-gradient-to-r from-[#00539C] to-[#0077CC] text-white py-3 px-4 rounded-lg font-medium hover:from-[#004085] hover:to-[#00539C] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                 >
@@ -332,7 +333,7 @@ function Profile() {
                 </button>
 
                 {/* Password Requirements */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mt-4">
                   <h3 className="text-sm font-medium text-blue-800 mb-2">
                     Password Requirements
                   </h3>
@@ -340,7 +341,7 @@ function Profile() {
                     <li className="flex items-center gap-2">
                       <div
                         className={`w-1.5 h-1.5 rounded-full ${
-                          oldPassword ? "bg-green-500" : "bg-blue-500"
+                          oldPassword ? "bg-emerald-500" : "bg-sky-500"
                         }`}
                       />
                       Current password is required
@@ -349,8 +350,8 @@ function Profile() {
                       <div
                         className={`w-1.5 h-1.5 rounded-full ${
                           newPassword.length >= 6
-                            ? "bg-green-500"
-                            : "bg-blue-500"
+                            ? "bg-emerald-500"
+                            : "bg-sky-500"
                         }`}
                       />
                       At least 6 characters long
@@ -361,8 +362,8 @@ function Profile() {
                           newPassword &&
                           confirmPassword &&
                           newPassword === confirmPassword
-                            ? "bg-green-500"
-                            : "bg-blue-500"
+                            ? "bg-emerald-500"
+                            : "bg-sky-500"
                         }`}
                       />
                       Passwords must match

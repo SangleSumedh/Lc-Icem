@@ -421,7 +421,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                           setStatus("APPROVED");
                           setActiveDropdown(null);
                         }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
+                        className="w-full px-4 py-2.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
                           className="w-4 h-4"
@@ -468,7 +468,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                             setStatus("REJECTED");
                             setActiveDropdown(null);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors duration-150"
+                          className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-150"
                         >
                           <svg
                             className="w-4 h-4"
@@ -593,7 +593,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
               {/* Remarks */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remarks <span className="text-red-500">*</span>
+                  Remarks <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   value={remarks}
@@ -648,9 +648,9 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                 onClick={handleUpdateStatus}
                 className={`px-5 py-2.5 rounded-lg text-white font-medium text-sm transition-colors duration-200 ${
                   status === "APPROVED"
-                    ? "bg-green-600 hover:bg-green-700"
+                    ? "bg-emerald-600 hover:bg-emerald-700"
                     : status === "REJECTED"
-                    ? "bg-red-600 hover:bg-red-700"
+                    ? "bg-rose-600 hover:bg-rose-700"
                     : "bg-yellow-600 hover:bg-yellow-700"
                 }`}
               >

@@ -404,7 +404,7 @@ function AddUserForm() {
                 setShowExportDropdown(!showExportDropdown);
               }}
               disabled={loading || students.length === 0}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
@@ -416,7 +416,7 @@ function AddUserForm() {
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-green-600 font-medium">Excel</span>
+                  <span className="text-emerald-600 font-medium">Excel</span>
                 </button>
                 <button
                   onClick={exportToWord}
@@ -428,7 +428,7 @@ function AddUserForm() {
                   onClick={exportToPDF}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-red-600 font-medium">PDF</span>
+                  <span className="text-rose-600 font-medium">PDF</span>
                 </button>
               </div>
             )}
@@ -575,7 +575,7 @@ function AddUserForm() {
                           setActiveDropdown(null);
                         }}
                         disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                        className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
                           className="w-4 h-4"
@@ -666,7 +666,7 @@ function AddUserForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    PRN <span className="text-red-500">*</span>
+                    PRN <span className="text-rose-500">*</span>
                   </label>
                   <input
                     name="prn"
@@ -680,7 +680,7 @@ function AddUserForm() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Full Name <span className="text-red-500">*</span>
+                    Full Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     name="studentName"
@@ -697,7 +697,7 @@ function AddUserForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Email <span className="text-red-500">*</span>
+                    Email <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -728,7 +728,7 @@ function AddUserForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    College <span className="text-red-500">*</span>
+                    College <span className="text-rose-500">*</span>
                   </label>
                   <select
                     name="college"
@@ -743,7 +743,7 @@ function AddUserForm() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Password <span className="text-red-500">*</span>
+                    Password <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="password"
@@ -811,7 +811,7 @@ function AddUserForm() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Full Name <span className="text-red-500">*</span>
+                    Full Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     value={editing.studentName}
@@ -828,7 +828,7 @@ function AddUserForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Email <span className="text-red-500">*</span>
+                    Email <span className="text-rose-500">*</span>
                   </label>
                   <input
                     value={editing.email}
@@ -858,7 +858,7 @@ function AddUserForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
-                    College <span className="text-red-500">*</span>
+                    College <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={editing.college}
@@ -934,7 +934,7 @@ function AddUserForm() {
                 </span>
                 ?
                 <br />
-                <span className="text-red-500 text-xs">
+                <span className="text-rose-500 text-xs">
                   This action cannot be undone and will permanently remove the
                   student record.
                 </span>
@@ -950,7 +950,7 @@ function AddUserForm() {
                 <button
                   onClick={handleDeleteConfirm}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
+                  className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   {loading ? "Deleting..." : "Delete"}
                 </button>

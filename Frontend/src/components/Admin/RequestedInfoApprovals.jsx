@@ -478,7 +478,7 @@ function RequestedInfoApprovals() {
                           setRemarks("");
                           setActiveDropdown(null);
                         }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
+                        className="w-full px-4 py-2.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
                           className="w-4 h-4"
@@ -598,7 +598,7 @@ function RequestedInfoApprovals() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remarks <span className="text-red-500">*</span>
+                  Remarks <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   value={remarks}
@@ -621,7 +621,7 @@ function RequestedInfoApprovals() {
               </button>
               <button
                 onClick={handleApprove}
-                className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
+                className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 text-sm font-medium"
               >
                 Approve Request
               </button>

@@ -217,7 +217,7 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[90vh]">
+      <div className="flex items-center justify-center h-[70vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -234,13 +234,13 @@ const StudentDashboard = () => {
             <li>Ensure all details are accurate before submission.</li>
             <li>
               Mandatory fields are marked with{" "}
-              <span className="text-red-500">*</span>.
+              <span className="text-rose-500">*</span>.
             </li>
             <li>The application will be processed within 7 working days.</li>
             <li>Contact the admin office in case of discrepancies.</li>
           </ul>
-          <div className="mt-4 p-3 bg-red-50 rounded-md">
-            <p className="text-red-600">{error}</p>
+          <div className="mt-4 p-3 bg-rose-50 rounded-md">
+            <p className="text-rose-600">{error}</p>
           </div>
         </div>
       </div>
@@ -266,7 +266,7 @@ const StudentDashboard = () => {
           </h3>
           <button
             onClick={() => window.open(lcCard.lcUrl, "_blank")}
-            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-green-600 transition-colors"
+            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-emerald-600 transition-colors"
           >
             Open LC
           </button>

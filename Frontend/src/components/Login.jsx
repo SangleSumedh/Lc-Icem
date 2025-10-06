@@ -109,7 +109,7 @@ const Login = () => {
             />
           </div>
           {formErrors.email && (
-            <p className="text-sm text-red-500 mt-1">Email is required</p>
+            <p className="text-sm text-rose-500 mt-1">Email is required</p>
           )}
         </div>
 
@@ -151,7 +151,7 @@ const Login = () => {
             </button>
           </div>
           {formErrors.password && (
-            <p className="text-sm text-red-500 mt-1">Password is required</p>
+            <p className="text-sm text-rose-500 mt-1">Password is required</p>
           )}
         </div>
 
@@ -159,7 +159,7 @@ const Login = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#00539C] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#003C84] transition"
         >
           {loading ? "Logging in..." : "Login"}
         </button>

@@ -26,11 +26,10 @@ function PublicNavbar() {
             </button>
 
             {/* Home Icon */}
-            <button
-              onClick={() => navigate("/")}
-              className="text-white hover:text-gray-200 transition"
-            >
-              <FaHome className="w-7 h-7" /> {/* Bigger, pure white icon */}
+            <button className="text-white hover:text-gray-200 transition">
+              <a href="https://indiraicem.ac.in" target="_blank">
+                <FaHome className="w-7 h-7" /> {/* Bigger, pure white icon */}
+              </a>
             </button>
           </div>
         </div>

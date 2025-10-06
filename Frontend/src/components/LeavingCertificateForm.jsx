@@ -59,7 +59,7 @@ const LeavingCertificateForm = ({
   }) => (
     <div className="relative w-full">
       <label className="block text-sm font-medium text-gray-700 mb-0.5">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <div
         onClick={() => !disabled && !viewMode && toggleDropdown(name)}
@@ -120,7 +120,7 @@ const LeavingCertificateForm = ({
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+        <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-white">
             {viewMode
               ? "View LC Form"
@@ -141,7 +141,7 @@ const LeavingCertificateForm = ({
           {/* Personal Details */}
           <div>
             <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-              <UserCircleIcon className="h-5 w-5 text-blue-600" /> Personal
+              <UserCircleIcon className="h-5 w-5 text-[#00539C]" /> Personal
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
@@ -149,7 +149,7 @@ const LeavingCertificateForm = ({
               {/* Student Name */}
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Student Full Name <span className="text-red-500">*</span>
+                  Student Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -188,7 +188,7 @@ const LeavingCertificateForm = ({
                 <div key={idx} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     {field.label}{" "}
-                    {field.required && <span className="text-red-500">*</span>}
+                    {field.required && <span className="text-rose-500">*</span>}
                   </label>
                   <input
                     type={field.type || "text"}
@@ -210,7 +210,7 @@ const LeavingCertificateForm = ({
           {/* College Details */}
           <div>
             <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-              <AcademicCapIcon className="h-5 w-5 text-blue-600" /> College
+              <AcademicCapIcon className="h-5 w-5 text-[#00539C]" /> College
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
@@ -225,7 +225,7 @@ const LeavingCertificateForm = ({
                   checked={formData.forMigrationFlag}
                   onChange={handleChange}
                   disabled={viewMode}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                  className="h-4 w-4 text-[#00539C] rounded focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
                 <label
                   htmlFor="forMigrationFlag"
@@ -252,7 +252,7 @@ const LeavingCertificateForm = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Year of Admission <span className="text-red-500">*</span>
+                  Year of Admission <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -287,7 +287,7 @@ const LeavingCertificateForm = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Last College Attended <span className="text-red-500">*</span>
+                  Last College Attended <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -310,13 +310,9 @@ const LeavingCertificateForm = ({
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
                   Reason for Leaving College{" "}
-                  <span className="text-red-500">*</span>
+                  <span className="text-rose-500">*</span>
                 </label>
-                <span className="text-xs text-gray-500 italic ml-2">
-                  {formData.forMigrationFlag
-                    ? "Note: This is a Migration Certificate application"
-                    : "Note: Mention the type of Leaving Certificate – Migration or Leaving / Transfer"}
-                </span>
+                
               </div>
               <textarea
                 name="reasonForLeaving"
@@ -344,7 +340,7 @@ const LeavingCertificateForm = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700"
               >
                 Close
               </button>
@@ -360,7 +356,7 @@ const LeavingCertificateForm = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? "Updating..." : "Update"}
                 </button>
@@ -377,7 +373,7 @@ const LeavingCertificateForm = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? "Submitting..." : "Submit"}
                 </button>

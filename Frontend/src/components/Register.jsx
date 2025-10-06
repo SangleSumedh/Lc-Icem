@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 import ENV from "../env";
+import { toast } from "react-hot-toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -47,6 +48,8 @@ const Register = () => {
     if (Object.values(errors).every((v) => !v)) {
       try {
         setLoading(true);
+        const toastId = toast.loading("Registering...");
+
         const res = await fetch(
           `${ENV.BASE_URL}/auth/student/register` ||
             "http://localhost:5000/auth/student/register",
@@ -59,17 +62,19 @@ const Register = () => {
 
         const data = await res.json();
         if (res.ok) {
-          alert("✅ Registration successful!");
+          toast.success("Registration successful!", { id: toastId });
           navigate("/");
         } else {
-          alert(data.error || "❌ Failed to register");
+          toast.error(data.error || "Failed to register", { id: toastId });
         }
       } catch (err) {
         console.error("❌ Network error:", err);
-        alert("Could not connect to backend.");
+        toast.error("Could not connect to backend.");
       } finally {
         setLoading(false);
       }
+    } else {
+      toast.error("Please fill all required fields");
     }
   };
 
@@ -295,7 +300,7 @@ const Register = () => {
             </div>
           )}
           {formErrors.college && (
-            <p className="text-xs text-red-500 mt-1">Please select a college</p>
+            <p className="text-xs text-rose-500 mt-1">Please select a college</p>
           )}
         </div>
 
@@ -303,7 +308,7 @@ const Register = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#003C84] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#00539C] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Registering..." : "Register"}
         </button>

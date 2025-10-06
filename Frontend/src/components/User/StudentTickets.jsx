@@ -1,22 +1,38 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
+  AcademicCapIcon,
+  UserCircleIcon,
+  ExclamationCircleIcon,
+  CalendarIcon,
+  CheckCircleIcon,
   EyeIcon,
   ClockIcon,
-  CheckCircleIcon,
   XCircleIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { jwtDecode } from "jwt-decode";
+import ENV from "../../env";
 
-const StudentTickets = () => {
+function StudentTickets() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Get student PRN from localStorage (assuming it's stored during login)
+
   const getStudentPrn = () => {
-    return localStorage.getItem("prn"); // or however you store student info
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    try {
+      const decoded = jwtDecode(token);
+      return decoded.prn || decoded.sub || null; // adjust according to your JWT payload
+    } catch (err) {
+      console.error("Error decoding JWT:", err);
+      return null;
+    }
   };
 
   // Get auth token from localStorage
@@ -30,6 +46,7 @@ const StudentTickets = () => {
       setLoading(true);
       const token = getAuthToken();
       const prn = getStudentPrn();
+      console.log(prn);
 
       if (!prn) {
         setError("Student PRN not found. Please log in again.");
@@ -98,21 +115,18 @@ const StudentTickets = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#00539C] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your tickets...</p>
-        </div>
+      <div className="flex items-center justify-center h-[90vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#]"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="min-h-[60vh] bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <XCircleIcon className="w-8 h-8 text-red-600" />
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircleIcon className="w-8 h-8 text-rose-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Error Loading Tickets
@@ -130,8 +144,8 @@ const StudentTickets = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-[60vh] bg-gray-50 p-6">
+      <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl px-6 py-4 mb-6">
           <div className="flex justify-between items-center">
@@ -148,7 +162,6 @@ const StudentTickets = () => {
               className="text-gray-700 border border-gray-300 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 hover:bg-gray-50"
             >
               <ArrowPathIcon className="w-5 h-5" />
-              Refresh
             </button>
           </div>
         </div>
@@ -173,16 +186,17 @@ const StudentTickets = () => {
             {tickets.map((ticket) => (
               <div
                 key={ticket.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-all duration-200"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                {/* Header Section */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {ticket.subject}
                       </h3>
                       <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border flex-shrink-0 ${getStatusColor(
                           ticket.status
                         )}`}
                       >
@@ -191,53 +205,85 @@ const StudentTickets = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-                      <div>
-                        <span className="font-medium">Category:</span>{" "}
-                        {ticket.category}
+                    {/* Ticket Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600 mb-4">
+                      <div className="space-y-2">
+                        <div>
+                          <span className="font-medium text-gray-500">
+                            Category:
+                          </span>
+                          <p className="text-gray-800 mt-0.5">
+                            {ticket.category}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-500">
+                            Ticket ID:
+                          </span>
+                          <p className="text-gray-800 mt-0.5 font-mono">
+                            {ticket.ticketId}
+                          </p>
+                        </div>
                       </div>
                       <div>
-                        <span className="font-medium">Ticket ID:</span>{" "}
-                        {ticket.ticketId}
-                      </div>
-                      <div>
-                        <span className="font-medium">Department:</span>{" "}
-                        {ticket.department}
+                        <span className="font-medium text-gray-500">
+                          Department:
+                        </span>
+                        <p className="text-gray-800 mt-0.5">
+                          {ticket.department}
+                        </p>
                       </div>
                     </div>
 
-                    <p className="text-gray-700 mb-4 line-clamp-2">
-                      {ticket.description}
-                    </p>
+                    {/* Description */}
+                    <div className="mb-4">
+                      <p className="text-gray-700 line-clamp-3 text-sm leading-relaxed">
+                        {ticket.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                {/* Footer Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100 gap-3">
                   <div className="text-sm text-gray-500">
-                    Created:{" "}
-                    {new Date(ticket.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {ticket.closedAt && (
-                      <span className="ml-4">
-                        • Closed:{" "}
-                        {new Date(ticket.closedAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>
+                        Created:{" "}
+                        {new Date(ticket.createdAt).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
                       </span>
-                    )}
+                      {ticket.closedAt && (
+                        <>
+                          <span className="text-gray-300">•</span>
+                          <span>
+                            Closed:{" "}
+                            {new Date(ticket.closedAt).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setSelectedTicket(ticket)}
-                      className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       <EyeIcon className="w-4 h-4" />
                       View Details
@@ -252,8 +298,8 @@ const StudentTickets = () => {
 
       {/* Ticket Details Modal */}
       {selectedTicket && (
-        <div className="fixed inset-0 bg-black/30 shadow-2xl backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/30  shadow-2xl backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] border-2 border-gray-300 overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-2xl font-bold text-[#00539C]">
@@ -395,6 +441,6 @@ const StudentTickets = () => {
       )}
     </div>
   );
-};
+}
 
 export default StudentTickets;

@@ -722,7 +722,7 @@ const AddDepartmentForm = () => {
                 setShowExportDropdown(!showExportDropdown);
               }}
               disabled={loading || departments.length === 0}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
@@ -734,7 +734,7 @@ const AddDepartmentForm = () => {
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-green-600 font-medium">Excel</span>
+                  <span className="text-emerald-600 font-medium">Excel</span>
                 </button>
                 <button
                   onClick={exportToWord}
@@ -746,7 +746,7 @@ const AddDepartmentForm = () => {
                   onClick={exportToPDF}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-red-600 font-medium">PDF</span>
+                  <span className="text-rose-600 font-medium">PDF</span>
                 </button>
               </div>
             )}
@@ -935,7 +935,7 @@ const AddDepartmentForm = () => {
                           setActiveDropdown(null);
                         }}
                         disabled={loading}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                        className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
                           className="w-3.5 h-3.5"
@@ -1037,7 +1037,7 @@ const AddDepartmentForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Department Name <span className="text-red-500">*</span>
+                      Department Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="deptName"
@@ -1064,7 +1064,7 @@ const AddDepartmentForm = () => {
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      College <span className="text-red-500">*</span>
+                      College <span className="text-rose-500">*</span>
                     </label>
                     <select
                       name="college"
@@ -1094,7 +1094,7 @@ const AddDepartmentForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Staff Name <span className="text-red-500">*</span>
+                      Staff Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="name"
@@ -1108,7 +1108,7 @@ const AddDepartmentForm = () => {
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Email <span className="text-red-500">*</span>
+                      Email <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -1123,7 +1123,7 @@ const AddDepartmentForm = () => {
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Password <span className="text-red-500">*</span>
+                      Password <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -1369,7 +1369,7 @@ const AddDepartmentForm = () => {
                 <button
                   onClick={() => setShowAddStaffModal(true)}
                   disabled={loading}
-                  className="flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
                 >
                   <FiPlus size={14} /> Add Staff
                 </button>
@@ -1462,7 +1462,7 @@ const AddDepartmentForm = () => {
                                   setStaffDropdown(null);
                                 }}
                                 disabled={loading}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                                className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                               >
                                 <svg
                                   className="w-3.5 h-3.5"
@@ -1664,7 +1664,7 @@ const AddDepartmentForm = () => {
       {deleteStaff && (
         <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
+            <div className="bg-rose-600 px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
                 Confirm Delete Staff
               </h2>
@@ -1692,7 +1692,7 @@ const AddDepartmentForm = () => {
                 <button
                   onClick={handleDeleteStaffConfirm}
                   disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50"
                 >
                   {loading ? "Deleting..." : "Delete"}
                 </button>
@@ -1726,7 +1726,7 @@ const AddDepartmentForm = () => {
                 </span>
                 ?
                 <br />
-                <span className="text-red-500 text-xs">
+                <span className="text-rose-500 text-xs">
                   This action cannot be undone and will remove all associated
                   staff members.
                 </span>
@@ -1742,7 +1742,7 @@ const AddDepartmentForm = () => {
                 <button
                   onClick={handleDeleteConfirm}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
+                  className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   {loading ? "Deleting..." : "Delete"}
                 </button>
