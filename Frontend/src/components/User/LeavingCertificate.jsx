@@ -205,7 +205,7 @@ const LeavingCertificate = () => {
 
   if (checkingStatus) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center h-[90vh] justify-center ">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -214,15 +214,15 @@ const LeavingCertificate = () => {
   return (
     <div className="flex flex-col w-full h-full p-6 space-y-6 overflow-y-auto">
       {/* Page Title */}
-      <h1 className="text-3xl font-bold text-gray-800">
+      <h1 className="text-3xl font-bold text-[#00539C]">
         Leaving Certificate Dashboard
       </h1>
 
       {/* Status Section */}
       {submitted ? (
         <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold text-blue-800 flex items-center gap-2">
-            <ClipboardDocumentIcon className="h-6 w-6 text-blue-600" />
+          <h2 className="text-xl font-semibold text-[#00539C] flex items-center gap-2">
+            <ClipboardDocumentIcon className="h-6 w-6 text-[#00539C]" />
             Form Submitted
           </h2>
           <p className="mt-2 text-gray-700">
@@ -233,7 +233,7 @@ const LeavingCertificate = () => {
           <div className="flex gap-3 mt-4">
             <button
               onClick={handleViewClick}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
             >
               <FaEye className="text-sm" />
               View Form
@@ -268,7 +268,7 @@ const LeavingCertificate = () => {
               <li>Ensure all details are accurate before submission.</li>
               <li>
                 Mandatory fields are marked with{" "}
-                <span className="text-red-500">*</span>.
+                <span className="text-rose-500">*</span>.
               </li>
               <li>The application will be processed within 7 working days.</li>
               <li>Contact the admin office in case of discrepancies.</li>

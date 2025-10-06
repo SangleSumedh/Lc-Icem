@@ -214,7 +214,7 @@ const LeavingCertificateForm = ({
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
-            
+
             {/* Migration Flag - Added this section */}
             <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-3">
@@ -225,17 +225,18 @@ const LeavingCertificateForm = ({
                   checked={formData.forMigrationFlag}
                   onChange={handleChange}
                   disabled={viewMode}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
-                <label 
-                  htmlFor="forMigrationFlag" 
+                <label
+                  htmlFor="forMigrationFlag"
                   className="text-sm font-medium text-gray-700"
                 >
                   This is a Migration Certificate
                 </label>
               </div>
               <p className="text-xs text-gray-600 mt-1 ml-7">
-                Check this box if you need a Migration Certificate instead of a regular Leaving Certificate
+                Check this box if you need a Migration Certificate instead of a
+                regular Leaving Certificate
               </p>
             </div>
 
@@ -312,17 +313,16 @@ const LeavingCertificateForm = ({
                   <span className="text-red-500">*</span>
                 </label>
                 <span className="text-xs text-gray-500 italic ml-2">
-                  {formData.forMigrationFlag 
+                  {formData.forMigrationFlag
                     ? "Note: This is a Migration Certificate application"
-                    : "Note: Mention the type of Leaving Certificate – Migration or Leaving / Transfer"
-                  }
+                    : "Note: Mention the type of Leaving Certificate – Migration or Leaving / Transfer"}
                 </span>
               </div>
               <textarea
                 name="reasonForLeaving"
                 placeholder={
-                  formData.forMigrationFlag 
-                    ? "Mention your reason for migration(Course Name and year)" 
+                  formData.forMigrationFlag
+                    ? "Mention your reason for migration(Course Name and year)"
                     : "Mention your reason for leaving(Course Name and year)"
                 }
                 rows={3}

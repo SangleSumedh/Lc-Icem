@@ -27,26 +27,29 @@ const Help = () => {
   return (
     <div className="flex flex-col justify-start items-start w-full max-w-4xl mx-auto p-6">
       {/* Page Title */}
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">💡 How can we help?</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        💡 How can we help?
+      </h1>
       <p className="text-gray-600 mb-6">
-        Find answers, guides, and resources to help you get the most out of our platform.
+        Find answers, guides, and resources to help you get the most out of our
+        platform.
       </p>
 
       {/* Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
         {/* Help Center */}
         <div className="bg-white shadow-md rounded-xl p-6 hover:shadow-lg transition">
-          <HelpCircle className="w-8 h-8 text-blue-500 mb-3" />
+          <HelpCircle className="w-8 h-8 text-[#00539C] mb-3" />
           <h2 className="text-xl font-semibold mb-2">Help Center</h2>
           <p className="text-gray-600 text-sm">
-            Browse FAQs, guides, and documentation to quickly resolve common issues.
+            Browse FAQs, guides, and documentation to quickly resolve common
+            issues.
           </p>
-          <button className="mt-3 px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+          <button className="mt-3 px-4 py-2 text-sm bg-[#00539C]">
             Go to Help Center
           </button>
         </div>
 
-    
         {/* Contact Support */}
         <div className="bg-white shadow-md rounded-xl p-6 hover:shadow-lg transition">
           <LifeBuoy className="w-8 h-8 text-red-500 mb-3" />
@@ -56,22 +59,25 @@ const Help = () => {
           </p>
           <ul className="space-y-2 text-sm text-gray-700">
             <li className="flex items-center space-x-2">
-              <Mail className="w-4 h-4 text-blue-600" />
+              <Mail className="w-4 h-4 text-[#00539C]" />
               <a
                 href="mailto:connect@gryphonacademy.co.in"
-                className="text-blue-600 hover:underline"
+                className="text-[#00539C] hover:underline"
               >
                 connect@gryphonacademy.co.in
               </a>
             </li>
             <li className="flex items-center space-x-2">
-              <Phone className="w-4 h-4 text-blue-600" />
-              <a href="tel:+918605234701" className="text-blue-600 hover:underline">
+              <Phone className="w-4 h-4 text-[#00539C]" />
+              <a
+                href="tel:+918605234701"
+                className="text-[#00539C] hover:underline"
+              >
                 +91 8605234701
               </a>
             </li>
             <li className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-blue-600" />
+              <Clock className="w-4 h-4 text-[#00539C]" />
               <span>Mon–Sat, 10AM–7PM IST</span>
             </li>
           </ul>
@@ -84,7 +90,7 @@ const Help = () => {
           onClick={() => setActiveTab("create")}
           className={`pb-2 ${
             activeTab === "create"
-              ? "border-b-2 border-blue-500 text-blue-600 font-semibold"
+              ? "border-b-2 border-blue-500 text-[#00539C] font-semibold"
               : "text-gray-600 hover:text-gray-800"
           }`}
         >
@@ -94,7 +100,7 @@ const Help = () => {
           onClick={() => setActiveTab("view")}
           className={`pb-2 ${
             activeTab === "view"
-              ? "border-b-2 border-blue-500 text-blue-600 font-semibold"
+              ? "border-b-2 border-blue-500 text-[#00539C] font-semibold"
               : "text-gray-600 hover:text-gray-800"
           }`}
         >
@@ -105,23 +111,28 @@ const Help = () => {
       {/* Create Ticket Form */}
       {activeTab === "create" && (
         <div className="w-full bg-white shadow-md rounded-xl p-6">
-          <h2 className="text-2xl font-semibold mb-4">🎫 Create a New Ticket</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            🎫 Create a New Ticket
+          </h2>
 
           {!formSubmitted ? (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-4 w-full"
+            >
               <input
                 type="text"
                 placeholder="Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="border p-2 rounded-lg focus:ring-2 focus:ring-blue-300"
+                className="border p-2 rounded-lg focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 required
               />
               <textarea
                 placeholder="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="border p-2 rounded-lg focus:ring-2 focus:ring-blue-300"
+                className="border p-2 rounded-lg focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 rows={3}
                 required
               />
@@ -143,7 +154,7 @@ const Help = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-600"
                 >
                   Submit Ticket
                 </button>
@@ -151,10 +162,12 @@ const Help = () => {
             </form>
           ) : (
             <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg shadow mb-6 w-full">
-              <h2 className="text-lg font-semibold mb-2">✅ Ticket Submitted!</h2>
+              <h2 className="text-lg font-semibold mb-2">
+                ✅ Ticket Submitted!
+              </h2>
               <p>Your ticket has been added successfully.</p>
               <button
-                className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="mt-3 px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-600"
                 onClick={() => setFormSubmitted(false)}
               >
                 Submit Another Ticket

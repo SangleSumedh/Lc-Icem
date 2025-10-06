@@ -1,13 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiPlus, FiRefreshCw, FiMoreVertical, FiUsers, FiDownload } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiUsers,
+  FiDownload,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+} from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
@@ -63,14 +78,16 @@ function AddUserForm() {
   const fetchStudents = async () => {
     setRefreshing(true);
     const toastId = toast.loading("Fetching students...");
-    
+
     try {
       const response = await axios.get(`${BASE_URL}/students`);
       if (response.data.success) {
         setStudents(response.data.data);
-        toast.success("Students loaded successfully!", { id: toastId });
+        toast.success("Data loaded successfully!", { id: toastId });
       } else {
-        toast.error(response.data.message || "Failed to fetch students", { id: toastId });
+        toast.error(response.data.message || "Failed to fetch students", {
+          id: toastId,
+        });
       }
     } catch (error) {
       console.error("Fetch students error:", error);
@@ -86,19 +103,22 @@ function AddUserForm() {
   // Export Functions
   const exportToExcel = () => {
     try {
-      const exportData = students.map(student => ({
-        "PRN": student.prn,
+      const exportData = students.map((student) => ({
+        PRN: student.prn,
         "Student Name": student.studentName,
-        "Email": student.email,
+        Email: student.email,
         "Phone Number": student.phoneNo || "N/A",
-        "College": student.college
+        College: student.college,
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Students");
 
-      XLSX.writeFile(wb, `students_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `students_export_${new Date().toISOString().split("T")[0]}.xlsx`
+      );
       toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -112,52 +132,77 @@ function AddUserForm() {
       const tableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("PRN")], width: { size: 30, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Student Name")], width: { size: 50, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Email")], width: { size: 60, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Phone")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("College")], width: { size: 30, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("PRN")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Student Name")],
+              width: { size: 50, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Email")],
+              width: { size: 60, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Phone")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("College")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...students.map(student => 
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph(student.prn)] }),
-              new TableCell({ children: [new Paragraph(student.studentName)] }),
-              new TableCell({ children: [new Paragraph(student.email)] }),
-              new TableCell({ children: [new Paragraph(student.phoneNo || "N/A")] }),
-              new TableCell({ children: [new Paragraph(student.college)] }),
-            ],
-          })
+        ...students.map(
+          (student) =>
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph(student.prn)] }),
+                new TableCell({
+                  children: [new Paragraph(student.studentName)],
+                }),
+                new TableCell({ children: [new Paragraph(student.email)] }),
+                new TableCell({
+                  children: [new Paragraph(student.phoneNo || "N/A")],
+                }),
+                new TableCell({ children: [new Paragraph(student.college)] }),
+              ],
+            })
         ),
       ];
 
       const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              text: "Students Report",
-              heading: "Heading1",
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Generated on: ${new Date().toLocaleDateString()}`,
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Total Students: ${students.length}`,
-              spacing: { after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: tableRows,
-            }),
-          ],
-        }],
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: "Students Report",
+                heading: "Heading1",
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Generated on: ${new Date().toLocaleDateString()}`,
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Total Students: ${students.length}`,
+                spacing: { after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: tableRows,
+              }),
+            ],
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `students_report_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(
+        blob,
+        `students_report_${new Date().toISOString().split("T")[0]}.docx`
+      );
       toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -166,64 +211,66 @@ function AddUserForm() {
     }
   };
 
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
 
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(40, 53, 147);
+      doc.text("Students Report", 105, 15, { align: "center" });
 
-const exportToPDF = () => {
-  try {
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(20);
-    doc.setTextColor(40, 53, 147);
-    doc.text("Students Report", 105, 15, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
-    doc.text(`Total Students: ${students.length}`, 105, 28, { align: "center" });
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, {
+        align: "center",
+      });
+      doc.text(`Total Students: ${students.length}`, 105, 28, {
+        align: "center",
+      });
 
-    const tableData = students.map(student => [
-      student.prn,
-      student.studentName,
-      student.email,
-      student.phoneNo || "N/A",
-      student.college
-    ]);
+      const tableData = students.map((student) => [
+        student.prn,
+        student.studentName,
+        student.email,
+        student.phoneNo || "N/A",
+        student.college,
+      ]);
 
-    // Use autoTable as a function, passing doc as first parameter
-    autoTable(doc, {
-      startY: 35,
-      head: [['PRN', 'Student Name', 'Email', 'Phone', 'College']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { 
-        fillColor: [0, 83, 156],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      styles: { 
-        fontSize: 8, 
-        cellPadding: 3,
-        halign: 'left'
-      },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 25 }
-      },
-      margin: { top: 35 }
-    });
+      // Use autoTable as a function, passing doc as first parameter
+      autoTable(doc, {
+        startY: 35,
+        head: [["PRN", "Student Name", "Email", "Phone", "College"]],
+        body: tableData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [0, 83, 156],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          halign: "left",
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 },
+        },
+        margin: { top: 35 },
+      });
 
-    doc.save(`students_report_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success("Exported to PDF successfully!");
-    setShowExportDropdown(false);
-  } catch (error) {
-    console.error("PDF export error:", error);
-    toast.error("Error exporting to PDF");
-  }
-};
+      doc.save(`students_report_${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("Exported to PDF successfully!");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Error exporting to PDF");
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -242,7 +289,7 @@ const exportToPDF = () => {
 
     try {
       const response = await axios.post(`${BASE_URL}/add-student`, formData);
-      
+
       if (response.data.success) {
         await fetchStudents();
         setFormData({
@@ -256,7 +303,9 @@ const exportToPDF = () => {
         setShowAddModal(false);
         toast.success("Student added successfully!", { id: toastId });
       } else {
-        toast.error(response.data.message || "Failed to add student", { id: toastId });
+        toast.error(response.data.message || "Failed to add student", {
+          id: toastId,
+        });
       }
     } catch (error) {
       console.error("Add student error:", error);
@@ -272,7 +321,10 @@ const exportToPDF = () => {
     const toastId = toast.loading("Updating student...");
 
     try {
-      const response = await axios.put(`${BASE_URL}/update-student/${editing.prn}`, editing);
+      const response = await axios.put(
+        `${BASE_URL}/update-student/${editing.prn}`,
+        editing
+      );
 
       if (response.data.success) {
         await fetchStudents();
@@ -295,8 +347,10 @@ const exportToPDF = () => {
     const toastId = toast.loading("Deleting student...");
 
     try {
-      const response = await axios.delete(`${BASE_URL}/delete-student/${deleteUser.prn}`);
-      
+      const response = await axios.delete(
+        `${BASE_URL}/delete-student/${deleteUser.prn}`
+      );
+
       if (response.data.success) {
         await fetchStudents();
         setDeleteUser(null);
@@ -327,38 +381,18 @@ const exportToPDF = () => {
   );
 
   return (
-    <main className="space-y-6 text-sm bg-gray-50 min-h-screen p-6">
-      {/* Toast Container */}
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            theme: {
-              primary: 'green',
-              secondary: 'black',
-            },
-          },
-          loading: {
-            duration: Infinity,
-          },
-        }}
-      />
-
+    <main className="space-y-6 text-sm bg-gray-50 min-h-screen">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white py-6 rounded-xl "
       >
         <div>
           <h1 className="text-2xl font-bold text-[#00539C]">Students</h1>
-          <p className="text-gray-600 mt-1 text-sm">Manage system students and their information</p>
+          <p className="text-gray-600 mt-1 text-sm">
+            Manage system students and their information
+          </p>
         </div>
         <div className="flex gap-3">
           {/* Export Button */}
@@ -411,7 +445,7 @@ const exportToPDF = () => {
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
           <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00539C]"></div>
             <span className="text-sm">Processing...</span>
@@ -420,7 +454,7 @@ const exportToPDF = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white p-4 rounded-xl shadow-sm border">
+      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -434,7 +468,7 @@ const exportToPDF = () => {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
           />
         </div>
 
@@ -444,9 +478,9 @@ const exportToPDF = () => {
             setCollegeFilter(e.target.value);
             setCurrentPage(1);
           }}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+          className=" px-8 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm appearance-none cursor-pointer"
         >
-          <option value="">All Colleges</option>
+          <option value="">All Colleges </option>
           {[...new Set(students.map((s) => s.college))].map((c) => (
             <option key={c} value={c}>
               {c}
@@ -457,7 +491,7 @@ const exportToPDF = () => {
         <button
           onClick={fetchStudents}
           disabled={refreshing || loading}
-          className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          className="p-2.5  rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
         >
           <FiRefreshCw
             size={16}
@@ -467,85 +501,114 @@ const exportToPDF = () => {
       </div>
 
       {/* Table */}
-<div className="bg-white rounded-xl shadow-sm border relative">
-  <table className="w-full text-left">
-    <thead className="bg-[#00539C] text-white">
-      <tr>
-        <th className="px-6 py-4 font-semibold text-sm">PRN</th>
-        <th className="px-6 py-4 font-semibold text-sm">Name</th>
-        <th className="px-6 py-4 font-semibold text-sm">Email</th>
-        <th className="px-6 py-4 font-semibold text-sm">Phone</th>
-        <th className="px-6 py-4 font-semibold text-sm">College</th>
-        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-100">
-      {paginatedStudents.map((s, index) => (
-        <tr key={s.prn} className="transition-colors duration-150 rounded-lg">
-          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">{s.prn}</td>
-          <td className="px-6 py-4 text-gray-700">{s.studentName}</td>
-          <td className="px-6 py-4 text-gray-700">{s.email}</td>
-          <td className="px-6 py-4 text-gray-700">{s.phoneNo || "—"}</td>
-          <td className="px-6 py-4 text-gray-700">{s.college}</td>
-          <td className="px-6 py-4 relative rounded-r-lg">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === s.prn ? null : s.prn);
-              }}
-              disabled={loading}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-            >
-              <FiMoreVertical size={18} className="text-gray-600" />
-            </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-300 relative">
+        <table className="w-full text-left font-semibold">
+          <thead className="bg-[#00539C] text-white">
+            <tr>
+              <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">
+                PRN
+              </th>
+              <th className="px-6 py-4 font-semibold text-sm">Name</th>
+              <th className="px-6 py-4 font-semibold text-sm">Email</th>
+              <th className="px-6 py-4 font-semibold text-sm">Phone</th>
+              <th className="px-6 py-4 font-semibold text-sm">College</th>
+              <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {paginatedStudents.map((s, index) => (
+              <tr
+                key={s.prn}
+                className="transition-colors duration-150 rounded-lg"
+              >
+                <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
+                  {s.prn}
+                </td>
+                <td className="px-6 py-4 text-gray-700">{s.studentName}</td>
+                <td className="px-6 py-4 text-gray-700">{s.email}</td>
+                <td className="px-6 py-4 text-gray-700">{s.phoneNo || "—"}</td>
+                <td className="px-6 py-4 text-gray-700">{s.college}</td>
+                <td className="px-6 py-4 relative rounded-r-lg">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDropdown(
+                        activeDropdown === s.prn ? null : s.prn
+                      );
+                    }}
+                    disabled={loading}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    <FiMoreVertical size={18} className="text-gray-600" />
+                  </button>
 
-            {/* Dropdown Menu */}
-            {activeDropdown === s.prn && (
-              <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
-                <button
-                  onClick={() => {
-                    setEditing({ ...s, password: "" });
-                    setActiveDropdown(null);
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Update
-                </button>
-                <button
-                  onClick={() => {
-                    setDeleteUser(s);
-                    setActiveDropdown(null);
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete
-                </button>
-              </div>
+                  {/* Dropdown Menu */}
+                  {activeDropdown === s.prn && (
+                    <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
+                      <button
+                        onClick={() => {
+                          setEditing({ ...s, password: "" });
+                          setActiveDropdown(null);
+                        }}
+                        disabled={loading}
+                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Update
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeleteUser(s);
+                          setActiveDropdown(null);
+                        }}
+                        disabled={loading}
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {paginatedStudents.length === 0 && (
+              <tr>
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <FiUsers className="h-12 w-12 text-gray-300 mb-2" />
+                    <p className="text-sm">No students found</p>
+                  </div>
+                </td>
+              </tr>
             )}
-          </td>
-        </tr>
-      ))}
-      {paginatedStudents.length === 0 && (
-        <tr>
-          <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-            <div className="flex flex-col items-center justify-center">
-              <FiUsers className="h-12 w-12 text-gray-300 mb-2" />
-              <p className="text-sm">No students found</p>
-            </div>
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -736,7 +799,9 @@ const exportToPDF = () => {
             <form onSubmit={handleUpdate} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">PRN</label>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    PRN
+                  </label>
                   <input
                     value={editing.prn}
                     disabled
@@ -863,10 +928,14 @@ const exportToPDF = () => {
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-700">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold text-gray-900">{deleteUser.studentName}</span>?
+                <span className="font-semibold text-gray-900">
+                  {deleteUser.studentName}
+                </span>
+                ?
                 <br />
                 <span className="text-red-500 text-xs">
-                  This action cannot be undone and will permanently remove the student record.
+                  This action cannot be undone and will permanently remove the
+                  student record.
                 </span>
               </p>
               <div className="flex justify-end gap-3">

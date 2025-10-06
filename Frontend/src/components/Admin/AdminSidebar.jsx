@@ -2,23 +2,18 @@ import React, { useRef, useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
-  DollarSign,
-  ShoppingCart,
   Megaphone,
-  GraduationCap,
-  Briefcase,
   FileText,
-  Bus,
   Home,
   ChevronLeft,
   ChevronRight,
-  UserPlus,
-  ShieldPlus,
+  TicketCheck,
   Building2,
-  Info,
   Clock,
 } from "lucide-react";
+import { FaBuilding } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function AdminSidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
@@ -32,16 +27,21 @@ function AdminSidebar({ collapsed, setCollapsed }) {
 
   // 🔹 Fetch departments only if role is department
   useEffect(() => {
-    if (role === "department") {
-      fetch("http://localhost:5000/admin/departments")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setDepartments(data.data);
+    const fetchDepartments = async () => {
+      if (role === "department") {
+        try {
+          const response = await axios.get(
+            "http://localhost:5000/admin/departments"
+          );
+          if (response.data.success) {
+            setDepartments(response.data.data);
           }
-        })
-        .catch((err) => console.error("Error fetching departments", err));
-    }
+        } catch (err) {
+          console.error("Error fetching departments", err);
+        }
+      }
+    };
+    fetchDepartments();
   }, [role]);
 
   // ✅ Create slug for routes
@@ -60,7 +60,7 @@ function AdminSidebar({ collapsed, setCollapsed }) {
         icon: FileText,
       },
       {
-        deptName: "Raise Tickets",
+        deptName: "Help",
         path: "/student/raise-tickets",
         icon: Megaphone,
       },
@@ -73,19 +73,9 @@ function AdminSidebar({ collapsed, setCollapsed }) {
         icon: LayoutDashboard,
       },
       {
-        deptName: "Add Department",
-        path: "/admin-dashboard/add-department",
-        icon: Building2,
-      },
-      {
-        deptName: "Add User",
-        path: "/admin-dashboard/add-user",
-        icon: UserPlus,
-      },
-      {
-        deptName: "Add SuperAdmin",
-        path: "/admin-dashboard/add-superadmin",
-        icon: ShieldPlus,
+        deptName: "Tickets",
+        path: "/admin-dashboard/registrar/raised-tickets",
+        icon: TicketCheck,
       },
     ];
   } else if (role === "department") {
@@ -100,20 +90,24 @@ function AdminSidebar({ collapsed, setCollapsed }) {
       if (d.deptName.toLowerCase() === "registrar") {
         return [
           { deptName: "Pending Approvals", path: base, icon: Clock },
-          { deptName: "Raised Tickets", path: `${base}/raised-tickets`, icon: Megaphone },
+          {
+            deptName: "Tickets",
+            path: `${base}/raised-tickets`,
+            icon: TicketCheck,
+          },
         ];
       }
 
       return [
-        { deptName: "Pending Approvals", path: base, icon: Clock },
-        { deptName: "Requested Info", path: `${base}/requested-info`, icon: Info },
+        { deptName: `${d.deptName} Dashboard`, path: base, icon: FaBuilding },
       ];
     });
   }
 
   useEffect(() => {
     const activeRef = itemRefs.current[location.pathname];
-    if (activeRef) activeRef.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (activeRef)
+      activeRef.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [location]);
 
   return (
@@ -128,21 +122,27 @@ function AdminSidebar({ collapsed, setCollapsed }) {
     >
       {/* Header with Toggle Button */}
       <div className="p-4 border-b border-gray-200">
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <div
+          className={`flex items-center ${
+            collapsed ? "justify-center" : "justify-between"
+          }`}
+        >
           {!collapsed && (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#00539C] rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">LC</span>
               </div>
-              <span className="font-semibold text-gray-800">Leaving Certificate</span>
+              <span className="font-semibold text-gray-800">
+                Leaving Certificate
+              </span>
             </div>
           )}
-          
+
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={`p-2 rounded-lg cursor-pointer transition-all duration-200 
               border border-gray-300 bg-white hover:bg-gray-50 
-              ${collapsed ? '' : 'hover:shadow-sm'}`}
+              ${collapsed ? "" : "hover:shadow-sm"}`}
           >
             {collapsed ? (
               <ChevronRight size={18} className="text-gray-600" />
@@ -151,7 +151,7 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             )}
           </button>
         </div>
-        
+
         {/* Project name shown when collapsed */}
         {collapsed && (
           <div className="mt-3 flex justify-center">
@@ -171,18 +171,24 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             <div
               key={item.path}
               ref={(el) => (itemRefs.current[item.path] = el)}
-              className={`flex items-center space-x-3 px-3 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+              className={`flex items-center p-3 space-x-1 text-center rounded-lg cursor-pointer transition-all duration-200 ${
                 isActive
                   ? "bg-[#00539C] text-white shadow-sm"
                   : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               }`}
               onClick={() => navigate(item.path)}
             >
-              <Icon 
-                className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} 
+              <Icon
+                className={`w-5 h-5 ${
+                  isActive ? "text-white" : "text-gray-500"
+                }`}
               />
               {!collapsed && (
-                <span className={`font-medium ${isActive ? 'text-white' : 'text-gray-700'}`}>
+                <span
+                  className={`font-medium ${
+                    isActive ? "text-white" : "text-gray-700"
+                  }`}
+                >
                   {item.deptName}
                 </span>
               )}

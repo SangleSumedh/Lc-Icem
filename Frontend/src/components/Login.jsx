@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -51,14 +51,14 @@ const Login = () => {
             localStorage.setItem("college", data.user.college);
           }
 
-          toast.success("✅ Login successful!");
+          toast.success("Login successful!");
           navigate("/student");
         } else {
-          toast.error(data.error || "❌ Login failed");
+          toast.error(data.error || "Login failed");
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        toast.error("⚠️ Could not connect to backend.");
+        console.error("Network error:", err);
+        toast.error("Could not connect to backend.");
       } finally {
         setLoading(false);
       }
@@ -76,9 +76,6 @@ const Login = () => {
         "Track application status",
       ]}
     >
-      {/* 🔥 Toaster */}
-      <Toaster position="top-right" reverseOrder={false} />
-
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Student Login</h2>
         <p className="text-sm text-gray-600 mt-1">

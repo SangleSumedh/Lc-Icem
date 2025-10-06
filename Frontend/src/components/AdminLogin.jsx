@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 // ✅ Utility to generate safe slugs
 const slugify = (str) =>
@@ -113,22 +113,22 @@ const AdminLogin = () => {
           localStorage.setItem("role", decoded.role);
 
           if (decoded.role === "superadmin") {
-            toast.success("✅ Admin login successful!");
+            toast.success("Admin login successful!");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
             const deptName = decoded.deptName;
             localStorage.setItem("deptName", deptName);
 
             const slug = slugify(deptName);
-            toast.success(`✅ Welcome ${deptName} Department!`);
+            toast.success(`Welcome ${deptName} Department!`);
             navigate(`/admin-dashboard/${slug}`);
           }
         } else {
-          toast.error(data.error || "❌ Login failed");
+          toast.error(data.error || "Login failed");
         }
       } catch (err) {
         console.error("❌ Network error:", err);
-        toast.error("⚠️ Could not connect to backend.");
+        toast.error("Could not connect to backend.");
       } finally {
         setLoading(false);
       }
@@ -146,9 +146,6 @@ const AdminLogin = () => {
         "Application management dashboard",
       ]}
     >
-      {/* 🔥 Toaster */}
-      <Toaster position="top-right" reverseOrder={false} />
-
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Admin Login</h2>
         <p className="text-sm text-gray-600 mt-1">

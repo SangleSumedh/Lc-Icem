@@ -82,63 +82,63 @@ const StudentDashboard = () => {
   const getDepartmentIcon = (deptName) => {
     const department = deptName.toLowerCase();
     if (department.includes("account"))
-      return <BanknotesIcon className="h-6 w-6 text-blue-600" />;
+      return <BanknotesIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("library"))
-      return <BookOpenIcon className="h-6 w-6 text-green-600" />;
+      return <BookOpenIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("alumni"))
-      return <UserGroupIcon className="h-6 w-6 text-purple-600" />;
+      return <UserGroupIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("placement"))
-      return <BriefcaseIcon className="h-6 w-6 text-indigo-600" />;
+      return <BriefcaseIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("scholarship"))
-      return <TrophyIcon className="h-6 w-6 text-yellow-600" />;
+      return <TrophyIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("exam"))
-      return <ClipboardDocumentListIcon className="h-6 w-6 text-red-600" />;
+      return <ClipboardDocumentListIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("hostel") || department.includes("mess"))
       return <HomeIcon className="h-6 w-6 text-gray-600" />;
     if (department.includes("bus") || department.includes("transport"))
-      return <TruckIcon className="h-6 w-6 text-orange-600" />;
+      return <TruckIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("civil"))
-      return <BuildingOfficeIcon className="h-6 w-6 text-brown-600" />;
+      return <BuildingOfficeIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("computer"))
-      return <ComputerDesktopIcon className="h-6 w-6 text-blue-500" />;
+      return <ComputerDesktopIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mechanical"))
-      return <WrenchIcon className="h-6 w-6 text-gray-700" />;
+      return <WrenchIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("ai") || department.includes("data"))
-      return <CpuChipIcon className="h-6 w-6 text-purple-500" />;
+      return <CpuChipIcon className="h-6 w-6 text-[#00539C]" />;
     if (
       department.includes("electronics") ||
       department.includes("telecommunication")
     )
-      return <CubeIcon className="h-6 w-6 text-green-500" />;
+      return <CubeIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("first year"))
-      return <AcademicCapIcon className="h-6 w-6 text-indigo-500" />;
+      return <AcademicCapIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("it"))
-      return <CodeBracketIcon className="h-6 w-6 text-red-500" />;
+      return <CodeBracketIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mba"))
-      return <ChartBarIcon className="h-6 w-6 text-green-700" />;
+      return <ChartBarIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mca"))
-      return <PuzzlePieceIcon className="h-6 w-6 text-blue-700" />;
+      return <PuzzlePieceIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("m.tech"))
-      return <BeakerIcon className="h-6 w-6 text-orange-500" />;
+      return <BeakerIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("engineering"))
-      return <RocketLaunchIcon className="h-6 w-6 text-teal-600" />;
-    return <BuildingLibraryIcon className="h-6 w-6 text-gray-500" />;
+      return <RocketLaunchIcon className="h-6 w-6 text-[#00539C]" />;
+    return <BuildingLibraryIcon className="h-6 w-6 text-[#00539C]" />;
   };
 
   const renderStatusIcon = (status) => {
     if (status === "APPROVED")
-      return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+      return <CheckCircleIcon className="h-5 w-5 text-emerald-500" />;
     if (status === "REJECTED")
-      return <XCircleIcon className="h-5 w-5 text-red-500" />;
+      return <XCircleIcon className="h-5 w-5 text-rpse-500" />;
     if (status === "REQUESTED_INFO")
-      return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
+      return <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />;
     return <ClockIcon className="h-5 w-5 text-yellow-500" />;
   };
 
   const getStatusColor = (status) => {
-    if (status === "APPROVED") return "text-green-600";
-    if (status === "REJECTED") return "text-red-600";
-    if (status === "REQUESTED_INFO") return "text-orange-600";
+    if (status === "APPROVED") return "text-emerald-600";
+    if (status === "REJECTED") return "text-rose-600";
+    if (status === "REQUESTED_INFO") return "text-amber-600";
     return "text-yellow-600";
   };
 
@@ -150,33 +150,34 @@ const StudentDashboard = () => {
   };
 
   const extractContactInfo = (remarks) => {
-  if (!remarks) return { phone: null, email: null, message: remarks };
+    if (!remarks) return { phone: null, email: null, message: remarks };
 
-  const phoneRegex = /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
-  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const phoneRegex =
+      /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 
-  // Extract phone and email
-  const phones = remarks.match(phoneRegex) || [];
-  const emails = remarks.match(emailRegex) || [];
+    // Extract phone and email
+    const phones = remarks.match(phoneRegex) || [];
+    const emails = remarks.match(emailRegex) || [];
 
-  // Remove the "Phone: " and "Email: " labels along with the actual numbers/emails
-  let message = remarks
-    .replace(/Phone:\s*[^\n]*/gi, '')  // Remove "Phone: xxx" lines
-    .replace(/Email:\s*[^\n]*/gi, '')  // Remove "Email: xxx" lines
-    .replace(/\n\s*\n/g, '\n')         // Clean up extra newlines
-    .trim();
+    // Remove the "Phone: " and "Email: " labels along with the actual numbers/emails
+    let message = remarks
+      .replace(/Phone:\s*[^\n]*/gi, "") // Remove "Phone: xxx" lines
+      .replace(/Email:\s*[^\n]*/gi, "") // Remove "Email: xxx" lines
+      .replace(/\n\s*\n/g, "\n") // Clean up extra newlines
+      .trim();
 
-  // If message is empty after removal, provide a default
-  if (!message) {
-    message = "Additional information required";
-  }
+    // If message is empty after removal, provide a default
+    if (!message) {
+      message = "Additional information required";
+    }
 
-  return {
-    phone: phones[0] || null,
-    email: emails[0] || null,
-    message: message,
+    return {
+      phone: phones[0] || null,
+      email: emails[0] || null,
+      message: message,
+    };
   };
-};
 
   const handleRemarksClick = (approval) => {
     if (approval.remarks && approval.status === "REQUESTED_INFO") {
@@ -203,7 +204,7 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-[90vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -246,14 +247,13 @@ const StudentDashboard = () => {
 
       {/* LC Generated Card - Show when LC is actually generated */}
       {lcCard && (
-        <div className="max-w-md mx-auto bg-green-50 border-2 border-green-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          <CheckCircleIcon className="h-8 w-8 text-green-600 mb-2" />
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+        <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all ">
+          <h3 className="text-lg font-semibold text-gray-800 mb-5 text-center">
             Your LC is Generated!
           </h3>
           <button
             onClick={() => window.open(lcCard.lcUrl, "_blank")}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-green-600 transition-colors"
           >
             Open LC
           </button>
@@ -286,7 +286,7 @@ const StudentDashboard = () => {
 
       {/* Approvals Grid */}
       {approvalsToRender.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {approvalsToRender.reverse().map((approval) => {
             const hasRemarks =
               approval.remarks && approval.status === "REQUESTED_INFO";
