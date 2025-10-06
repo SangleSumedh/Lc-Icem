@@ -34,6 +34,7 @@ import {
   BanknotesIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
+import ENV from "../../env.js";
 
 const StudentDashboard = () => {
   const [approvals, setApprovals] = useState([]);
@@ -53,9 +54,20 @@ const StudentDashboard = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setApprovals(response.data.approvals);
+
+        if (response.data.approvals) {
+          setApprovals(response.data.approvals);
+          setError(null); // Clear any previous errors
+        } else {
+          setError("No approval data found");
+        }
       } catch (err) {
-        setError("Please submit your LC form first");
+        // Only show error if it's not a 404 (form not submitted yet)
+        if (err.response?.status === 404) {
+          setError("Please submit your LC form first");
+        } else {
+          setError("Failed to load approval status. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -286,7 +298,7 @@ const StudentDashboard = () => {
       )}
 
       {/* Approvals Grid */}
-      {approvalsToRender.length > 0 && (
+      {approvals && approvalsToRender.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {approvalsToRender.reverse().map((approval) => {
             const hasRemarks =
@@ -382,12 +394,12 @@ const StudentDashboard = () => {
                   </h4>
                   {selectedRemarks.phone && (
                     <div className="flex items-center gap-3 mb-2">
-                      <PhoneIcon className="h-5 w-5 text-green-600" />
+                      <PhoneIcon className="h-5 w-5 text-emerald-600" />
                       <div>
                         <p className="text-sm text-gray-600">Phone</p>
                         <a
                           href={`tel:${selectedRemarks.phone}`}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-[#00539C] hover:text-blue-800 font-medium"
                         >
                           {selectedRemarks.phone}
                         </a>
@@ -396,12 +408,12 @@ const StudentDashboard = () => {
                   )}
                   {selectedRemarks.email && (
                     <div className="flex items-center gap-3">
-                      <EnvelopeIcon className="h-5 w-5 text-blue-600" />
+                      <EnvelopeIcon className="h-5 w-5 text-[#00539C]" />
                       <div>
                         <p className="text-sm text-gray-600">Email</p>
                         <a
                           href={`mailto:${selectedRemarks.email}`}
-                          className="text-blue-600 hover:text-blue-800 font-medium break-all"
+                          className="text-[#00539C] hover:text-blue-800 font-medium break-all"
                         >
                           {selectedRemarks.email}
                         </a>
