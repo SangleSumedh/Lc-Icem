@@ -279,9 +279,7 @@ const StudentDashboard = () => {
       {/* LC Being Generated Card - Show when all approved but LC not generated yet */}
       {allApproved && !lcCard && (
         <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-center mb-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-          </div>
+          
           <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
             Your LC is Being Generated!
           </h3>

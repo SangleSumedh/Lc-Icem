@@ -72,7 +72,7 @@ const RegistrarPendingLCs = () => {
       uploadFormData.append("lcPdf", file);
 
       const uploadPromise = axios.post(
-        `${ENV.BASE_URL}/departments/requests/infos` ||
+        `${ENV.BASE_URL}/registrar/upload-lc/${prn}` ||
           `http://localhost:5000/registrar/upload-lc/${prn}`,
         uploadFormData,
         {
@@ -112,7 +112,8 @@ const RegistrarPendingLCs = () => {
       setError(null);
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        "http://localhost:5000/registrar/pending-lc",
+        `${ENV.BASE_URL}/registrar/pending-lc` ||
+          "http://localhost:5000/registrar/pending-lc",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -184,7 +185,8 @@ const RegistrarPendingLCs = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://localhost:5000/registrar/lc-details/${prn}`,
+        `${ENV.BASE_URL}/registrar/lc-details/${prn}` ||
+          `http://localhost:5000/registrar/lc-details/${prn}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
