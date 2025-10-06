@@ -7,6 +7,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import axios from "axios";
+import ENV from "../../env";
 
 const RaisedTicket = () => {
   const [tickets, setTickets] = useState([]);
@@ -40,12 +41,15 @@ const RaisedTicket = () => {
       setLoading(true);
       const token = getAuthToken();
 
-      const response = await axios.get("http://localhost:5000/tickets/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.get(
+        `${ENV.BASE_URL}/tickets/` || "http://localhost:5000/tickets/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.data.success) {
         const sortedTickets = sortTicketsByStatus(response.data.tickets || []);
@@ -67,7 +71,8 @@ const RaisedTicket = () => {
       const token = getAuthToken();
 
       const response = await axios.patch(
-        `http://localhost:5000/tickets/${ticketId}/status`,
+        `${ENV.BASE_URL}/tickets/${ticketId}/status` ||
+          `http://localhost:5000/tickets/${ticketId}/status`,
         statusUpdate,
         {
           headers: {

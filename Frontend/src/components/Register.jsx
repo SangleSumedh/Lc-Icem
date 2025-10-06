@@ -46,11 +46,15 @@ const Register = () => {
     if (Object.values(errors).every((v) => !v)) {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/auth/student/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+        const res = await fetch(
+          `${ENV.BASE_URL}/auth/student/register` ||
+            "http://localhost:5000/auth/student/register",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+          }
+        );
 
         const data = await res.json();
         if (res.ok) {

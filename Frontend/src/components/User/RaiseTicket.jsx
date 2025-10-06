@@ -56,7 +56,8 @@ const StudentTickets = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:5000/tickets/student/${prn}`,
+        `${ENV.BASE_URL}/tickets/student/${prn}` ||
+          `http://localhost:5000/tickets/student/${prn}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -441,7 +442,8 @@ const RaiseTickets = () => {
         setDepartmentError("");
 
         const response = await axios.get(
-          "http://localhost:5000/lc-form/get-departments"
+          `${ENV.BASE_URL}/lc-form/get-departments` ||
+            "http://localhost:5000/lc-form/get-departments"
         );
 
         if (response.data.success && response.data.Departments) {
@@ -521,7 +523,8 @@ const RaiseTickets = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/tickets/",
+        `${ENV.BASE_URL}/tickets/` ||
+          "http://localhost:5000/tickets/",
         ticketData
       );
 

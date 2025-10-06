@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiClipboard, FiCheckCircle, FiInfo } from "react-icons/fi";
 import RegistrarPendingLCs from "./RegistrarPendingLCs";
+import ENV from "../../env.js";
 
 // Lazy-loaded components
 const PendingApprovals = lazy(() => import("./PendingApprovals"));
@@ -59,11 +60,19 @@ const DepartmentDashboard = () => {
   };
 
   const fetchUrls = {
-    pending: "http://localhost:5000/departments/pending-approvals",
-    approved: "http://localhost:5000/departments/approvals/approved",
-    requested: "http://localhost:5000/departments/requests/info",
+    pending:
+      `${ENV.BASE_URL}/departments/pending-approvals` ||
+      "http://localhost:5000/departments/pending-approvals",
+    approved:
+      `${ENV.BASE_URL}/departments/approvals/approved` ||
+      "http://localhost:5000/departments/approvals/approved",
+    requested:
+      `${ENV.BASE_URL}/departments/requests/infos` ||
+      "http://localhost:5000/departments/requests/info",
   };
-  const updateUrl = "http://localhost:5000/departments/update-status";
+  const updateUrl =
+    `${ENV.BASE_URL}/departments/update-status` ||
+    "http://localhost:5000/departments/update-status";
 
   if (!deptName) {
     return (

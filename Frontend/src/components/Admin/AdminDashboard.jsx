@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AddDepartmentForm from "./AddDepartmentForm";
 import AddSuperAdmin from "./AddSuperAdmin";
 import AddUserForm from "./AddUserForm";
+import ENV from "../../env.js";
 
 
 const AdminDashboard = () => {
@@ -35,13 +36,24 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       const [studentsRes, departmentsRes, superadminsRes] = await Promise.all([
-        fetch("http://localhost:5000/admin/students", {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then((r) => r.json()),
-        fetch("http://localhost:5000/admin/departments").then((r) => r.json()),
-        fetch("http://localhost:5000/admin/get-superAdmins", {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then((r) => r.json()),
+        fetch(
+          `${ENV.BASE_URL}/admin/students` ||
+            "http://localhost:5000/admin/students",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ).then((r) => r.json()),
+        fetch(
+          `${ENV.BASE_URL}/admin/departments` ||
+            "http://localhost:5000/admin/departments"
+        ).then((r) => r.json()),
+        fetch(
+          `${ENV.BASE_URL}/admin/get-superAdmins` ||
+            "http://localhost:5000/admin/get-superAdmins",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ).then((r) => r.json()),
       ]);
 
       setStats({
@@ -59,7 +71,8 @@ const AdminDashboard = () => {
   const fetchLoginLogs = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/admin/staff-login-logs",
+        `${ENV.BASE_URL}/admin/staff-login-logs` ||
+          "http://localhost:5000/admin/staff-login-logs",
         {
           headers: { Authorization: `Bearer ${token}` },
         }

@@ -96,8 +96,10 @@ const AdminLogin = () => {
         setLoading(true);
         const url =
           loginType === "superadmin"
-            ? "http://localhost:5000/auth/admin/login"
-            : "http://localhost:5000/auth/department/login";
+            ? `${ENV.BASE_URL}/auth/admin/login` ||
+              "http://localhost:5000/auth/admin/login"
+            : `${ENV.BASE_URL}/auth/department/login` ||
+              "http://localhost:5000/auth/department/login";
 
         const res = await fetch(url, {
           method: "POST",

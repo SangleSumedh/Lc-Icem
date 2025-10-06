@@ -19,11 +19,18 @@ app.use(cors());
 app.use(express.json());
 
 app.use(
-  cors({
-    origin: "http://localhost:5173", // React app
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
-  })
+  cors(
+    {
+      origin: "http://localhost:5173", // React app
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      credentials: true,
+    },
+    {
+      origin: "https://lc-icem-sumedh.vercel.app", // Frontend
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      credentials: true,
+    }
+  )
 );
 
 //Routes

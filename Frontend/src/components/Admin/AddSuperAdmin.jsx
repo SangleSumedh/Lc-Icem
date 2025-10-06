@@ -26,10 +26,11 @@ import {
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
+import ENV from "../../env.js";
 
 function AddSuperAdmin() {
   const token = localStorage.getItem("token");
-  const BASE_URL = "http://localhost:5000/admin";
+  const BASE_URL = `${ENV.BASE_URL}/admin` || "http://localhost:5000/admin";
   const navigate = useNavigate();
 
   // Configure axios defaults

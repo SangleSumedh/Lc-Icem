@@ -17,6 +17,7 @@ import {
   TextRun,
 } from "docx";
 import { saveAs } from "file-saver";
+import ENV from "../../env.js";
 
 function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
   const [approvals, setApprovals] = useState([]);
@@ -33,7 +34,9 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
     setRefreshing(true);
     try {
       const res = await axios.get(
-        fetchUrl || "http://localhost:5000/departments/approvals/approved",
+        fetchUrl ||
+          `${ENV.BASE_URL}/departments/approvals/approved` ||
+          "http://localhost:5000/departments/approvals/approved",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -386,7 +389,9 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
                   {a.student.phoneNo || "—"}
                 </td>
                 <td className="px-6 text-emerald-500 ">
-                  <div className="bg-emerald-50 text-center p-2 rounded-xl ">{a.status}</div>
+                  <div className="bg-emerald-50 text-center p-2 rounded-xl ">
+                    {a.status}
+                  </div>
                 </td>
               </tr>
             ))}

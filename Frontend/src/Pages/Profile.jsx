@@ -109,12 +109,16 @@ function Profile() {
 
     setIsLoading(true);
     try {
-      await axios.post(`http://localhost:5000${url}`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      await axios.post(
+        `${ENV.BASE_URL}${url}` || `http://localhost:5000${url}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       toast.success("Password changed successfully!");
       setOldPassword("");
       setNewPassword("");

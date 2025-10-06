@@ -14,6 +14,7 @@ import {
 import { FaBuilding } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import ENV from "../../env.js";
 
 function AdminSidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
@@ -31,7 +32,8 @@ function AdminSidebar({ collapsed, setCollapsed }) {
       if (role === "department") {
         try {
           const response = await axios.get(
-            "http://localhost:5000/admin/departments"
+            `${ENV.BASE_URL}/admin/departments` ||
+              "http://localhost:5000/admin/departments"
           );
           if (response.data.success) {
             setDepartments(response.data.data);

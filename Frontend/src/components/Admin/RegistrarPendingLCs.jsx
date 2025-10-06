@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { generatePDF, REQUIRED_FIELDS } from "./Register/PDFgenerator";
 import { generatePDF2 } from "./Register/PDFgenerator2";
+import ENV from "../../env";
 
 const RegistrarPendingLCs = () => {
   const [pendingLCs, setPendingLCs] = useState([]);
@@ -71,7 +72,8 @@ const RegistrarPendingLCs = () => {
       uploadFormData.append("lcPdf", file);
 
       const uploadPromise = axios.post(
-        `http://localhost:5000/registrar/upload-lc/${prn}`,
+        `${ENV.BASE_URL}/departments/requests/infos` ||
+          `http://localhost:5000/registrar/upload-lc/${prn}`,
         uploadFormData,
         {
           headers: {
@@ -215,9 +217,12 @@ const RegistrarPendingLCs = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        `http://localhost:5000/registrar/generate-lc/${
+        `${ENV.BASE_URL}/registrar/generate-lc/${
           selectedStudent.studentProfile?.prn || selectedStudent.prn
-        }`,
+        }` ||
+          `http://localhost:5000/registrar/generate-lc/${
+            selectedStudent.studentProfile?.prn || selectedStudent.prn
+          }`,
         formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

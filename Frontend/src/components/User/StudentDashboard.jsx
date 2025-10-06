@@ -47,7 +47,8 @@ const StudentDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/lc-form/approval-status",
+          `${ENV.BASE_URL}/lc-form/approval-status` ||
+            "http://localhost:5000/lc-form/approval-status",
           {
             headers: { Authorization: `Bearer ${token}` },
           }

@@ -3,6 +3,7 @@ import { FaWpforms, FaEye, FaEdit } from "react-icons/fa";
 import { FaFileWaveform } from "react-icons/fa6";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
 import LeavingCertificateForm from "../LeavingCertificateForm"; // Import the reusable component
+import ENV from "../../env";
 
 const LeavingCertificate = () => {
   const [showModal, setShowModal] = useState(false);
@@ -52,16 +53,21 @@ const LeavingCertificate = () => {
 
         // Check approval status
         const statusRes = await fetch(
-          "http://localhost:5000/lc-form/approval-status",
+          `${ENV.BASE_URL}/lc-form/approval-status` ||
+            "http://localhost:5000/lc-form/approval-status",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
         // Fetch LC form data
-        const formRes = await fetch("http://localhost:5000/lc-form/form", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const formRes = await fetch(
+          `${ENV.BASE_URL}/lc-form/form` ||
+            "http://localhost:5000/lc-form/form",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         if (statusRes.ok) {
           const statusData = await statusRes.json();
@@ -118,9 +124,13 @@ const LeavingCertificate = () => {
         const token = localStorage.getItem("token");
         const studentCollege = localStorage.getItem("college"); // ✅ get student’s college
 
-        const res = await fetch("http://localhost:5000/lc-form/hod-branches", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `${ENV.BASE_URL}/lc-form/hod-branches` ||
+            "http://localhost:5000/lc-form/hod-branches",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         const data = await res.json();
         if (data.success) {
@@ -148,23 +158,30 @@ const LeavingCertificate = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/lc-form", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = await fetch(
+        `${ENV.BASE_URL}/lc-form` ||
+          "http://localhost:5000/lc-form",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
       const data = await res.json();
       if (res.ok) {
         setSubmitted(true);
         setShowModal(false);
         setEditMode(false);
         // Refresh form data
-        const formRes = await fetch("http://localhost:5000/lc-form/form", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const formRes = await fetch(
+          `${ENV.BASE_URL}/lc-form/form` || "http://localhost:5000/lc-form/form",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         if (formRes.ok) {
           const formData = await formRes.json();
           if (formData.success && formData.lcForm) {

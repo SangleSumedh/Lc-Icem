@@ -37,7 +37,8 @@ const StudentTickets = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:5000/api/tickets/student/${prn}`,
+        `${ENV.BASE_URL}/tickets/student/${prn}` ||
+          `http://localhost:5000/tickets/student/${prn}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

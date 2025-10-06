@@ -37,8 +37,12 @@ function RequestedInfoApprovals() {
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
 
-  const fetchUrl = "http://localhost:5000/departments/approvals/requested-info";
-  const updateUrl = "http://localhost:5000/departments/update-status";
+  const fetchUrl =
+    `${ENV.BASE_URL}/departments/approvals/requested-info` ||
+    "http://localhost:5000/departments/approvals/requested-info";
+  const updateUrl =
+    `${ENV.BASE_URL}/departments/update-status` ||
+    "http://localhost:5000/departments/update-status";
 
   // Close dropdown when clicking outside
   useEffect(() => {
