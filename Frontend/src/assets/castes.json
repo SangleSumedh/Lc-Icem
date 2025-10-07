@@ -1,0 +1,78 @@
+{
+  "religions": [
+    {
+      "religion": "Hinduism",
+      "castes": [
+        "Brahmin",
+        "Rajput",
+        "Bhumihar",
+        "Tyagi",
+        "Bania",
+        "Kayastha",
+        "Khatri",
+        "Arora",
+        "Maratha",
+        "Nair",
+        "Reddy",
+        "Kamma",
+        "Kapu",
+        "Vellalar",
+        "Nadar",
+        "Yadav",
+        "Kurmi",
+        "Gurjar",
+        "Jat",
+        "Ahir",
+        "Lodh",
+        "Teli",
+        "Kumhar",
+        "Lohar",
+        "Nai",
+        "Chamar",
+        "Mahar",
+        "Mala",
+        "Madiga",
+        "Pasi",
+        "Dhobi",
+        "Balmiki",
+        "Gond",
+        "Bhil",
+        "Santhal",
+        "Munda",
+        "Oraon",
+        "Lingayat",
+        "Jain",
+        "Sindhi",
+        "Other"
+      ]
+    },
+    {
+      "religion": "Islam",
+      "castes": ["Sunni", "Shia", "Ahmadiyya", "Sufi", "Other"]
+    },
+    {
+      "religion": "Christianity",
+      "castes": ["Catholic", "Protestant", "Orthodox", "Other"]
+    },
+    {
+      "religion": "Sikhism",
+      "castes": ["Jat", "Khatri", "Arora", "Other"]
+    },
+    {
+      "religion": "Buddhism",
+      "castes": ["Mahayana", "Theravada", "Vajrayana", "Other"]
+    },
+    {
+      "religion": "Jainism",
+      "castes": ["Digambara", "Shwetambara", "Other"]
+    },
+    {
+      "religion": "Zoroastrianism",
+      "castes": ["Parsi", "Irani"]
+    },
+    {
+      "religion": "Judaism",
+      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews", "Other"]
+    }
+  ]
+}

@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { ChevronDown } from "lucide-react";
+
+// Import JSON data
+import religionsData from "../assets/religions.json";
+import castesData from "../assets/castes.json";
+import nationsData from "../assets/nations.json";
 
 const LeavingCertificateForm = ({
   showModal,
@@ -20,8 +25,8 @@ const LeavingCertificateForm = ({
     studentID: "",
     fatherName: "",
     motherName: "",
-    caste: "",
-    subCaste: "",
+    caste: "", // Will store religion
+    subCaste: "", // Will store caste
     nationality: "",
     placeOfBirth: "",
     dateOfBirth: "",
@@ -32,18 +37,97 @@ const LeavingCertificateForm = ({
     branch: "",
     admissionMode: "",
     reasonForLeaving: "",
-    forMigrationFlag: false, // Added migration flag
+    forMigrationFlag: false,
+    customReligion: "",
+    customCaste: "",
     ...initialFormData,
   });
 
   const [dropdownOpen, setDropdownOpen] = useState({});
+  const [filteredCastes, setFilteredCastes] = useState([]);
+
+  // Function to convert date to words
+  const convertDateToWords = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    // Add ordinal suffix to day
+    const getOrdinalSuffix = (day) => {
+      if (day > 3 && day < 21) return "th";
+      switch (day % 10) {
+        case 1:
+          return "st";
+        case 2:
+          return "nd";
+        case 3:
+          return "rd";
+        default:
+          return "th";
+      }
+    };
+
+    return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+  };
+
+  // Auto-update DOB words when date changes
+  useEffect(() => {
+    if (formData.dateOfBirth && !viewMode && !editMode) {
+      const dobWords = convertDateToWords(formData.dateOfBirth);
+      setFormData((prev) => ({ ...prev, dobWords }));
+    }
+  }, [formData.dateOfBirth, viewMode, editMode]);
+
+  // Filter castes based on selected religion
+  useEffect(() => {
+    if (formData.caste && formData.caste !== "Other") {
+      const religion = religionsData.religions.find(
+        (r) => r.religion === formData.caste
+      );
+      setFilteredCastes(religion?.castes || []);
+    } else {
+      setFilteredCastes([]);
+    }
+  }, [formData.caste]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ 
-      ...formData, 
-      [name]: type === 'checkbox' ? checked : value 
-    });
+
+    if (name === "caste") {
+      // Reset caste when religion changes
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCaste: "",
+        customReligion: "",
+        customCaste: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === "checkbox" ? checked : value,
+      });
+    }
   };
 
   const toggleDropdown = (field) =>
@@ -54,11 +138,11 @@ const LeavingCertificateForm = ({
     name,
     value,
     options,
-    required,
+    required = false,
     disabled,
   }) => (
     <div className="relative w-full">
-      <label className="block text-sm font-medium text-gray-700 mb-0.5">
+      <label className="block text-sm font-medium text-gray-700 mb-0.5 text-nowrap">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <div
@@ -70,10 +154,8 @@ const LeavingCertificateForm = ({
         <span
           className={value ? "text-gray-800 text-sm" : "text-gray-400 text-sm"}
         >
-          {branchesLoading
-            ? "Loading..."
-            : options.length === 0
-            ? "No branches available"
+          {options.length === 0
+            ? "No options available"
             : value
             ? options.find((opt) => opt.value === value)?.label
             : "Select option"}
@@ -84,8 +166,8 @@ const LeavingCertificateForm = ({
           }`}
         />
       </div>
-      {dropdownOpen[name] && !disabled && !branchesLoading && !viewMode && (
-        <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
+      {dropdownOpen[name] && !disabled && !viewMode && (
+        <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-60 overflow-y-auto">
           {options.length > 0 ? (
             options.map((opt) => (
               <div
@@ -101,7 +183,7 @@ const LeavingCertificateForm = ({
             ))
           ) : (
             <div className="px-3 py-2 text-sm text-gray-500">
-              No branches available
+              No options available
             </div>
           )}
         </div>
@@ -111,8 +193,49 @@ const LeavingCertificateForm = ({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Prepare data for backend - use custom values if "Other" is selected
+    const submitData = {
+      ...formData,
+      caste:
+        formData.caste === "Other" ? formData.customReligion : formData.caste,
+      subCaste:
+        formData.subCaste === "Other"
+          ? formData.customCaste
+          : formData.subCaste,
+    };
+
+    onSubmit(submitData);
   };
+
+  // Prepare dropdown options from JSON data
+  const religionOptions = [
+    ...religionsData.religions.map((religion) => ({
+      value: religion.religion,
+      label: religion.religion,
+    })),
+    { value: "Other", label: "Other" },
+  ];
+
+  const casteOptions = [
+    ...filteredCastes.map((caste) => ({
+      value: caste,
+      label: caste,
+    })),
+    { value: "Other", label: "Other" },
+  ];
+
+  const nationalityOptions = nationsData.nations.map((nation) => ({
+    value: nation,
+    label: nation,
+  }));
+
+  const admissionModeOptions = [
+    { value: "FIRSTYEAR", label: "First Year" },
+    { value: "DIRECTSECONDYEAR", label: "Direct Second Year" },
+    { value: "MBA", label: "MBA" },
+    { value: "MCA", label: "MCA" },
+  ];
 
   if (!showModal) return null;
 
@@ -169,9 +292,6 @@ const LeavingCertificateForm = ({
                 { label: "Student ID", name: "studentID", required: false },
                 { label: "Father's Name", name: "fatherName", required: true },
                 { label: "Mother's Name", name: "motherName", required: true },
-                { label: "Caste", name: "caste", required: true },
-                { label: "Sub-Caste", name: "subCaste", required: true },
-                { label: "Nationality", name: "nationality", required: true },
                 {
                   label: "Place of Birth",
                   name: "placeOfBirth",
@@ -183,7 +303,6 @@ const LeavingCertificateForm = ({
                   type: "date",
                   required: true,
                 },
-                { label: "DOB (in words)", name: "dobWords", required: true },
               ].map((field, idx) => (
                 <div key={idx} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
@@ -204,6 +323,96 @@ const LeavingCertificateForm = ({
                   />
                 </div>
               ))}
+
+              {/* DOB in Words (Auto-generated) */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  DOB (in words) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="dobWords"
+                  value={formData.dobWords}
+                  onChange={handleChange}
+                  required={!viewMode}
+                  disabled={viewMode}
+                  readOnly={viewMode}
+                  placeholder="Auto-generated from date of birth"
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50"
+                  }`}
+                />
+                {!viewMode && formData.dateOfBirth && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Auto-generated from selected date
+                  </p>
+                )}
+              </div>
+
+              {/* Religion Dropdown (stored in caste field) */}
+              <div className="space-y-1">
+                <CustomDropdown
+                  label="Religion"
+                  name="caste"
+                  value={formData.caste}
+                  options={religionOptions}
+                  required={true}
+                  disabled={viewMode}
+                />
+                {/* Custom Religion Input */}
+                {formData.caste === "Other" && !viewMode && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="customReligion"
+                      placeholder="Specify your religion"
+                      value={formData.customReligion}
+                      onChange={handleChange}
+                      className="border p-2 rounded-lg w-full"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Caste Dropdown (stored in subCaste field) */}
+              <div className="space-y-1">
+                <CustomDropdown
+                  label="Caste"
+                  name="subCaste"
+                  value={formData.subCaste}
+                  options={casteOptions}
+                  required={true}
+                  disabled={viewMode || !formData.caste}
+                />
+                {/* Custom Caste Input */}
+                {formData.subCaste === "Other" && !viewMode && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="customCaste"
+                      placeholder="Specify your caste"
+                      value={formData.customCaste}
+                      onChange={handleChange}
+                      className="border p-2 rounded-lg w-full"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Nationality Dropdown */}
+              <div className="space-y-1">
+                
+                <CustomDropdown
+                  label="Nationality"
+                  name="nationality"
+                  value={formData.nationality}
+                  options={nationalityOptions}
+                  required={true}
+                  disabled={viewMode}
+                />
+              </div>
             </div>
           </div>
 
@@ -257,21 +466,23 @@ const LeavingCertificateForm = ({
                 </label>
               </div>
               <p className="text-xs text-gray-600 mt-2">
-                Selecting “Migration Certificate” will request a migration
+                Selecting "Migration Certificate" will request a migration
                 certificate instead of a regular leaving certificate.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Branch Dropdown */}
               <CustomDropdown
                 label="Branch"
                 name="branch"
-                required
                 value={formData.branch}
                 options={branches}
-                disabled={viewMode}
+                required={true}
+                disabled={viewMode || branchesLoading}
               />
 
+              {/* Year of Admission */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Year of Admission <span className="text-rose-500">*</span>
@@ -284,30 +495,28 @@ const LeavingCertificateForm = ({
                   required={!viewMode}
                   disabled={viewMode}
                   readOnly={viewMode}
+                  min="2000"
+                  max="2030"
                   className={`border p-2 rounded-lg w-full ${
                     viewMode ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
                 />
               </div>
 
+              {/* Admission Mode Dropdown */}
               <CustomDropdown
                 label="Admission Mode"
                 name="admissionMode"
-                required
                 value={formData.admissionMode}
-                options={[
-                  { value: "FIRSTYEAR", label: "First Year" },
-                  { value: "DIRECTSECONDYEAR", label: "Direct Second Year" },
-                  { value: "MBA", label: "MBA" },
-                  { value: "MCA", label: "MCA" },
-                ]}
+                options={admissionModeOptions}
+                required={true}
                 disabled={viewMode}
               />
             </div>
 
-            {/* Last College + Certificate Type */}
+            {/* Last College */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Last College Attended <span className="text-rose-500">*</span>
                 </label>
@@ -327,7 +536,7 @@ const LeavingCertificateForm = ({
               </div>
             </div>
 
-            {/* Reason */}
+            {/* Reason for Leaving */}
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
@@ -339,8 +548,8 @@ const LeavingCertificateForm = ({
                 name="reasonForLeaving"
                 placeholder={
                   formData.forMigrationFlag
-                    ? "Mention your reason for migration(Course Name and year)"
-                    : "Mention your reason for leaving(Course Name and year)"
+                    ? "Mention your reason for migration (Course Name and year)"
+                    : "Mention your reason for leaving (Course Name and year)"
                 }
                 rows={3}
                 value={formData.reasonForLeaving}

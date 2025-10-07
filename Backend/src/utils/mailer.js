@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import nodemailer from "nodemailer";
 
-// Email configuration with connection pooling and better timeout handling
+// Email configuration optimized for slow servers
 const transporter = nodemailer.createTransport({
   host: "smtp.office365.com",
   port: 587,
@@ -11,18 +11,16 @@ const transporter = nodemailer.createTransport({
     user: process.env.COLLEGE_EMAIL,
     pass: process.env.COLLEGE_PASS,
   },
-  // Connection pooling and performance optimizations
+  // Connection pooling for better performance
   pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  rateDelta: 1000,
-  rateLimit: 5,
-  // Timeout configurations
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000, // 10 seconds
-  socketTimeout: 30000, // 30 seconds
+  maxConnections: 3, // Reduced for slow servers
+  maxMessages: 50,
+  // Remove timeouts for slow servers
+  connectionTimeout: 0, // No timeout
+  greetingTimeout: 0, // No timeout
+  socketTimeout: 0, // No timeout
   // Retry logic
-  retries: 3,
+  retries: 2, // Reduced retries
 });
 
 // Verify transporter connection on startup
@@ -117,7 +115,6 @@ export const sendEmail = async ({
       to,
       subject,
       timestamp: new Date().toISOString(),
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
 
     // Enhanced error handling with specific error messages
@@ -129,10 +126,6 @@ export const sendEmail = async ({
     } else if (err.code === "ECONNECTION") {
       userFriendlyError =
         "Cannot connect to email server. Please check your internet connection.";
-    } else if (err.code === "ETIMEDOUT") {
-      userFriendlyError = "Email connection timed out. Please try again.";
-    } else if (err.code === "ESOCKET") {
-      userFriendlyError = "Email socket error. Please try again later.";
     } else if (err.message.includes("Invalid login")) {
       userFriendlyError = "Email login credentials are invalid.";
     } else if (err.message.includes("Recipient address")) {
@@ -143,10 +136,10 @@ export const sendEmail = async ({
   }
 };
 
-// Utility function for sending bulk emails with rate limiting
+// Utility function for sending bulk emails with minimal delay
 export const sendBulkEmail = async (
   emailDataArray,
-  delayBetweenEmails = 1000
+  delayBetweenEmails = 500 // Reduced delay for slow servers
 ) => {
   const results = {
     successful: [],
@@ -175,7 +168,7 @@ export const sendBulkEmail = async (
       );
     }
 
-    // Add delay between emails to avoid rate limiting
+    // Minimal delay between emails for slow servers
     if (i < emailDataArray.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, delayBetweenEmails));
     }
@@ -202,7 +195,7 @@ export const checkEmailServiceStatus = async () => {
   }
 };
 
-// Template for common email types (you can extend this)
+// Template for common email types
 export const emailTemplates = {
   staffCredentials: (name, email, password) => ({
     subject: "Your Staff Account Credentials - LC-ICEM Portal",

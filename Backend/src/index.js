@@ -12,29 +12,30 @@ import ticketRoutes from "./routes/ticketRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Define allowed origins
+// ✅ Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
   "https://lc-icem-sumedh.vercel.app",
 ];
 
-// ✅ Configure CORS properly
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        console.warn("❌ CORS blocked origin:", origin);
-        return callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
-  })
-);
+// ✅ CORS options
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow non-browser requests
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.warn("❌ CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+// ✅ Apply CORS middleware
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
