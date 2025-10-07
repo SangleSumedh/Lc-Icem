@@ -215,28 +215,50 @@ const LeavingCertificateForm = ({
             </h3>
             <hr className="border-gray-300 my-2" />
 
-            {/* Migration Flag - Added this section */}
+            {/* Certificate Type - Radio Buttons */}
             <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="forMigrationFlag"
-                  name="forMigrationFlag"
-                  checked={formData.forMigrationFlag}
-                  onChange={handleChange}
-                  disabled={viewMode}
-                  className="h-4 w-4 text-[#00539C] rounded focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
-                />
-                <label
-                  htmlFor="forMigrationFlag"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  This is a Migration Certificate
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Certificate Type
+              </label>
+              <div className="flex items-center space-x-6">
+                {/* Transfer Certificate (dummy) */}
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="certificateType"
+                    value="transfer"
+                    checked={!formData.forMigrationFlag}
+                    onChange={() => {}}
+                    disabled={viewMode}
+                    className="h-4 w-4 text-[#00539C] focus:ring-1 focus:ring-gray-400 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Transfer Certificate
+                  </span>
+                </label>
+
+                {/* Migration Certificate (functional) */}
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="certificateType"
+                    value="migration"
+                    checked={formData.forMigrationFlag}
+                    onChange={() =>
+                      !viewMode &&
+                      setFormData({ ...formData, forMigrationFlag: true })
+                    }
+                    disabled={viewMode}
+                    className="h-4 w-4 text-[#00539C] focus:ring-1 focus:ring-gray-400 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Migration Certificate
+                  </span>
                 </label>
               </div>
-              <p className="text-xs text-gray-600 mt-1 ml-7">
-                Check this box if you need a Migration Certificate instead of a
-                regular Leaving Certificate
+              <p className="text-xs text-gray-600 mt-2">
+                Selecting “Migration Certificate” will request a migration
+                certificate instead of a regular leaving certificate.
               </p>
             </div>
 
@@ -312,7 +334,6 @@ const LeavingCertificateForm = ({
                   Reason for Leaving College{" "}
                   <span className="text-rose-500">*</span>
                 </label>
-                
               </div>
               <textarea
                 name="reasonForLeaving"

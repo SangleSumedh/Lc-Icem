@@ -159,14 +159,14 @@ export const generatePDF = (studentData, formData) => {
     margin + 60,
     { align: "center" }
   );
-  doc.text("will be punished with rustication]", pageWidth / 2, margin + 70, {
+  doc.text("will be punished with rustication]", pageWidth / 2, margin + 65, {
     align: "center",
   });
 
   // ==== TABLE ====
   const tableColumns = ["", "", ""];
   const tableRows = [
-    ["Sr.", "Student", formData.studentID || ""],
+    ["Sr.", "Student ID", formData.studentID || ""],
     ["1", "Name of the Student in Full", studentData.studentName || ""],
     ["2", "Father's Name", formData.fatherName || ""],
     ["3", "Mother's Name", formData.motherName || ""],
@@ -183,7 +183,13 @@ export const generatePDF = (studentData, formData) => {
     ["10", "Date of Admission", formData.dateOfAdmission || ""],
     ["11", "Progress & Conduct", formData.progressAndConduct || ""],
     ["12", "Date of Leaving College", formData.dateOfLeaving || ""],
-    ["13", "Year in which studying & since when",   `${formData.admissionMode ||  "No "} ${formData.branch || ""}  ${formData.yearOfAdmission || ""}`],
+    [
+      "13",
+      "Year in which studying & since when",
+      `${(formData.admissionMode || "").toLowerCase()} ${
+        formData.branch || ""
+      }  ${formData.yearOfAdmission || ""}`,
+    ],
     ["14", "Reason for Leaving College", formData.reasonForLeaving || ""],
     ["15", "Remarks", formData.remarks || "_______"],
   ];
@@ -197,7 +203,7 @@ export const generatePDF = (studentData, formData) => {
     columnStyles: {
       0: { cellWidth: 12 }, // Sr. No
       1: { cellWidth: 75 }, // Particulars
-      2: { cellWidth: 95, fontStyle: "bold" }, // ✅ Details column bold
+      2: { cellWidth: 95, fontStyle: "bold" }, 
     },
     headStyles: {
       fillColor: [255, 255, 255],

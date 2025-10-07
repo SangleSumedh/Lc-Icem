@@ -172,7 +172,13 @@ export const generatePDF2 = (studentData, formData) => {
     ["10", "Date of Admission", formData.dateOfAdmission || ""],
     ["11", "Progress & Conduct", formData.progressAndConduct || ""],
     ["12", "Date of Leaving College", formData.dateOfLeaving || ""],
-    ["13", "Year in which studying & since when",  `${formData.branch || ""} From ${formData.yearOfAdmission || ""}`],
+    [
+      "13",
+      "Year in which studying & since when",
+      `${(formData.admissionMode || "").toLowerCase()} ${
+        formData.branch || ""
+      }  ${formData.yearOfAdmission || ""}`,
+    ],
     ["14", "Reason for Leaving College", formData.reasonForLeaving || ""],
     ["15", "Remarks", formData.remarks || "_______"],
   ];
