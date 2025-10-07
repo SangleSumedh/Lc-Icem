@@ -44,34 +44,54 @@ const StudentDashboard = () => {
   const [showRemarksDialog, setShowRemarksDialog] = useState(false);
 
   useEffect(() => {
-    const fetchApprovals = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `${ENV.BASE_URL}/lc-form/approval-status` ||
-            "http://localhost:5000/lc-form/approval-status",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+   const fetchApprovals = async () => {
+     try {
+       const token = localStorage.getItem("token");
+       const response = await axios.get(
+         `${ENV.BASE_URL}/lc-form/approval-status`,
+         {
+           headers: { Authorization: `Bearer ${token}` },
+         }
+       );
 
-        if (response.data.approvals) {
-          setApprovals(response.data.approvals);
-          setError(null); // Clear any previous errors
-        } else {
-          setError("No approval data found");
-        }
-      } catch (err) {
-        // Only show error if it's not a 404 (form not submitted yet)
-        if (err.response?.status === 404) {
-          setError("Please submit your LC form first");
-        } else {
-          setError("Failed to load approval status. Please try again.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+       // Handle sendResponse format
+       if (response.data.success) {
+         // Access approvals from response.data.data.approvals
+         if (response.data.data.approvals) {
+           setApprovals(response.data.data.approvals);
+           setError(null); // Clear any previous errors
+         } else {
+           setError("No approval data found");
+         }
+       } else {
+         // Use message from sendResponse format for errors
+         setError(response.data.message || "Failed to load approval status");
+       }
+     } catch (err) {
+       console.error("Error fetching approvals:", err);
+
+       // Enhanced error handling for sendResponse format
+       if (err.response) {
+         // For sendResponse format, check status and message
+         if (err.response.status === 404) {
+           setError(
+             err.response.data?.message || "Please submit your LC form first"
+           );
+         } else {
+           setError(
+             err.response.data?.message ||
+               "Failed to load approval status. Please try again."
+           );
+         }
+       } else if (err.request) {
+         setError("Network error. Please check your connection.");
+       } else {
+         setError("An unexpected error occurred. Please try again.");
+       }
+     } finally {
+       setLoading(false);
+     }
+   };
     fetchApprovals();
   }, []);
 
@@ -266,7 +286,7 @@ const StudentDashboard = () => {
           </h3>
           <button
             onClick={() => window.open(lcCard.lcUrl, "_blank")}
-            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-emerald-600 transition-colors"
+            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-[#004988] transition-colors"
           >
             Open LC
           </button>
@@ -279,7 +299,6 @@ const StudentDashboard = () => {
       {/* LC Being Generated Card - Show when all approved but LC not generated yet */}
       {allApproved && !lcCard && (
         <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          
           <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
             Your LC is Being Generated!
           </h3>

@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import axios from "axios";
 import ENV from "../../env";
+import {toast} from "react-hot-toast";
 
 const RaisedTicket = () => {
   const [tickets, setTickets] = useState([]);
@@ -39,27 +40,44 @@ const RaisedTicket = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
+      setError("");
       const token = getAuthToken();
 
-      const response = await axios.get(
-        `${ENV.BASE_URL}/tickets/` || "http://localhost:5000/tickets/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.get(`${ENV.BASE_URL}/tickets/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-      if (response.data.success) {
-        const sortedTickets = sortTicketsByStatus(response.data.tickets || []);
+      const { success, data, message } = response.data;
+
+      if (success) {
+        const tickets = data?.tickets || [];
+        const sortedTickets = sortTicketsByStatus(tickets);
         setTickets(sortedTickets);
+
+        // Optional: Show message if no tickets
+        if (tickets.length === 0) {
+          console.log("No tickets found");
+        }
       } else {
-        throw new Error(response.data.error || "Failed to fetch tickets");
+        throw new Error(message || "Failed to fetch tickets");
       }
     } catch (err) {
       console.error("Error fetching tickets:", err);
-      setError(err.response?.data?.error || err.message);
+
+      // Enhanced error handling
+      let errorMessage = "Failed to fetch tickets";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (err.request) {
+        errorMessage = "Network error - please check your connection";
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -69,10 +87,10 @@ const RaisedTicket = () => {
   const updateTicketStatus = async (ticketId) => {
     try {
       const token = getAuthToken();
+      const toastId = toast.loading("Updating ticket status...");
 
       const response = await axios.patch(
-        `${ENV.BASE_URL}/tickets/${ticketId}/status` ||
-          `http://localhost:5000/tickets/${ticketId}/status`,
+        `${ENV.BASE_URL}/tickets/${ticketId}/status`,
         statusUpdate,
         {
           headers: {
@@ -82,17 +100,31 @@ const RaisedTicket = () => {
         }
       );
 
-      if (response.data.success) {
-        alert("Ticket status updated successfully!");
+      const { success, message } = response.data;
+
+      if (success) {
+        toast.success(message || "Ticket status updated successfully!", {
+          id: toastId,
+        });
         setSelectedTicket(null);
         setStatusUpdate({ status: "", remarks: "" });
-        fetchTickets(); // Refresh the list (will re-sort)
+        fetchTickets(); // Refresh the list
       } else {
-        throw new Error(response.data.error || "Failed to update ticket");
+        throw new Error(message || "Failed to update ticket");
       }
     } catch (err) {
       console.error("Error updating ticket:", err);
-      alert(`Error: ${err.response?.data?.error || err.message}`);
+
+      let errorMessage = "Failed to update ticket status";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 404) {
+        errorMessage = "Ticket not found";
+      } else if (err.request) {
+        errorMessage = "Network error - please check your connection";
+      }
+
+      toast.error(errorMessage);
     }
   };
 

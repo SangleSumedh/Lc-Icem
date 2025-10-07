@@ -13,7 +13,8 @@ import AddDepartmentForm from "./AddDepartmentForm";
 import AddSuperAdmin from "./AddSuperAdmin";
 import AddUserForm from "./AddUserForm";
 import ENV from "../../env.js";
-
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -70,21 +71,64 @@ const AdminDashboard = () => {
 
   const fetchLoginLogs = async () => {
     try {
-      const response = await fetch(
-        `${ENV.BASE_URL}/admin/staff-login-logs` ||
-          "http://localhost:5000/admin/staff-login-logs",
+      const response = await axios.get(
+        `${ENV.BASE_URL}/admin/staff-login-logs`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
-      const data = await response.json();
 
-      if (data.success) {
-        setLoginLogs(data.data || []);
-        setStats((prev) => ({ ...prev, loginLogs: data.data?.length || 0 }));
+      if (response.data.success) {
+        setLoginLogs(response.data.data || []);
+        setStats((prev) => ({
+          ...prev,
+          loginLogs: response.data.data?.length || 0,
+        }));
+
+        // Optional: Show success toast for larger datasets
+        if (response.data.data?.length > 0) {
+          toast.success(`Loaded ${response.data.data.length} login logs`);
+        }
+      } else {
+        toast.error(response.data.message || "Failed to fetch login logs");
       }
     } catch (err) {
       console.error("Error fetching login logs:", err);
+
+      // Enhanced error handling with user-friendly messages
+      if (err.response) {
+        // Server responded with error status
+        const errorMessage =
+          err.response.data?.message || "Failed to load login logs";
+
+        // Handle specific backend error messages
+        if (err.response.status === 503) {
+          toast.error(
+            "Service temporarily unavailable. Please try again later."
+          );
+        } else if (err.response.status === 404) {
+          toast.error("No login logs found in the system.");
+        } else if (err.response.status === 408) {
+          toast.error("Request timeout. Please try again.");
+        } else if (err.response.status === 401) {
+          toast.error("Session expired. Please login again.");
+          // Optional: Redirect to login
+          // navigate('/login');
+        } else if (err.response.status === 403) {
+          toast.error("Access denied. Insufficient permissions.");
+        } else {
+          toast.error(errorMessage);
+        }
+      } else if (err.request) {
+        // Request was made but no response received
+        toast.error("Network error. Please check your internet connection.");
+      } else {
+        // Something else happened
+        toast.error("An unexpected error occurred. Please try again.");
+      }
     }
   };
 

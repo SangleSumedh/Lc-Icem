@@ -1,28 +1,30 @@
 import prisma from "../prisma.js";
+import { handlePrismaError } from "../utils/handlePrismaError.js";
+import { sendResponse } from "../utils/sendResponse.js";
 
 // Submit LC form
 export const submitLCForm = async (req, res) => {
-  const prn = req.user.prn; // PRN from JWT
-  const {
-    studentName,
-    studentID,
-    fatherName,
-    motherName,
-    caste,
-    subCaste,
-    nationality,
-    placeOfBirth,
-    dateOfBirth,
-    dobWords,
-    lastCollege,
-    yearOfAdmission,
-    branch,
-    admissionMode,
-    reasonForLeaving,
-  } = req.body;
-
   try {
-    // Date handling utility function
+    const prn = req.user.prn; // PRN from JWT
+    const {
+      studentName,
+      studentID,
+      fatherName,
+      motherName,
+      caste,
+      subCaste,
+      nationality,
+      placeOfBirth,
+      dateOfBirth,
+      dobWords,
+      lastCollege,
+      yearOfAdmission,
+      branch,
+      admissionMode,
+      reasonForLeaving,
+    } = req.body;
+
+    // Date handling utility function (unchanged)
     const parseDate = (dateString) => {
       if (!dateString) return null;
       // If it's already a Date object or timestamp, convert to ISO string first
@@ -30,7 +32,7 @@ export const submitLCForm = async (req, res) => {
         return new Date(dateString);
       }
       // If it's a timestamp number, convert to Date
-      if (typeof dateString === 'number') {
+      if (typeof dateString === "number") {
         return new Date(dateString);
       }
       // If it's ISO string or date string, parse normally
@@ -54,7 +56,7 @@ export const submitLCForm = async (req, res) => {
       reasonForLeaving,
       forMigrationFlag: req.body.forMigrationFlag || false,
     };
-    
+
     if (studentID) profileData.studentID = studentID;
 
     // Upsert student profile
@@ -79,8 +81,15 @@ export const submitLCForm = async (req, res) => {
     const accountDept = await prisma.department.findFirst({
       where: { deptName: "Account" },
     });
-    if (!accountDept)
-      return res.status(404).json({ error: "Account department not found" });
+    if (!accountDept) {
+      return sendResponse(
+        res,
+        false,
+        "Account department not found",
+        null,
+        404
+      );
+    }
 
     // Create approval request if not exists
     const existing = await prisma.approvalRequest.findFirst({
@@ -102,13 +111,18 @@ export const submitLCForm = async (req, res) => {
       console.log(`✅ Created approval request for Account department`);
     }
 
-    res.json({ success: true, message: "LC form submitted", profile });
+    return sendResponse(res, true, "LC form submitted successfully", {
+      profile,
+    });
   } catch (err) {
-    console.error(
-      "Something went wrong while creating student profile:",
-      err.message
-    );
-    res.status(400).json({ error: err.message });
+    console.error("Error submitting LC form:", err.message);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "submit_lc_form",
+      prn: req.user?.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -126,11 +140,18 @@ export const getHodBranches = async (req, res) => {
       college: dept.college,
     }));
 
-    res.json({ success: true, branches });
+    return sendResponse(res, true, "HOD branches fetched successfully", {
+      branches,
+    });
   } catch (err) {
     console.error("Error fetching HOD branches:", err.message);
-    res.status(500).json({ error: "Failed to fetch HOD branches" });
-  }
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_hod_branches",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
+  }
 };
 
 export const getDepartments = async (req, res) => {
@@ -139,20 +160,25 @@ export const getDepartments = async (req, res) => {
       select: { deptId: true, deptName: true, college: true },
     });
 
-    res.json({ success: true, Departments });
+    return sendResponse(res, true, "Departments fetched successfully", {
+      Departments,
+    });
   } catch (err) {
     console.error("Error fetching Departments:", err.message);
-    res.status(500).json({ error: "Failed to fetch Departments" });
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_departments",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-
-
 // Get approval status for student
 export const getApprovalStatus = async (req, res) => {
-  const prn = req.user.prn;
-
   try {
+    const prn = req.user.prn;
+
     const approvals = await prisma.approvalRequest.findMany({
       where: { studentPrn: prn },
       include: {
@@ -166,8 +192,9 @@ export const getApprovalStatus = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    if (!approvals.length)
-      return res.status(404).json({ error: "No approval requests found" });
+    if (!approvals.length) {
+      return sendResponse(res, false, "No approval requests found", null, 404);
+    }
 
     const approvalsWithExtra = approvals.map((approval) => ({
       approvalId: approval.approvalId,
@@ -187,82 +214,122 @@ export const getApprovalStatus = async (req, res) => {
           : null,
     }));
 
-    res.json({ success: true, approvals: approvalsWithExtra });
+    return sendResponse(res, true, "Approval status fetched successfully", {
+      approvals: approvalsWithExtra,
+    });
   } catch (err) {
     console.error("Error fetching approval status:", err.message);
-    res.status(400).json({ error: err.message });
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_approval_status",
+      prn: req.user?.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 // Get REQUESTED_INFO approvals for student
 export const getRequestedInfoApprovals = async (req, res) => {
-  const prn = req.user.prn;
-
   try {
+    const prn = req.user.prn;
+
     const requests = await prisma.approvalRequest.findMany({
       where: { studentPrn: prn, status: "REQUESTED_INFO" },
       include: { department: { select: { deptName: true } } },
       orderBy: { updatedAt: "desc" },
     });
 
-    if (!requests.length)
-      return res
-        .status(404)
-        .json({ error: "No requests for more information" });
+    if (!requests.length) {
+      return sendResponse(
+        res,
+        false,
+        "No requests for more information",
+        null,
+        404
+      );
+    }
 
-    res.json({ success: true, requests });
+    return sendResponse(
+      res,
+      true,
+      "Requested info approvals fetched successfully",
+      { requests }
+    );
   } catch (err) {
     console.error("Error fetching REQUESTED_INFO approvals:", err.message);
-    res.status(400).json({ error: err.message });
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_requested_info_approvals",
+      prn: req.user?.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-
 // Resubmit LC form
 export const resubmitLCForm = async (req, res) => {
-  const prn = req.user.prn;
-  const { approvalId, updates, studentName, forMigrationFlag } = req.body;
-
-  if (!approvalId || !updates)
-    return res
-      .status(400)
-      .json({ error: "approvalId and updates are required" });
-
   try {
+    const prn = req.user.prn;
+    const { approvalId, updates, studentName, forMigrationFlag } = req.body;
+
+    if (!approvalId || !updates) {
+      return sendResponse(
+        res,
+        false,
+        "approvalId and updates are required",
+        null,
+        400
+      );
+    }
+
     const approval = await prisma.approvalRequest.findUnique({
       where: { approvalId },
     });
 
-    if (!approval)
-      return res.status(404).json({ error: "Approval request not found" });
-    if (approval.studentPrn !== prn)
-      return res
-        .status(403)
-        .json({ error: "You cannot update this approval request" });
-    if (approval.status !== "REQUESTED_INFO")
-      return res
-        .status(400)
-        .json({ error: "Approval request is not requesting more info" });
+    if (!approval) {
+      return sendResponse(res, false, "Approval request not found", null, 404);
+    }
+    if (approval.studentPrn !== prn) {
+      return sendResponse(
+        res,
+        false,
+        "You cannot update this approval request",
+        null,
+        403
+      );
+    }
+    if (approval.status !== "REQUESTED_INFO") {
+      return sendResponse(
+        res,
+        false,
+        "Approval request is not requesting more info",
+        null,
+        400
+      );
+    }
 
-    // Handle date parsing for updates
+    // Handle date parsing for updates (unchanged)
     const parseDate = (dateString) => {
       if (!dateString) return null;
       if (dateString instanceof Date) return new Date(dateString);
-      if (typeof dateString === 'number') return new Date(dateString);
+      if (typeof dateString === "number") return new Date(dateString);
       const date = new Date(dateString);
       return isNaN(date.getTime()) ? null : date;
     };
 
     const profileUpdates = { ...updates };
-    
+
     // Convert dateOfBirth if present in updates
     if (updates.dateOfBirth !== undefined) {
       profileUpdates.dateOfBirth = parseDate(updates.dateOfBirth);
     }
-    
+
     // Ensure yearOfAdmission remains integer
     if (updates.yearOfAdmission !== undefined) {
-      profileUpdates.yearOfAdmission = parseInt(updates.yearOfAdmission) || null;
+      profileUpdates.yearOfAdmission =
+        parseInt(updates.yearOfAdmission) || null;
     }
 
     if (forMigrationFlag !== undefined) {
@@ -290,24 +357,29 @@ export const resubmitLCForm = async (req, res) => {
       data: { status: "PENDING" },
     });
 
-    res.json({
-      success: true,
-      message: "LC form resubmitted successfully",
+    return sendResponse(res, true, "LC form resubmitted successfully", {
       profile: updatedProfile,
       student: updatedStudent || undefined,
       approval: updatedApproval,
     });
   } catch (err) {
     console.error("Error resubmitting LC form:", err.message);
-    res.status(400).json({ error: err.message });
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "resubmit_lc_form",
+      prn: req.user?.prn,
+      approvalId: req.body?.approvalId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 // Get LC form for student
 export const getLCForm = async (req, res) => {
-  const prn = req.user.prn;
-
   try {
+    const prn = req.user.prn;
+
     const studentWithProfile = await prisma.student.findUnique({
       where: { prn },
       select: {
@@ -343,37 +415,49 @@ export const getLCForm = async (req, res) => {
       },
     });
 
-    if (!studentWithProfile || !studentWithProfile.profile)
-      return res
-        .status(404)
-        .json({ error: "LC form not found for this student" });
+    if (!studentWithProfile || !studentWithProfile.profile) {
+      return sendResponse(
+        res,
+        false,
+        "LC form not found for this student",
+        null,
+        404
+      );
+    }
 
-    // Format dates for frontend - convert to ISO string without timezone issues
+    // Format dates for frontend - convert to ISO string without timezone issues (unchanged)
     const formatDateForFrontend = (date) => {
       if (!date) return null;
       // For date-only fields, return YYYY-MM-DD format
       const d = new Date(date);
       if (isNaN(d.getTime())) return null;
-      return d.toISOString().split('T')[0]; // Returns "YYYY-MM-DD"
+      return d.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
     };
 
     const profileWithFormattedDates = {
       ...studentWithProfile.profile,
       studentName: studentWithProfile.studentName,
       // Format date fields for frontend
-      dateOfBirth: formatDateForFrontend(studentWithProfile.profile.dateOfBirth),
+      dateOfBirth: formatDateForFrontend(
+        studentWithProfile.profile.dateOfBirth
+      ),
       // yearOfAdmission remains as integer - no formatting needed
     };
 
-    res.json({
-      success: true,
-      lcForm: { 
-        ...studentWithProfile, 
-        profile: profileWithFormattedDates 
+    return sendResponse(res, true, "LC form fetched successfully", {
+      lcForm: {
+        ...studentWithProfile,
+        profile: profileWithFormattedDates,
       },
     });
   } catch (err) {
     console.error("Error fetching LC form:", err.message);
-    res.status(400).json({ error: err.message });
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_lc_form",
+      prn: req.user?.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };

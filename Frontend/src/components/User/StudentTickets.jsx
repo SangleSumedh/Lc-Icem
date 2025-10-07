@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { jwtDecode } from "jwt-decode";
 import ENV from "../../env";
+import { toast } from "react-hot-toast";
 
 function StudentTickets() {
   const [tickets, setTickets] = useState([]);
@@ -50,6 +51,7 @@ function StudentTickets() {
 
       if (!prn) {
         setError("Student PRN not found. Please log in again.");
+        toast.error("Student PRN not found. Please log in again.");
         return;
       }
 
@@ -64,19 +66,26 @@ function StudentTickets() {
         }
       );
 
-      if (response.data.success) {
-        setTickets(response.data.tickets || []);
+      // Use the standardized response format
+      const { success, data, message } = response.data;
+
+      if (success) {
+        setTickets(data?.tickets || []);
       } else {
-        throw new Error(response.data.error || "Failed to fetch tickets");
+        throw new Error(message || "Failed to fetch tickets");
       }
     } catch (err) {
       console.error("Error fetching student tickets:", err);
-      setError(err.response?.data?.error || err.message);
+
+      // Enhanced error handling
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to fetch tickets";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {

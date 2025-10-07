@@ -1,14 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiRefreshCw, FiMoreVertical, FiDownload } from "react-icons/fi";
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiDownload,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+} from "docx";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import ENV from "../../env";
+import axios from "axios";
 
 function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [approvals, setApprovals] = useState([]);
@@ -46,32 +60,41 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const fetchApprovals = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch(fetchUrl, {
+      const response = await axios.get(fetchUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (res.ok) {
-          setApprovals(data.pendingApprovals || []);
-        } else {
-          console.error("Fetch error:", data);
-          setApprovals([]);
+      const { success, data, message } = response.data;
+
+      if (success) {
+        const approvals = data?.pendingApprovals || [];
+        setApprovals(approvals);
+
+        // Optional: Show success message if no approvals
+        if (approvals.length === 0) {
+          console.log("No pending approvals found");
         }
-      } catch {
-        console.error("Received non-JSON response:", text);
+      } else {
+        console.error("Fetch error:", message);
         setApprovals([]);
       }
     } catch (err) {
       console.error("Error fetching approvals:", err);
+
+      let errorMessage = "Failed to fetch approvals";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.request) {
+        errorMessage = "Network error - please check your connection";
+      }
+
+      console.error(errorMessage);
       setApprovals([]);
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchApprovals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,26 +103,35 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   // Export Functions
   const exportToExcel = () => {
     try {
-      const exportData = approvals.map(approval => ({
+      const exportData = approvals.map((approval) => ({
         "Approval ID": approval.approvalId,
         "Student Name": approval.student.studentName,
-        "PRN": approval.student.prn,
-        "Email": approval.student.email,
-        "Phone": approval.student.phoneNo || "N/A",
-        "Department": approval.deptName || "N/A",
-        "Branch": approval.branch || "N/A",
+        PRN: approval.student.prn,
+        Email: approval.student.email,
+        Phone: approval.student.phoneNo || "N/A",
+        Department: approval.deptName || "N/A",
+        Branch: approval.branch || "N/A",
         "Year of Admission": approval.yearOfAdmission || "N/A",
-        "Status": approval.status,
-        "Remarks": approval.remarks || "N/A",
-        "Created At": approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : "N/A",
-        "Approved At": approval.approvedAt ? new Date(approval.approvedAt).toLocaleDateString() : "N/A"
+        Status: approval.status,
+        Remarks: approval.remarks || "N/A",
+        "Created At": approval.createdAt
+          ? new Date(approval.createdAt).toLocaleDateString()
+          : "N/A",
+        "Approved At": approval.approvedAt
+          ? new Date(approval.approvedAt).toLocaleDateString()
+          : "N/A",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Approvals");
 
-      XLSX.writeFile(wb, `${title.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `${title.toLowerCase().replace(/\s+/g, "_")}_export_${
+          new Date().toISOString().split("T")[0]
+        }.xlsx`
+      );
       toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -113,54 +145,90 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       const tableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Student Name")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("PRN")], width: { size: 30, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Email")], width: { size: 50, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Phone")], width: { size: 35, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Department")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Status")], width: { size: 30, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("Student Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("PRN")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Email")],
+              width: { size: 50, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Phone")],
+              width: { size: 35, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Department")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Status")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...approvals.map(approval => 
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph(approval.student.studentName)] }),
-              new TableCell({ children: [new Paragraph(approval.student.prn)] }),
-              new TableCell({ children: [new Paragraph(approval.student.email)] }),
-              new TableCell({ children: [new Paragraph(approval.student.phoneNo || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.deptName || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.status)] }),
-            ],
-          })
+        ...approvals.map(
+          (approval) =>
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph(approval.student.studentName)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.prn)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.email)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.phoneNo || "N/A")],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.deptName || "N/A")],
+                }),
+                new TableCell({ children: [new Paragraph(approval.status)] }),
+              ],
+            })
         ),
       ];
 
       const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              text: `${title} Report`,
-              heading: "Heading1",
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Generated on: ${new Date().toLocaleDateString()}`,
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Total Records: ${approvals.length}`,
-              spacing: { after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: tableRows,
-            }),
-          ],
-        }],
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: `${title} Report`,
+                heading: "Heading1",
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Generated on: ${new Date().toLocaleDateString()}`,
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Total Records: ${approvals.length}`,
+                spacing: { after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: tableRows,
+              }),
+            ],
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `${title.toLowerCase().replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(
+        blob,
+        `${title.toLowerCase().replace(/\s+/g, "_")}_report_${
+          new Date().toISOString().split("T")[0]
+        }.docx`
+      );
       toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -172,44 +240,29 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text(`${title} Report`, 105, 15, { align: "center" });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
-      doc.text(`Total Records: ${approvals.length}`, 105, 28, { align: "center" });
 
-      const tableData = approvals.map(approval => [
-        approval.student.studentName,
-        approval.student.prn,
-        approval.student.email,
-        approval.student.phoneNo || "N/A",
-        approval.deptName || "N/A",
-        approval.status
-      ]);
-
-      doc.autoTable({
+      // Add autoTable to the jsPDF instance
+      autoTable(doc, {
         startY: 35,
-        head: [['Student Name', 'PRN', 'Email', 'Phone', 'Department', 'Status']],
-        body: tableData,
-        theme: 'grid',
+        head: [
+          ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
+        ],
+        body: approvals.map((approval) => [
+          approval.student.studentName,
+          approval.student.prn,
+          approval.student.email,
+          approval.student.phoneNo || "N/A",
+          approval.deptName || "N/A",
+          approval.status,
+        ]),
+        theme: "grid",
         headStyles: { fillColor: [0, 83, 156] },
         styles: { fontSize: 7, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 20 }
-        }
       });
 
-      doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(
+        `approvals_report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
       toast.success("Exported to PDF successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -237,39 +290,53 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
     const updatePromise = new Promise(async (resolve, reject) => {
       try {
-        const res = await fetch(updateUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
+        const response = await axios.post(
+          updateUrl,
+          {
             approvalId: Number(selectedApproval.approvalId),
             status,
             remarks: finalRemarks,
-          }),
-        });
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-        const data = await res.json();
-        if (res.ok && data.success) {
+        // With axios, response.data contains the parsed JSON
+        const { success, message } = response.data;
+
+        if (success) {
           setSelectedApproval(null);
           setStatus("");
           setRemarks("");
           setPhone("");
           setEmail("");
           fetchApprovals();
-          resolve("Approval updated successfully");
+          resolve(message || "Approval updated successfully");
         } else {
-          reject(data.error || "Failed to update approval");
+          reject(message || "Failed to update approval");
         }
       } catch (err) {
         console.error("Error updating approval:", err);
-        reject("Error updating approval");
+
+        // Enhanced error handling
+        if (err.response?.data?.message) {
+          reject(err.response.data.message);
+        } else if (err.response?.data?.error) {
+          reject(err.response.data.error);
+        } else if (err.request) {
+          reject("Network error - please check your connection");
+        } else {
+          reject("Error updating approval");
+        }
       }
     });
 
     toast.promise(updatePromise, {
-      loading: 'Updating approval...',
+      loading: "Updating approval...",
       success: (message) => message,
       error: (err) => err,
     });
@@ -666,6 +733,6 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       )}
     </div>
   );
-}    
+}
 
 export default PendingApprovals;

@@ -89,7 +89,7 @@ const DepartmentDashboard = () => {
       <div className="space-y-6">
         {/* Navigation */}
         <div className="px-6">
-          <div className="flex space-x-2 bg-gray-100/50 rounded-xl p-1 backdrop-blur-sm">
+          <div className="flex space-x-2  rounded-xl p-1 backdrop-blur-sm">
             {tabs.map((tab) => {
               const colorClass = getColorClasses(tab.color);
               return (

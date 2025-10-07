@@ -14,6 +14,7 @@ import {
 import AuthLayout from "./AuthLayout";
 import toast from "react-hot-toast";
 import ENV from "../env";
+import axios from "axios";
 
 // ✅ Utility to generate safe slugs
 const slugify = (str) =>
@@ -95,43 +96,82 @@ const AdminLogin = () => {
     if (!errors.email && !errors.password && !errors.loginType) {
       try {
         setLoading(true);
-        const url =
+
+        // Determine the correct endpoint
+        const endpoint =
           loginType === "superadmin"
-            ? `${ENV.BASE_URL}/auth/admin/login` ||
-              "http://localhost:5000/auth/admin/login"
-            : `${ENV.BASE_URL}/auth/department/login` ||
-              "http://localhost:5000/auth/department/login";
+            ? "/auth/admin/login"
+            : "/auth/department/login";
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+        const response = await axios.post(
+          `${ENV.BASE_URL}${endpoint}`,
+          formData,
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
+        // Handle sendResponse format
+        if (response.data.success) {
+          // Access token from response.data.data
+          const { token, user } = response.data.data;
 
-          const decoded = jwtDecode(data.token);
+          // Ensure token is a string before storing
+          const tokenString = String(token).trim();
+          localStorage.setItem("token", tokenString);
+
+          const decoded = jwtDecode(tokenString);
           localStorage.setItem("role", decoded.role);
 
           if (decoded.role === "superadmin") {
-            toast.success("Admin login successful!");
+            // Store superadmin data
+            if (user) {
+              localStorage.setItem("adminId", user.id || "");
+              localStorage.setItem("username", user.username || "");
+              localStorage.setItem("email", user.email || "");
+            }
+            toast.success(response.data.message || "Admin login successful!");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
+            // Store department staff data
             const deptName = decoded.deptName;
             localStorage.setItem("deptName", deptName);
+            localStorage.setItem("staffId", decoded.staffId || "");
+            localStorage.setItem("deptId", decoded.deptId || "");
+            localStorage.setItem("staffName", decoded.name || "");
+
+            // Also store from user object if available
+            if (user) {
+              localStorage.setItem(
+                "staffName",
+                user.name || decoded.name || ""
+              );
+              localStorage.setItem("email", user.email || "");
+            }
 
             const slug = slugify(deptName);
-            toast.success(`Welcome ${deptName} Department!`);
+            toast.success(
+              response.data.message || `Welcome ${deptName} Department!`
+            );
             navigate(`/admin-dashboard/${slug}`);
           }
         } else {
-          toast.error(data.error || "Login failed");
+          // Use message from sendResponse format
+          toast.error(response.data.message || "Login failed");
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        toast.error("Could not connect to backend.");
+        console.error("❌ Login error:", err);
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage = err.response.data?.message || "Login failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during login");
+        }
       } finally {
         setLoading(false);
       }

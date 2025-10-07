@@ -4,6 +4,8 @@ import { FaFileWaveform } from "react-icons/fa6";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
 import LeavingCertificateForm from "../LeavingCertificateForm"; 
 import ENV from "../../env";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const LeavingCertificate = () => {
   const [showModal, setShowModal] = useState(false);
@@ -70,15 +72,22 @@ const LeavingCertificate = () => {
         );
 
         if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          if (statusData.approvals && statusData.approvals.length > 0) {
+          const statusResponse = await statusRes.json();
+          const statusData = statusResponse.data; // Access the data property
+          if (
+            statusData &&
+            statusData.approvals &&
+            statusData.approvals.length > 0
+          ) {
             setSubmitted(true);
           }
         }
 
         if (formRes.ok) {
-          const formData = await formRes.json();
-          if (formData.success && formData.lcForm) {
+          const formResponse = await formRes.json();
+          const formData = formResponse.data; // Access the data property
+
+          if (formResponse.success && formData.lcForm) {
             setLcFormData(formData.lcForm);
             setIsFormEditable(formData.lcForm.profile?.isFormEditable || false);
 
@@ -110,6 +119,7 @@ const LeavingCertificate = () => {
         }
       } catch (err) {
         console.error("❌ Error checking form status:", err);
+        toast.error("Error checking form status");
       } finally {
         setCheckingStatus(false);
       }
@@ -122,9 +132,16 @@ const LeavingCertificate = () => {
     const fetchBranches = async () => {
       try {
         const token = localStorage.getItem("token");
-        const studentCollege = localStorage.getItem("college"); // ✅ get student’s college
+        const studentCollege = localStorage.getItem("college");
 
-        const res = await fetch(
+        if (!token || !studentCollege) {
+          console.error("❌ Missing token or college information");
+          setBranches([]);
+          toast.error("Missing authentication information");
+          return;
+        }
+
+        const response = await axios.get(
           `${ENV.BASE_URL}/lc-form/hod-branches` ||
             "http://localhost:5000/lc-form/hod-branches",
           {
@@ -132,25 +149,66 @@ const LeavingCertificate = () => {
           }
         );
 
-        const data = await res.json();
-        if (data.success) {
-          // ✅ Filter branches for logged-in student’s college
-          const filteredBranches = data.branches.filter(
-            (b) => b.college === studentCollege
-          );
+        // With Axios, the response data is directly accessible via response.data
+        const { success, message, data } = response.data;
 
-          const branchOptions = filteredBranches.map((b) => ({
-            value: b.branch,
-            label: b.branch,
-          }));
-          setBranches(branchOptions);
+        if (!success) {
+          console.error("❌ Failed to fetch branches:", message);
+          setBranches([]);
+          toast.error(message || "Failed to fetch branches");
+          return;
         }
+
+        // Ensure we have the branches array
+        const branchesArray = data?.branches || [];
+
+        if (!Array.isArray(branchesArray)) {
+          console.error("❌ Invalid branches data format:", branchesArray);
+          setBranches([]);
+          toast.error("Invalid branches data format");
+          return;
+        }
+
+        // Filter branches by college
+        const filteredBranches = branchesArray.filter(
+          (b) => b.college === studentCollege
+        );
+
+        // Create options for dropdown
+        const branchOptions = filteredBranches.map((b) => ({
+          value: b.branch,
+          label: b.branch,
+        }));
+
+        setBranches(branchOptions);
       } catch (err) {
         console.error("❌ Error fetching branches:", err);
+
+        // Axios error handling
+        if (err.response) {
+          // Server responded with error status
+          console.error(
+            "Server error:",
+            err.response.status,
+            err.response.data
+          );
+          toast.error(err.response.data?.message || "Failed to fetch branches");
+        } else if (err.request) {
+          // Request made but no response received
+          console.error("Network error:", err.request);
+          toast.error("Network error - please check your connection");
+        } else {
+          // Something else happened
+          console.error("Error:", err.message);
+          toast.error("Error fetching branches");
+        }
+
+        setBranches([]); // Set empty array on error
       } finally {
         setBranchesLoading(false);
       }
     };
+
     fetchBranches();
   }, []);
 
@@ -158,43 +216,53 @@ const LeavingCertificate = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${ENV.BASE_URL}/lc-form` ||
-          "http://localhost:5000/lc-form",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (res.ok) {
+      const response = await axios.post(`${ENV.BASE_URL}/lc-form`, formData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Axios automatically throws for non-2xx status, so if we're here, it's successful
+      const { success, message, data } = response.data;
+
+      if (success) {
         setSubmitted(true);
         setShowModal(false);
         setEditMode(false);
+
         // Refresh form data
-        const formRes = await fetch(
-          `${ENV.BASE_URL}/lc-form/form` || "http://localhost:5000/lc-form/form",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (formRes.ok) {
-          const formData = await formRes.json();
-          if (formData.success && formData.lcForm) {
-            setLcFormData(formData.lcForm);
-            setIsFormEditable(formData.lcForm.profile?.isFormEditable || false);
-          }
+        const formResponse = await axios.get(`${ENV.BASE_URL}/lc-form/form`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (formResponse.data.success && formResponse.data.data?.lcForm) {
+          setLcFormData(formResponse.data.data.lcForm);
+          setIsFormEditable(
+            formResponse.data.data.lcForm.profile?.isFormEditable || false
+          );
         }
+
+        // Show success message
+        toast.success("Form submitted successfully!");
       } else {
-        alert(data.error || "❌ Failed to submit form");
+        toast.error(message || "Failed to submit form");
       }
     } catch (err) {
-      console.log(lcFormData);
-      alert("Could not connect to backend.", err);
+      console.error("Submission error:", err);
+
+      // Enhanced error handling for axios
+      if (err.response) {
+        // Server responded with error status
+        const errorMessage = err.response.data?.message || "Submission failed";
+        toast.error(errorMessage);
+      } else if (err.request) {
+        // Request was made but no response received
+        toast.error("Network error - please check your connection");
+      } else {
+        // Something else happened
+        toast.error("An error occurred while submitting the form");
+      }
     } finally {
       setLoading(false);
     }

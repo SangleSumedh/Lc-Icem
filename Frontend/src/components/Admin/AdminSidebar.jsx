@@ -35,8 +35,14 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             `${ENV.BASE_URL}/admin/departments` ||
               "http://localhost:5000/admin/departments"
           );
-          if (response.data.success) {
-            setDepartments(response.data.data);
+
+          // Use the standardized response format
+          const { success, data, message } = response.data;
+
+          if (success) {
+            setDepartments(data?.departments || data || []);
+          } else {
+            console.error("Failed to fetch departments:", message);
           }
         } catch (err) {
           console.error("Error fetching departments", err);

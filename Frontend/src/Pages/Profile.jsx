@@ -74,69 +74,80 @@ function Profile() {
     navigate(-1);
   };
 
-  const handleChangePassword = async () => {
-    if (!oldPassword) {
-      return toast.error("Please enter your current password");
-    }
+const handleChangePassword = async () => {
+  if (!oldPassword) {
+    return toast.error("Please enter your current password");
+  }
 
-    if (!newPassword) {
-      return toast.error("Please enter a new password");
-    }
+  if (!newPassword) {
+    return toast.error("Please enter a new password");
+  }
 
-    if (newPassword.length < 6) {
-      return toast.error("Password must be at least 6 characters long");
-    }
+  if (newPassword.length < 6) {
+    return toast.error("Password must be at least 6 characters long");
+  }
 
-    if (newPassword !== confirmPassword) {
-      return toast.error("Passwords do not match");
-    }
+  if (newPassword !== confirmPassword) {
+    return toast.error("Passwords do not match");
+  }
 
-    // Determine the correct endpoint based on user role
-    let url = "";
-    let payload = { oldPassword, newPassword };
+  let url = "";
+  let payload = { oldPassword, newPassword };
 
-    if (role === "student") {
-      url = "/auth/student/change-password";
-      // For students, the backend expects req.user.prn from JWT
-    } else if (role === "department") {
-      url = "/auth/department/change-password";
-      // For department staff, the backend expects req.user.staffId from JWT
-    } else if (role === "superadmin") {
-      url = "/auth/admin/change-password";
-      // For superadmin, the backend expects req.user.id from JWT
-    } else {
-      return toast.error("Invalid user role");
-    }
+  if (role === "student") {
+    url = "/auth/student/change-password";
+  } else if (role === "department") {
+    url = "/auth/department/change-password";
+  } else if (role === "superadmin") {
+    url = "/auth/admin/change-password";
+  } else {
+    return toast.error("Invalid user role");
+  }
 
-    setIsLoading(true);
-    try {
-      await axios.post(
-        `${ENV.BASE_URL}${url}` || `http://localhost:5000${url}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      toast.success("Password changed successfully!");
+  const toastId = toast.loading("Changing password...");
+  setIsLoading(true);
+
+  try {
+    const response = await axios.post(`${ENV.BASE_URL}${url}`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const { success, message } = response.data;
+
+    if (success) {
+      toast.success(message || "Password changed successfully!", {
+        id: toastId,
+      });
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err) {
-      console.error("Password change error:", err);
-      if (err.response?.data?.error) {
-        toast.error(err.response.data.error);
-      } else if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
-      } else {
-        toast.error("Failed to change password");
-      }
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast.error(message || "Failed to change password", { id: toastId });
     }
-  };
+  } catch (err) {
+    console.error("Password change error:", err);
+
+    let errorMessage = "Failed to change password";
+    if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
+    } else if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+    } else if (err.response?.status === 401) {
+      errorMessage = "Current password is incorrect";
+    } else if (err.response?.status === 404) {
+      errorMessage = "User not found";
+    } else if (err.request) {
+      errorMessage = "Network error - please check your connection";
+    }
+
+    toast.error(errorMessage, { id: toastId });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const getRoleIcon = () => {
     switch (user.role) {

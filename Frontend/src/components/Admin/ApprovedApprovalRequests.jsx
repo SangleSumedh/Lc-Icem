@@ -41,7 +41,16 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setApprovals(res.data.approvedApprovals || []);
+
+      // Use the standardized response format
+      const { success, data, message } = res.data;
+
+      if (success) {
+        setApprovals(data?.approvedApprovals || []);
+      } else {
+        console.error("Fetch error:", message);
+        setApprovals([]);
+      }
     } catch (err) {
       console.error(
         "Error fetching approvals:",

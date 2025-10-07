@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 import ENV from "../env";
+import axios from "axios";
 import { toast } from "react-hot-toast";
 
 const Register = () => {
@@ -50,26 +51,42 @@ const Register = () => {
         setLoading(true);
         const toastId = toast.loading("Registering...");
 
-        const res = await fetch(
-          `${ENV.BASE_URL}/auth/student/register` ||
-            "http://localhost:5000/auth/student/register",
+        const response = await axios.post(
+          `${ENV.BASE_URL}/auth/student/register`,
+          formData,
           {
-            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
           }
         );
 
-        const data = await res.json();
-        if (res.ok) {
+        // Handle consistent response format
+        if (response.data.success) {
           toast.success("Registration successful!", { id: toastId });
           navigate("/");
         } else {
-          toast.error(data.error || "Failed to register", { id: toastId });
+          // Use message instead of error for sendResponse format
+          toast.error(response.data.message || "Failed to register", {
+            id: toastId,
+          });
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        toast.error("Could not connect to backend.");
+        console.error("❌ Registration error:", err);
+        // Dismiss the loading toast first
+        toast.dismiss();
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage =
+            err.response.data?.message ||
+            err.response.data?.error ||
+            "Registration failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during registration");
+        }
       } finally {
         setLoading(false);
       }
@@ -86,7 +103,7 @@ const Register = () => {
     {
       value: "ICEM",
       label: "ICEM",
-      description: "Indira College of Engineering",
+      description: "Indira College of Engineering and Management",
     },
     {
       value: "IGSB",
@@ -166,6 +183,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.studentName && (
+            <p className="text-xs text-rose-500 mt-1">Full name is required</p>
+          )}
         </div>
 
         {/* PRN */}
@@ -184,6 +204,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.prn && (
+            <p className="text-xs text-rose-500 mt-1">PRN is required</p>
+          )}
         </div>
 
         {/* Email */}
@@ -202,6 +225,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.email && (
+            <p className="text-xs text-rose-500 mt-1">Email is required</p>
+          )}
         </div>
 
         {/* Phone */}
@@ -220,6 +246,11 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.phoneNo && (
+            <p className="text-xs text-rose-500 mt-1">
+              Phone number is required
+            </p>
+          )}
         </div>
 
         {/* Password */}
@@ -238,6 +269,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.password && (
+            <p className="text-xs text-rose-500 mt-1">Password is required</p>
+          )}
         </div>
 
         {/* College - Custom Dropdown */}
@@ -272,18 +306,7 @@ const Register = () => {
 
           {dropdownOpen && (
             <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 animate-scaleIn">
-              {[
-                {
-                  value: "ICEM",
-                  label: "ICEM",
-                  description: "Indira College of Engineering and Management",
-                },
-                {
-                  value: "IGSB",
-                  label: "IGSB",
-                  description: "Indira Global School of Business",
-                },
-              ].map((option) => (
+              {collegeOptions.map((option) => (
                 <div
                   key={option.value}
                   onClick={() => handleCollegeSelect(option)}
@@ -300,7 +323,9 @@ const Register = () => {
             </div>
           )}
           {formErrors.college && (
-            <p className="text-xs text-rose-500 mt-1">Please select a college</p>
+            <p className="text-xs text-rose-500 mt-1">
+              Please select a college
+            </p>
           )}
         </div>
 

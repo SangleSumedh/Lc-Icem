@@ -15,7 +15,6 @@ import { jwtDecode } from "jwt-decode";
 import ENV from "../../env";
 import StudentTickets from "./StudentTickets";
 
-
 // Main RaiseTickets Component with Navigation
 function RaiseTickets() {
   const [activeTab, setActiveTab] = useState("raise"); // 'raise' or 'active'
@@ -35,6 +34,7 @@ function RaiseTickets() {
   const [departmentError, setDepartmentError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+
   // Fetch departments from API
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -47,32 +47,39 @@ function RaiseTickets() {
             "http://localhost:5000/lc-form/get-departments"
         );
 
-        if (response.data.success && response.data.Departments) {
+        // Use the standardized response format
+        const { success, data, message } = response.data;
+
+        if (success && data?.Departments) {
           // Transform the API data to match our expected format
-          const transformedDepartments = response.data.Departments.map(
-            (dept) => ({
-              id: dept.deptId,
-              name: dept.deptName,
-              college: dept.college,
-            })
-          );
+          const transformedDepartments = data.Departments.map((dept) => ({
+            id: dept.deptId,
+            name: dept.deptName,
+            college: dept.college,
+          }));
           setDepartments(transformedDepartments);
         } else {
-          throw new Error("Invalid data format from server");
+          throw new Error(message || "Invalid data format from server");
         }
       } catch (err) {
         console.error("Error fetching departments:", err);
         setDepartmentError("Failed to load departments. Please try again.");
 
-        // Fallback to default departments if API fails
-        setDepartments([
+        // Fallback to default departments if API fails - ensure consistent format
+        const fallbackDepartments = [
           "Registrar Office",
           "IT Department",
           "Accounts Department",
           "Examination Cell",
           "Library",
           "Other",
-        ]);
+        ].map((dept, index) => ({
+          id: index + 1,
+          name: dept,
+          college: "ALL",
+        }));
+
+        setDepartments(fallbackDepartments);
       } finally {
         setIsLoadingDepartments(false);
       }
@@ -94,7 +101,7 @@ function RaiseTickets() {
 
     // Validate department selection
     if (!formData.department) {
-      alert("Please select a department");
+      toast.error("Please select a department");
       return;
     }
 
@@ -128,7 +135,10 @@ function RaiseTickets() {
         ticketData
       );
 
-      if (response.data.success) {
+      // Use standardized response format
+      const { success, message, data } = response.data;
+
+      if (success) {
         setSubmitSuccess(true);
         // Reset form
         setFormData({
@@ -141,20 +151,26 @@ function RaiseTickets() {
           relatedTo: "",
         });
 
+        toast.success("Ticket raised successfully!");
+
         // Hide success message after 5 seconds
         setTimeout(() => {
           setSubmitSuccess(false);
         }, 5000);
       } else {
-        throw new Error(response.data.error || "Failed to raise ticket");
+        throw new Error(message || "Failed to raise ticket");
       }
     } catch (err) {
       console.error("Error raising ticket:", err);
-      alert(
-        `❌ ${
-          err.response?.data?.error || "Something went wrong! Please try again."
-        }`
-      );
+
+      // Enhanced error handling with toast
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else if (err.response?.data?.error) {
+        toast.error(err.response.data.error);
+      } else {
+        toast.error("Something went wrong! Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -322,18 +338,14 @@ function RaiseTickets() {
                       value={formData.department}
                       onChange={handleChange}
                       disabled={isLoadingDepartments}
-                      className="w-full max-h-[30vh] border border-gray-300 rounded-lg px-4 py-3 focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full max-h-[30vh] border border-gray-300 rounded-lg px-4 py-3 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       required
                     >
                       <option value="">Select department</option>
                       {departments.map((dept) => (
-                        <option
-                          key={typeof dept === "object" ? dept.id : dept}
-                          value={typeof dept === "object" ? dept.name : dept}
-                        >
-                          {typeof dept === "object" ? dept.name : dept}
-                          {typeof dept === "object" &&
-                            dept.college &&
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                          {dept.college &&
                             dept.college !== "ALL" &&
                             ` (${dept.college})`}
                         </option>

@@ -1,106 +1,208 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { handlePrismaError } from "../utils/handlePrismaError.js";
+import { sendResponse } from "../utils/sendResponse.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET not set in environment variables");
 
 export const registerStudent = async (req, res) => {
-  const { prn, studentName, email, phoneNo, password, college } = req.body;
-
-  if (!prn || !studentName || !email || !phoneNo || !password || !college) {
-    return res
-      .status(400)
-      .json({ error: "All fields are required, including college" });
-  }
-
-  const allowedColleges = ["ICEM", "IGSB"];
-  if (!allowedColleges.includes(college)) {
-    return res.status(400).json({ error: "Invalid college value" });
-  }
-
   try {
+    const { prn, studentName, email, phoneNo, password, college } = req.body;
+
+    // Validate required fields
+    if (!prn || !studentName || !email || !phoneNo || !password || !college) {
+      return sendResponse(
+        res,
+        false,
+        "All fields are required, including college",
+        null,
+        400
+      );
+    }
+
+    // Validate college
+    const allowedColleges = ["ICEM", "IGSB"];
+    if (!allowedColleges.includes(college)) {
+      return sendResponse(
+        res,
+        false,
+        "Invalid college value. Must be one of: ICEM, IGSB",
+        null,
+        400
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return sendResponse(
+        res,
+        false,
+        "Please provide a valid email address",
+        null,
+        400
+      );
+    }
+
+    // Validate phone number
+    if (!/^\d{10}$/.test(phoneNo)) {
+      return sendResponse(
+        res,
+        false,
+        "Phone number must be exactly 10 digits",
+        null,
+        400
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const student = await prisma.student.create({
       data: {
         prn,
-        studentName,
-        email,
+        studentName: studentName.trim(),
+        email: email, // KEEP ORIGINAL CASE
         phoneNo,
         password: hashedPassword,
         college,
       },
+      select: {
+        prn: true,
+        studentName: true,
+        email: true,
+        phoneNo: true,
+        college: true,
+      },
     });
 
-    console.log("Student Registered");
-    res.json({ message: "Registration Successful", student });
+    console.log(`✅ Student Registered: ${studentName} (PRN: ${prn})`);
+
+    return sendResponse(res, true, "Registration Successful", student, 201);
   } catch (err) {
-    console.error("Something went wrong during registration:", err.message);
-    res.status(400).json({ error: err.message });
+    console.error("Student registration error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "student_registration",
+      email: req.body.email,
+      prn: req.body.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 export const loginStudent = async (req, res) => {
-  const { email, password  } = req.body;
-
   try {
-    const student = await prisma.student.findUnique({ where: { email } });
-    if (!student) return res.status(400).json({ error: "Student not found" });
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return sendResponse(
+        res,
+        false,
+        "Email and password are required",
+        null,
+        400
+      );
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { email }, // KEEP ORIGINAL CASE SEARCH
+    });
+
+    if (!student) {
+      return sendResponse(res, false, "Student not found", null, 404);
+    }
 
     const valid = await bcrypt.compare(password, student.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) {
+      return sendResponse(res, false, "Invalid credentials", null, 401);
+    }
 
     const token = jwt.sign(
-      { role: "student", prn: student.prn, email: student.email },
+      {
+        role: "student",
+        prn: student.prn,
+        email: student.email,
+        college: student.college,
+      },
       JWT_SECRET,
       { expiresIn: "3h" }
     );
 
-    res.json({
-      success: true,
-      message: "Logged In",
+    return sendResponse(res, true, "Logged in successfully", {
       token,
-      user: { prn: student.prn, email: student.email, college: student.college },
+      user: {
+        prn: student.prn,
+        email: student.email,
+        college: student.college,
+        studentName: student.studentName,
+      },
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Student login error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "student_login",
+      email: req.body.email,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 export const staffLogin = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return sendResponse(
+        res,
+        false,
+        "Email and password are required",
+        null,
+        400
+      );
+    }
+
     const staff = await prisma.staff.findUnique({
-      where: { email },
+      where: { email }, // KEEP ORIGINAL CASE SEARCH
       include: { department: true },
     });
-    if (!staff) return res.status(400).json({ error: "Staff not found" });
+
+    if (!staff) {
+      return sendResponse(res, false, "Staff not found", null, 404);
+    }
 
     const valid = await bcrypt.compare(password, staff.passwordHash);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) {
+      return sendResponse(res, false, "Invalid credentials", null, 401);
+    }
 
-    // 🔹 Generate JWT
+    // Generate JWT
     const token = jwt.sign(
       {
         role: "department",
         staffId: staff.staffId,
         deptId: staff.deptId,
         name: staff.name,
-        deptName: staff.department.deptName,
+        deptName: staff.department?.deptName || "Unknown Department",
         email: staff.email,
       },
       JWT_SECRET,
       { expiresIn: "8h" }
     );
 
-    // 🔹 Create staff login log
+    // Create staff login log
     try {
       await prisma.staffLoginLog.create({
         data: {
           staffId: staff.staffId,
           staffName: staff.name,
-          ipAddress: req.ip || null,
+          ipAddress: req.ip || req.connection.remoteAddress || null,
           userAgent: req.headers["user-agent"] || null,
         },
       });
@@ -110,172 +212,287 @@ export const staffLogin = async (req, res) => {
       // Do not block login if logging fails
     }
 
-    res.json({
-      success: true,
-      message: "Logged In as Department",
-      token,
-      user: {
-        staffId: staff.staffId,
-        name: staff.name,
-        deptId: staff.deptId,
-        deptName: staff.department.deptName,
-        email: staff.email,
-      },
-    });
+    return sendResponse(
+      res,
+      true,
+      "Logged in successfully as department staff",
+      {
+        token,
+        user: {
+          staffId: staff.staffId,
+          name: staff.name,
+          deptId: staff.deptId,
+          deptName: staff.department?.deptName || "Unknown Department",
+          email: staff.email,
+        },
+      }
+    );
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Staff login error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "staff_login",
+      email: req.body.email,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-
 export const superAdminLogin = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    const superAdmin = await prisma.superAdmin.findUnique({ where: { email } });
-    if (!superAdmin)
-      return res.status(400).json({ error: "Super Admin not found" });
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return sendResponse(
+        res,
+        false,
+        "Email and password are required",
+        null,
+        400
+      );
+    }
+
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: { email }, // KEEP ORIGINAL CASE SEARCH
+    });
+
+    if (!superAdmin) {
+      return sendResponse(res, false, "Super admin not found", null, 404);
+    }
 
     const valid = await bcrypt.compare(password, superAdmin.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) {
+      return sendResponse(res, false, "Invalid credentials", null, 401);
+    }
 
     const token = jwt.sign(
-      { role: "superadmin", id: superAdmin.id, email: superAdmin.email },
+      {
+        role: "superadmin",
+        id: superAdmin.id,
+        email: superAdmin.email,
+        username: superAdmin.username,
+      },
       JWT_SECRET,
       { expiresIn: "10h" }
     );
 
-    res.json({
-      success: true,
-      message: "Logged In as Super Admin",
+    return sendResponse(res, true, "Logged in successfully as super admin", {
       token,
-      user: { id: superAdmin.id, email: superAdmin.email },
+      user: {
+        id: superAdmin.id,
+        email: superAdmin.email,
+        username: superAdmin.username,
+      },
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Super admin login error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "super_admin_login",
+      email: req.body.email,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-/**
- * Change Staff Password
- * Expects: { oldPassword, newPassword }
- * Requires: staffId from JWT (req.user.staffId)
- */
+// Password change functions remain the same (they don't affect emails)
 export const changeStaffPassword = async (req, res) => {
-  const staffId = req.user.staffId; // Ensure you have auth middleware
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    return res
-      .status(400)
-      .json({ error: "Both old and new passwords are required" });
-  }
-
   try {
-    // 1️⃣ Get staff
-    const staff = await prisma.staff.findUnique({ where: { staffId } });
-    if (!staff) return res.status(404).json({ error: "Staff not found" });
+    const staffId = req.user.staffId;
+    const { oldPassword, newPassword } = req.body;
 
-    // 2️⃣ Check old password
+    // Validate required fields
+    if (!oldPassword || !newPassword) {
+      return sendResponse(
+        res,
+        false,
+        "Both old and new passwords are required",
+        null,
+        400
+      );
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 6) {
+      return sendResponse(
+        res,
+        false,
+        "New password must be at least 6 characters long",
+        null,
+        400
+      );
+    }
+
+    // Get staff
+    const staff = await prisma.staff.findUnique({
+      where: { staffId },
+    });
+
+    if (!staff) {
+      return sendResponse(res, false, "Staff not found", null, 404);
+    }
+
+    // Check old password
     const isValid = await bcrypt.compare(oldPassword, staff.passwordHash);
-    if (!isValid) return res.status(401).json({ error: "Old password is incorrect" });
+    if (!isValid) {
+      return sendResponse(res, false, "Old password is incorrect", null, 401);
+    }
 
-    // 3️⃣ Hash new password
+    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password in DB
+    // Update password
     await prisma.staff.update({
       where: { staffId },
       data: { passwordHash: hashedPassword },
     });
 
-    res.json({ success: true, message: "Password changed successfully" });
+    console.log(`✅ Password changed for staff ID: ${staffId}`);
+
+    return sendResponse(res, true, "Password changed successfully");
   } catch (err) {
-    console.error("Error changing staff password:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Change staff password error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "change_staff_password",
+      staffId: req.user.staffId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-/**
- * Change Student Password
- * Expects: { oldPassword, newPassword }
- * Requires: prn from JWT (req.user.prn)
- */
 export const changeStudentPassword = async (req, res) => {
-  const prn = req.user.prn; // Ensure you have auth middleware
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    return res
-      .status(400)
-      .json({ error: "Both old and new passwords are required" });
-  }
-
   try {
-    // 1️⃣ Get student
-    const student = await prisma.student.findUnique({ where: { prn } });
-    if (!student) return res.status(404).json({ error: "Student not found" });
+    const prn = req.user.prn;
+    const { oldPassword, newPassword } = req.body;
 
-    // 2️⃣ Check old password
+    // Validate required fields
+    if (!oldPassword || !newPassword) {
+      return sendResponse(
+        res,
+        false,
+        "Both old and new passwords are required",
+        null,
+        400
+      );
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 6) {
+      return sendResponse(
+        res,
+        false,
+        "New password must be at least 6 characters long",
+        null,
+        400
+      );
+    }
+
+    // Get student
+    const student = await prisma.student.findUnique({
+      where: { prn },
+    });
+
+    if (!student) {
+      return sendResponse(res, false, "Student not found", null, 404);
+    }
+
+    // Check old password
     const isValid = await bcrypt.compare(oldPassword, student.password);
-    if (!isValid) return res.status(401).json({ error: "Old password is incorrect" });
+    if (!isValid) {
+      return sendResponse(res, false, "Old password is incorrect", null, 401);
+    }
 
-    // 3️⃣ Hash new password
+    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password in DB
+    // Update password
     await prisma.student.update({
       where: { prn },
       data: { password: hashedPassword },
     });
 
-    res.json({ success: true, message: "Password changed successfully" });
+    console.log(`✅ Password changed for student PRN: ${prn}`);
+
+    return sendResponse(res, true, "Password changed successfully");
   } catch (err) {
-    console.error("Error changing student password:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Change student password error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "change_student_password",
+      prn: req.user.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
-
-/**
- * Change SuperAdmin Password
- * Expects: { oldPassword, newPassword }
- * Requires: prn from JWT (req.user.prn)
- */
 export const changeSuperAdminPassword = async (req, res) => {
-  const adminId = req.user.id; // Comes from JWT
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    return res
-      .status(400)
-      .json({ error: "Both old and new passwords are required" });
-  }
-
   try {
-    // 1️⃣ Get super admin
+    const adminId = req.user.id;
+    const { oldPassword, newPassword } = req.body;
+
+    // Validate required fields
+    if (!oldPassword || !newPassword) {
+      return sendResponse(
+        res,
+        false,
+        "Both old and new passwords are required",
+        null,
+        400
+      );
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 6) {
+      return sendResponse(
+        res,
+        false,
+        "New password must be at least 6 characters long",
+        null,
+        400
+      );
+    }
+
+    // Get super admin
     const admin = await prisma.superAdmin.findUnique({
       where: { id: adminId },
     });
-    if (!admin) return res.status(404).json({ error: "Super Admin not found" });
 
-    // 2️⃣ Check old password
+    if (!admin) {
+      return sendResponse(res, false, "Super admin not found", null, 404);
+    }
+
+    // Check old password
     const isValid = await bcrypt.compare(oldPassword, admin.password);
-    if (!isValid)
-      return res.status(401).json({ error: "Old password is incorrect" });
+    if (!isValid) {
+      return sendResponse(res, false, "Old password is incorrect", null, 401);
+    }
 
-    // 3️⃣ Hash new password
+    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password in DB
+    // Update password
     await prisma.superAdmin.update({
       where: { id: adminId },
       data: { password: hashedPassword },
     });
 
-    res.json({ success: true, message: "Password changed successfully" });
+    console.log(`✅ Password changed for super admin ID: ${adminId}`);
+
+    return sendResponse(res, true, "Password changed successfully");
   } catch (err) {
-    console.error("Error changing super admin password:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Change super admin password error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "change_super_admin_password",
+      adminId: req.user.id,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };

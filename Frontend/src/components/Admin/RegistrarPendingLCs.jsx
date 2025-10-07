@@ -59,7 +59,7 @@ const RegistrarPendingLCs = () => {
 
     const currentStudent = student || selectedStudent;
     if (!currentStudent) {
-      toast.error("No student selected"); // Replace alert with toast
+      toast.error("No student selected");
       return;
     }
 
@@ -83,19 +83,22 @@ const RegistrarPendingLCs = () => {
         }
       );
 
-      // Use toast.promise for better UX
+      // Use toast.promise with standardized response format
       await toast.promise(uploadPromise, {
         loading: "Uploading LC...",
-        success: (res) => {
-          if (res.data.success) {
+        success: (response) => {
+          const { success, message } = response.data;
+          if (success) {
             fetchPendingLCs();
-            return "LC uploaded to server & saved to S3!";
+            return message || "LC uploaded to server & saved to S3!";
           } else {
-            throw new Error(res.data.message || "Upload failed");
+            throw new Error(message || "Upload failed");
           }
         },
-        error: (err) =>
-          `Failed to upload LC: ${err.response?.data?.message || err.message}`,
+        error: (err) => {
+          const errorMessage = err.response?.data?.message || err.message;
+          return `Failed to upload LC: ${errorMessage}`;
+        },
       });
     } catch (err) {
       console.error("Upload error:", err);
@@ -111,7 +114,7 @@ const RegistrarPendingLCs = () => {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem("token");
-      const res = await axios.get(
+      const response = await axios.get(
         `${ENV.BASE_URL}/registrar/pending-lc` ||
           "http://localhost:5000/registrar/pending-lc",
         {
@@ -119,13 +122,17 @@ const RegistrarPendingLCs = () => {
         }
       );
 
-      if (res.data.success) {
-        setPendingLCs(res.data.pendingLCs || []);
-        if (!res.data.pendingLCs || res.data.pendingLCs.length === 0) {
+      // Use the standardized response format
+      const { success, data, message } = response.data;
+
+      if (success) {
+        setPendingLCs(data?.pendingLCs || []);
+        if (!data?.pendingLCs || data.pendingLCs.length === 0) {
           setError("No pending leaving certificates found.");
         }
       } else {
-        setError(res.data.message || "Failed to fetch pending LCs");
+        setError(message || "Failed to fetch pending LCs");
+        toast.error(message || "Failed to fetch pending LCs");
       }
     } catch (err) {
       console.error("Error fetching pending LCs:", err);
@@ -184,17 +191,21 @@ const RegistrarPendingLCs = () => {
   const fetchLCDetails = async (prn) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
+      const response = await axios.get(
         `${ENV.BASE_URL}/registrar/lc-details/${prn}` ||
           `http://localhost:5000/registrar/lc-details/${prn}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      if (res.data.success && res.data.lcForm?.profile) {
+
+      // Use the standardized response format
+      const { success, data } = response.data;
+
+      if (success && data?.studentProfile) {
         setFormData((prev) => ({
           ...prev,
-          ...res.data.lcForm.profile,
+          ...data.studentProfile,
         }));
       }
     } catch (err) {
@@ -229,8 +240,11 @@ const RegistrarPendingLCs = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data.success) {
-        toast.success("LC generated successfully"); // Replace alert with toast
+      // Use the standardized response format
+      const { success, message, data } = response.data;
+
+      if (success) {
+        toast.success(message || "LC generated successfully");
 
         const studentData =
           selectedStudent.studentProfile?.student ||
@@ -257,14 +271,14 @@ const RegistrarPendingLCs = () => {
         const prn = selectedStudent.studentProfile?.prn || selectedStudent.prn;
         setGeneratedLCs((prev) => ({ ...prev, [prn]: true }));
       } else {
-        throw new Error(response.data.message || "Failed to generate LC");
+        throw new Error(message || "Failed to generate LC");
       }
     } catch (err) {
       console.error("Error generating LC:", err);
       const errorMessage = `Failed to generate LC: ${
         err.response?.data?.message || err.message
       }`;
-      toast.error(errorMessage); // Replace alert with toast
+      toast.error(errorMessage);
     } finally {
       setGenerating(false);
     }
@@ -851,7 +865,8 @@ const RegistrarPendingLCs = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Admission Mode <span className="text-rose-500">*</span>
+                          Admission Mode{" "}
+                          <span className="text-rose-500">*</span>
                         </label>
                         <select
                           name="admissionMode"

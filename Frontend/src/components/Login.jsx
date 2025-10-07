@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import AuthLayout from "./AuthLayout";
 import toast from "react-hot-toast";
 import ENV from "../env";
+import axios from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,35 +36,59 @@ const Login = () => {
     if (!errors.email && !errors.password) {
       try {
         setLoading(true);
-        const res = await fetch(
-          `${ENV.BASE_URL}/auth/student/login` ||
-            "http://localhost:5000/auth/student/login",
+
+        // Using axios for better error handling
+        const response = await axios.post(
+          `${ENV.BASE_URL}/auth/student/login`,
+          formData,
           {
-            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
           }
         );
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
+        // Handle sendResponse format
+        if (response.data.success) {
+          // Access token and user data from response.data.data
+          const { token, user } = response.data.data;
 
-          const decoded = jwtDecode(data.token);
+          // Ensure token is a string before storing
+          const tokenString = String(token).trim();
+          localStorage.setItem("token", tokenString);
+
+          // Decode token to get role
+          const decoded = jwtDecode(tokenString);
           localStorage.setItem("role", decoded.role);
 
-          if (data.user && data.user.college) {
-            localStorage.setItem("college", data.user.college);
+          // Store user data
+          if (user && user.college) {
+            localStorage.setItem("college", user.college);
+          }
+          if (user && user.prn) {
+            localStorage.setItem("prn", user.prn);
+          }
+          if (user && user.studentName) {
+            localStorage.setItem("studentName", user.studentName);
           }
 
-          toast.success("Login successful!");
+          toast.success(response.data.message || "Login successful!");
           navigate("/student");
         } else {
-          toast.error(data.error || "Login failed");
+          // Use message from sendResponse format
+          toast.error(response.data.message || "Login failed");
         }
       } catch (err) {
-        console.error("Network error:", err);
-        toast.error("Could not connect to backend.");
+        console.error("Login error:", err);
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage = err.response.data?.message || "Login failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during login");
+        }
       } finally {
         setLoading(false);
       }

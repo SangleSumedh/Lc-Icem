@@ -19,8 +19,10 @@ import {
   WidthType,
 } from "docx";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import ENV from "../../env";
+import { toast } from "react-hot-toast";
+import axios from "axios";
 
 function RequestedInfoApprovals() {
   const [approvals, setApprovals] = useState([]);
@@ -62,24 +64,29 @@ function RequestedInfoApprovals() {
   const fetchApprovals = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch(fetchUrl, {
+      const response = await axios.get(fetchUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (res.ok && data.success) {
-          setApprovals(data.requestedInfoApprovals || []);
-        } else {
-          console.error("Fetch error:", data);
-          setApprovals([]);
-        }
-      } catch {
-        console.error("Non-JSON response:", text);
+
+      // Use the standardized response format
+      const { success, data, message } = response.data;
+
+      if (success) {
+        setApprovals(data?.requestedInfoApprovals || []);
+      } else {
+        console.error("Fetch error:", message);
         setApprovals([]);
       }
     } catch (err) {
       console.error("Error fetching requested-info approvals:", err);
+
+      // Enhanced error handling
+      if (err.response?.data?.message) {
+        console.error("Backend error:", err.response.data.message);
+      } else if (err.request) {
+        console.error("Network error");
+      }
+
       setApprovals([]);
     } finally {
       setRefreshing(false);
@@ -124,11 +131,11 @@ function RequestedInfoApprovals() {
           new Date().toISOString().split("T")[0]
         }.xlsx`
       );
-      alert("✅ Exported to Excel successfully!");
+      toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Excel export error:", error);
-      alert("❌ Error exporting to Excel");
+      toast.error("Error exporting to Excel!");
     }
   };
 
@@ -223,108 +230,96 @@ function RequestedInfoApprovals() {
           new Date().toISOString().split("T")[0]
         }.docx`
       );
-      alert("✅ Exported to Word successfully!");
+      toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Word export error:", error);
-      alert("❌ Error exporting to Word");
+      toast.error("Error Exporting to Excel");
     }
   };
 
   const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text("Requested Information Approvals Report", 105, 15, {
-        align: "center",
-      });
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, {
-        align: "center",
-      });
-      doc.text(`Total Records: ${approvals.length}`, 105, 28, {
-        align: "center",
-      });
-
-      const tableData = approvals.map((approval) => [
-        approval.student.studentName,
-        approval.student.prn,
-        approval.student.email,
-        approval.student.phoneNo || "N/A",
-        approval.deptName || "N/A",
-        approval.branch || "N/A",
-      ]);
-
-      doc.autoTable({
-        startY: 35,
-        head: [
-          ["Student Name", "PRN", "Email", "Phone", "Department", "Branch"],
-        ],
-        body: tableData,
-        theme: "grid",
-        headStyles: { fillColor: [0, 83, 156] },
-        styles: { fontSize: 7, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 25 },
-        },
-      });
-
-      doc.save(
-        `requested_info_approvals_report_${
-          new Date().toISOString().split("T")[0]
-        }.pdf`
-      );
-      alert("✅ Exported to PDF successfully!");
-      setShowExportDropdown(false);
-    } catch (error) {
-      console.error("PDF export error:", error);
-      alert("❌ Error exporting to PDF");
-    }
-  };
+      try {
+        const doc = new jsPDF();
+  
+        // Add autoTable to the jsPDF instance
+        autoTable(doc, {
+          startY: 35,
+          head: [
+            ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
+          ],
+          body: approvals.map((approval) => [
+            approval.student.studentName,
+            approval.student.prn,
+            approval.student.email,
+            approval.student.phoneNo || "N/A",
+            approval.deptName || "N/A",
+            approval.status,
+          ]),
+          theme: "grid",
+          headStyles: { fillColor: [0, 83, 156] },
+          styles: { fontSize: 7, cellPadding: 2 },
+        });
+  
+        doc.save(
+          `approvals_report_${new Date().toISOString().split("T")[0]}.pdf`
+        );
+        toast.success("Exported to PDF successfully!");
+        setShowExportDropdown(false);
+      } catch (error) {
+        console.error("PDF export error:", error);
+        toast.error("Error exporting to PDF");
+      }
+    };
 
   // ✅ Only Approve action
   const handleApprove = async () => {
     if (!selectedApproval) return;
     if (!remarks.trim()) {
-      alert("Remarks are required");
+      toast.error("Remarks are required");
       return;
     }
 
     try {
-      const res = await fetch(updateUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const response = await axios.post(
+        updateUrl,
+        {
           approvalId: Number(selectedApproval.approvalId),
           status: "APPROVED",
           remarks,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert("✅ Request approved");
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // With axios, response.data contains the parsed JSON
+      const { success, message } = response.data;
+
+      if (success) {
+        toast.success(message || "Request approved successfully!");
         setSelectedApproval(null);
         setRemarks("");
         fetchApprovals();
       } else {
-        alert(data.error || "❌ Failed to approve");
+        toast.error(message || "Failed to approve request");
       }
     } catch (err) {
       console.error("Approve error:", err);
-      alert("❌ Error approving request");
+
+      // Enhanced error handling
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else if (err.response?.status === 403) {
+        toast.error("You don't have permission to approve this request");
+      } else if (err.request) {
+        toast.error("Network error - please check your connection");
+      } else {
+        toast.error("Error approving request");
+      }
     }
   };
 
