@@ -398,7 +398,7 @@ const RegistrarPendingLCs = () => {
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white py-6 rounded-xl"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 py-6 rounded-xl"
         >
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-[#00539C]">
@@ -420,9 +420,9 @@ const RegistrarPendingLCs = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl"
+          className="bg-gray-50 rounded-2xl"
         >
-          <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
+          <div className="flex flex-col sm:flex-row gap-3 text-sm bg-gray-50 py-4 rounded-xl">
             <div className="relative flex-1 ">
               <FiSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -477,7 +477,7 @@ const RegistrarPendingLCs = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-200"
+            className="text-center py-12 bg-gray-50 rounded-2xl shadow-sm border border-gray-200"
           >
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <DocumentTextIcon className="w-8 h-8 text-gray-400" />
@@ -507,7 +507,7 @@ const RegistrarPendingLCs = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-300 relative"
+            className="bg-gray-50 rounded-xl shadow-sm border border-gray-300 relative"
           >
             <div className="">
               <table className="w-full text-left">
@@ -704,7 +704,7 @@ const RegistrarPendingLCs = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl  max-h-[90vh] "
+                className="bg-gray-50 w-full max-w-5xl rounded-2xl shadow-2xl  max-h-[90vh] "
               >
                 {/* Header */}
                 <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center rounded-t-xl">
@@ -1060,7 +1060,7 @@ const RegistrarPendingLCs = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+                className="bg-gray-50 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
               >
                 {/* Header */}
                 <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">

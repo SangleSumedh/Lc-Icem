@@ -363,7 +363,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white py-6 rounded-xl "
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 py-6 rounded-xl "
       >
         <div>
           <h1 className="text-2xl font-bold text-[#00539C]">{title}</h1>
@@ -386,7 +386,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
             {/* Export Dropdown */}
             {showExportDropdown && (
-              <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
+              <div className="absolute right-0 top-12 bg-gray-50 border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
                 <button
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
@@ -412,7 +412,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-gray-50 py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -439,7 +439,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-300 relative">
+      <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-300 relative">
         <table className="w-full text-left">
           <thead className="bg-[#00539C] text-white">
             <tr>
@@ -481,7 +481,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
                   {/* Dropdown Menu */}
                   {activeDropdown === a.approvalId && (
-                    <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[160px]">
+                    <div className="absolute top-full right-5 mt-2 bg-gray-50 border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[160px]">
                       <button
                         onClick={() => {
                           setSelectedApproval(a);
@@ -622,7 +622,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       {/* Remarks Modal */}
       {selectedApproval && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gray-50 w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
