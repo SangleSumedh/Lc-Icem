@@ -392,13 +392,13 @@ const RegistrarPendingLCs = () => {
   }, []);
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen">
+    <div className="space-y-6 text-sm  min-h-screen">
       <div className="max-w-8xl mx-auto space-y-6">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 py-6 rounded-xl"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4  py-6 rounded-xl"
         >
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-[#00539C]">
@@ -409,7 +409,7 @@ const RegistrarPendingLCs = () => {
               certificate applications
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-3 text-xs text-gray-500  rounded-lg px-3 py-2">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
             <span>{filteredLCs.length} pending certificates</span>
           </div>
@@ -420,9 +420,9 @@ const RegistrarPendingLCs = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gray-50 rounded-2xl"
+          className=" rounded-2xl"
         >
-          <div className="flex flex-col sm:flex-row gap-3 text-sm bg-gray-50 py-4 rounded-xl">
+          <div className="flex flex-col sm:flex-row gap-3 text-sm  py-4 rounded-xl">
             <div className="relative flex-1 ">
               <FiSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"

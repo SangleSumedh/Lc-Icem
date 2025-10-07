@@ -289,7 +289,7 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
   );
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen">
+    <div className="space-y-6 text-sm  min-h-screen">
       {/* Header & Export Buttons */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
@@ -341,7 +341,7 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-3 text-sm  py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"

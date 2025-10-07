@@ -366,8 +366,8 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 py-6 rounded-xl "
       >
         <div>
-          <h1 className="text-2xl font-bold text-[#00539C]">{title}</h1>
-          <p className="text-gray-600 mt-1 text-sm">{subtitle}</p>
+          <h1 className="text-2xl font-bold pl-5 text-[#00539C]">{title}</h1>
+          <p className="text-gray-600 mt-1 pl-5 text-sm">{subtitle}</p>
         </div>
 
         {/* Export Button */}
@@ -412,7 +412,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-gray-50 py-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm bg-gray-50 py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -439,7 +439,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-300 relative">
+      <div className="bg-gray-50 rounded-xl ml-3 shadow-sm border border-gray-300 relative">
         <table className="w-full text-left">
           <thead className="bg-[#00539C] text-white">
             <tr>
