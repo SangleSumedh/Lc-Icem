@@ -363,7 +363,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 py-6 rounded-xl "
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6 rounded-xl "
       >
         <div>
           <h1 className="text-2xl font-bold pl-5 text-[#00539C]">{title}</h1>
@@ -412,7 +412,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm bg-gray-50 py-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm  py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
