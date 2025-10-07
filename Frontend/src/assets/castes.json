@@ -48,23 +48,23 @@
     },
     {
       "religion": "Islam",
-      "castes": ["Sunni", "Shia", "Ahmadiyya", "Sufi", "Other"]
+      "castes": ["Sunni", "Shia", "Ahmadiyya", "Sufi"]
     },
     {
       "religion": "Christianity",
-      "castes": ["Catholic", "Protestant", "Orthodox", "Other"]
+      "castes": ["Catholic", "Protestant", "Orthodox"]
     },
     {
       "religion": "Sikhism",
-      "castes": ["Jat", "Khatri", "Arora", "Other"]
+      "castes": ["Jat", "Khatri", "Arora"]
     },
     {
       "religion": "Buddhism",
-      "castes": ["Mahayana", "Theravada", "Vajrayana", "Other"]
+      "castes": ["Mahayana", "Theravada", "Vajrayana"]
     },
     {
       "religion": "Jainism",
-      "castes": ["Digambara", "Shwetambara", "Other"]
+      "castes": ["Digambara", "Shwetambara"]
     },
     {
       "religion": "Zoroastrianism",
@@ -72,7 +72,7 @@
     },
     {
       "religion": "Judaism",
-      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews", "Other"]
+      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews"]
     }
   ]
 }

@@ -278,8 +278,8 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       return;
     }
     if (!remarks.trim()) {
-      toast.error("Remarks are required");
-      return;
+      setRemarks("Approved");
+      toast.caller("Remark Set To Approved");
     }
 
     let finalRemarks = remarks;
@@ -358,7 +358,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   );
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen">
+    <div className="space-y-6 text-sm  min-h-screen">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}

@@ -217,7 +217,7 @@ const AdminDashboard = () => {
           <div>
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
             {loading ? (
-              <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div className="h-8 w-16  rounded-lg animate-pulse"></div>
             ) : (
               <p className={`text-3xl font-bold ${colorClass.text}`}>{value}</p>
             )}

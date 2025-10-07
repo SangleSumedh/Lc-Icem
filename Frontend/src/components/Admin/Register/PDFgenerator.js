@@ -4,21 +4,21 @@ import logo from "../../../assets/logo.jpg";
 
 export const REQUIRED_FIELDS = [
   "studentID",
-  "dateOfLeaving", 
+  "dateOfLeaving",
   "dateOfAdmission",
   "progressAndConduct",
-  "fatherName", 
-  "motherName", 
-  "caste", 
-  "subCaste", 
-  "nationality", 
-  "placeOfBirth", 
-  "dateOfBirth", 
-  "dobWords", 
-  "branch", 
-  "yearOfAdmission", 
-  "admissionMode", 
-  "lastCollege", 
+  "fatherName",
+  "motherName",
+  "caste",
+  "subCaste",
+  "nationality",
+  "placeOfBirth",
+  "dateOfBirth",
+  "dobWords",
+  "branch",
+  "yearOfAdmission",
+  "admissionMode",
+  "lastCollege",
   "reasonForLeaving",
   //"yearAndBranch" // Add this line
 ];
@@ -167,30 +167,38 @@ export const generatePDF = (studentData, formData) => {
   const tableColumns = ["", "", ""];
   const tableRows = [
     ["Sr.", "Student ID", formData.studentID || ""],
-    ["1", "Name of the Student in Full", studentData.studentName || ""],
-    ["2", "Father's Name", formData.fatherName || ""],
-    ["3", "Mother's Name", formData.motherName || ""],
+    [
+      "1",
+      "Name of the Student in Full",
+      (studentData.studentName || "").toUpperCase(),
+    ],
+    ["2", "Father's Name", (formData.fatherName || "").toUpperCase()],
+    ["3", "Mother's Name", (formData.motherName || "").toUpperCase()],
     [
       "4",
       "Caste & Sub-caste only in the case of Student belonging to Backward Classes & Category among Backward Classes",
       `${formData.caste || ""} ${formData.subCaste || ""}`,
     ],
-    ["5", "Nationality", formData.nationality || ""],
-    ["6", "Place of Birth", formData.placeOfBirth || ""],
+    ["5", "Nationality", (formData.nationality || "").toUpperCase()],
+    ["6", "Place of Birth", (formData.placeOfBirth || "").toUpperCase()],
     ["7", "Date of Birth", formData.dateOfBirth || ""],
-    ["8", "Date of Birth in Words", formData.dobWords || ""],
-    ["9", "Last College attended", formData.lastCollege || ""],
+    ["8", "Date of Birth in Words", (formData.dobWords || "").toUpperCase()],
+    ["9", "Last College attended", (formData.lastCollege || "").toUpperCase()],
     ["10", "Date of Admission", formData.dateOfAdmission || ""],
     ["11", "Progress & Conduct", formData.progressAndConduct || ""],
     ["12", "Date of Leaving College", formData.dateOfLeaving || ""],
     [
       "13",
       "Year in which studying & since when",
-      `${(formData.admissionMode || "").toLowerCase()} ${
+      `${(formData.admissionMode || "").toUpperCase()} ${(
         formData.branch || ""
-      }  ${formData.yearOfAdmission || ""}`,
+      ).toUpperCase()}  ${(formData.yearOfAdmission || "").toUpperCase()}`,
     ],
-    ["14", "Reason for Leaving College", formData.reasonForLeaving || ""],
+    [
+      "14",
+      "Reason for Leaving College",
+      (formData.reasonForLeaving || "").toUpperCase(),
+    ],
     ["15", "Remarks", formData.remarks || "_______"],
   ];
 
@@ -203,7 +211,7 @@ export const generatePDF = (studentData, formData) => {
     columnStyles: {
       0: { cellWidth: 12 }, // Sr. No
       1: { cellWidth: 75 }, // Particulars
-      2: { cellWidth: 95, fontStyle: "bold" }, 
+      2: { cellWidth: 95, fontStyle: "bold" },
     },
     headStyles: {
       fillColor: [255, 255, 255],

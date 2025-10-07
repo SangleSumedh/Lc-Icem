@@ -363,7 +363,7 @@ const LeavingCertificate = () => {
           {/* CTA Button */}
           <button
             onClick={handleOpenModal}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition"
+            className="flex items-center max-w-sm sm:max-w-[200px] justify-center gap-2 px-6 py-3 bg-[#00539C] text-white font-semibold rounded-xl shadow hover:bg-[#023d71] transition"
           >
             <FaFileWaveform className="text-lg" />
             Fill Form

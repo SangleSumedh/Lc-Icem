@@ -403,7 +403,6 @@ const LeavingCertificateForm = ({
 
               {/* Nationality Dropdown */}
               <div className="space-y-1">
-                
                 <CustomDropdown
                   label="Nationality"
                   name="nationality"
@@ -430,14 +429,17 @@ const LeavingCertificateForm = ({
                 Certificate Type
               </label>
               <div className="flex items-center space-x-6">
-                {/* Transfer Certificate (dummy) */}
+                {/* Transfer Certificate */}
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
                     name="certificateType"
                     value="transfer"
                     checked={!formData.forMigrationFlag}
-                    onChange={() => {}}
+                    onChange={() =>
+                      !viewMode &&
+                      setFormData({ ...formData, forMigrationFlag: false })
+                    }
                     disabled={viewMode}
                     className="h-4 w-4 text-[#00539C] focus:ring-1 focus:ring-gray-400 focus:outline-none"
                   />
@@ -446,7 +448,7 @@ const LeavingCertificateForm = ({
                   </span>
                 </label>
 
-                {/* Migration Certificate (functional) */}
+                {/* Migration Certificate */}
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"

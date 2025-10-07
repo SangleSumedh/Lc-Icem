@@ -133,6 +133,11 @@ const ApprovalTimeline = ({ approvals }) => {
   const approvedCount = departmentStatuses.filter(
     (dept) => dept.status === "APPROVED"
   ).length;
+
+  const requestedCount = departmentStatuses.filter(
+    (dept) => dept.status === "REQUESTED_INFO"
+  ).length;
+
   const totalCount = departmentStatuses.length;
   const progressPercentage = (approvedCount / totalCount) * 100;
 
@@ -222,7 +227,7 @@ const ApprovalTimeline = ({ approvals }) => {
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-          <span className="text-gray-600">Info Needed</span>
+          <span className="text-gray-600">Info Needed ({requestedCount})</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
@@ -230,7 +235,7 @@ const ApprovalTimeline = ({ approvals }) => {
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-          <span className="text-gray-600">Pending</span>
+          <span className="text-gray-600">Pending ({10 - approvedCount})</span>
         </div>
       </div>
     </div>

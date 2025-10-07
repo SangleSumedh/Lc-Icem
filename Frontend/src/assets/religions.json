@@ -42,41 +42,36 @@
         "Oraon",
         "Lingayat",
         "Jain",
-        "Sindhi",
-        "Other"
+        "Sindhi"
       ]
     },
     {
       "religion": "Islam",
-      "castes": ["Sunni", "Shia", "Ahmadiyya", "Sufi", "Other"]
+      "castes": ["N/A"]
     },
     {
       "religion": "Christianity",
-      "castes": ["Catholic", "Protestant", "Orthodox", "Other"]
+      "castes": ["N/A"]
     },
     {
       "religion": "Sikhism",
-      "castes": ["Jat", "Khatri", "Arora", "Other"]
+      "castes": ["N/A"]
     },
     {
       "religion": "Buddhism",
-      "castes": ["Mahayana", "Theravada", "Vajrayana", "Other"]
+      "castes": ["Mahayana", "Theravada", "Vajrayana"]
     },
     {
       "religion": "Jainism",
-      "castes": ["Digambara", "Shwetambara", "Other"]
+      "castes": ["Digambara", "Shwetambara"]
     },
     {
       "religion": "Zoroastrianism",
-      "castes": ["Parsi", "Irani", "Other"]
+      "castes": ["Parsi", "Irani"]
     },
     {
       "religion": "Judaism",
-      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews", "Other"]
-    },
-    {
-      "religion": "Other",
-      "castes": ["Other"]
+      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews"]
     }
   ]
 }
