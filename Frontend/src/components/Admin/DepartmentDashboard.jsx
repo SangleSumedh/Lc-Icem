@@ -157,7 +157,7 @@ const DepartmentDashboard = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-6">
+    <main className="min-h-screen bg-white p-6">
       {renderContent()}
     </main>
   );
