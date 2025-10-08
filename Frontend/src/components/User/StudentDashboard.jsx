@@ -370,12 +370,11 @@ const StudentDashboard = () => {
           <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 text-center">
             Your LC is Being Generated!
           </h3>
-          <p className="text-sm sm:text-base text-gray-600 text-center mb-3">
-            All departments have approved. Your LC will be available shortly.
+          <p className="text-sm sm:text-base text-gray-500 text-center mb-3">
+            All departments have <span className="text-emerald-500">Approved</span> your application. Registrar will soon
+            generate your leaving certificate.
           </p>
-          <div className="px-4 py-2 bg-blue-500 text-white rounded cursor-not-allowed opacity-75 w-full sm:w-auto text-center">
-            Generating LC...
-          </div>
+
           <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
             Please check back later
           </p>
@@ -446,6 +445,78 @@ const StudentDashboard = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 🔹 Remarks Dialog Modal */}
+      {showRemarksDialog && selectedRemarks && (
+        <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30 bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 rounded-t-xl flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
+                {selectedRemarks.department} - Remarks
+              </h3>
+              <button
+                onClick={closeRemarksDialog}
+                className="text-white hover:text-orange-200 transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {selectedRemarks.message}
+                </p>
+              </div>
+
+              {(selectedRemarks.phone || selectedRemarks.email) && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 mb-3">
+                    Contact Information:
+                  </h4>
+                  {selectedRemarks.phone && (
+                    <div className="flex items-center gap-3 mb-2">
+                      <PhoneIcon className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Phone</p>
+                        <a
+                          href={`tel:${selectedRemarks.phone}`}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {selectedRemarks.phone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {selectedRemarks.email && (
+                    <div className="flex items-center gap-3">
+                      <EnvelopeIcon className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Email</p>
+                        <a
+                          href={`mailto:${selectedRemarks.email}`}
+                          className="text-blue-600 hover:text-blue-800 font-medium break-all"
+                        >
+                          {selectedRemarks.email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={closeRemarksDialog}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

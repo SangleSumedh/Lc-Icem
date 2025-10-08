@@ -17,11 +17,9 @@ import {
   TextRun,
 } from "docx";
 import { saveAs } from "file-saver";
-import ENV from "../../env.js";
+import useApprovalsStore from "../../store/approvalsStore";
 
-function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+function ApprovedApprovalRequests({ title, subtitle }) {
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,42 +28,20 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
 
   const token = localStorage.getItem("token");
 
-  const fetchApprovals = async () => {
+  const { approvalsData, loadingStates, fetchApprovals } = useApprovalsStore();
+
+  const approvals = approvalsData.approved;
+  const loading = loadingStates.approved;
+
+  // ✅ Fetch approvals using Zustand
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const res = await axios.get(
-        fetchUrl ||
-          `${ENV.BASE_URL}/departments/approvals/approved` ||
-          "http://localhost:5000/departments/approvals/approved",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Use the standardized response format
-      const { success, data, message } = res.data;
-
-      if (success) {
-        setApprovals(data?.approvedApprovals || []);
-      } else {
-        console.error("Fetch error:", message);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error(
-        "Error fetching approvals:",
-        err.response?.data || err.message
-      );
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/approvals/approved` ||
+      "http://localhost:5000/departments/approvals/approved";
+    await fetchApprovals("approved", fetchUrl, token);
+    setRefreshing(false);
   };
-
-  useEffect(() => {
-    fetchApprovals();
-  }, []);
 
   // Export to Excel
   const exportToExcel = () => {
@@ -359,7 +335,7 @@ function ApprovedApprovalRequests({ title, subtitle, fetchUrl }) {
           />
         </div>
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData} 
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >

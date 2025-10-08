@@ -29,6 +29,13 @@ export const generatePDF = (studentData, formData) => {
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
 
+  // ==== Check for Migration Flag ====
+  const isMigration =
+    studentData?.forMigrationFlag || formData?.forMigrationFlag;
+  const certificateTitle = isMigration
+    ? "TRANSFER CERTIFICATE"
+    : "MIGRATION CERTIFICATE";
+
   // ==== HEADER ====
   // Logo (top right)
   const imgWidth = 25;
@@ -100,14 +107,13 @@ export const generatePDF = (studentData, formData) => {
   doc.setLineWidth(0.3);
   doc.line(margin, margin + 35, pageWidth - margin, margin + 35);
 
-  // Ref & Certificate No.
+  // Ref & Certificate No. - Updated for migration
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text(
-    `Ref: ${formData.refNo || "ICEM/Registrar/TC/2025/ ____"}`,
-    margin + 10,
-    margin + 38
-  );
+  const refText = isMigration
+    ? `Ref: ${formData.refNo || "ICEM/Registrar/MC/2025/ ____"}`
+    : `Ref: ${formData.refNo || "ICEM/Registrar/TC/2025/ ____"}`;
+  doc.text(refText, margin + 10, margin + 38);
 
   //Form no
   doc.setFont("helvetica", "bold");
@@ -133,12 +139,12 @@ export const generatePDF = (studentData, formData) => {
     { align: "center" }
   );
 
-  // Title
+  // Title - Updated based on migration flag
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
 
   // Text
-  const titleText = "TRANSFER CERTIFICATE";
+  const titleText = certificateTitle;
   const titleY = margin + 45;
 
   doc.text(titleText, pageWidth / 2, titleY, { align: "center" });
@@ -150,9 +156,10 @@ export const generatePDF = (studentData, formData) => {
   doc.setLineWidth(0.2);
   doc.line(startX, titleY + 1, endX, titleY + 1);
 
-  // Note line
+  // Note line - Updated for migration
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
+
   doc.text(
     "[No change in any entry in this certificate should be made except by the authority issuing it and infringement to the rule",
     pageWidth / 2,
@@ -177,7 +184,9 @@ export const generatePDF = (studentData, formData) => {
     [
       "4",
       "Caste & Sub-caste only in the case of Student belonging to Backward Classes & Category among Backward Classes",
-      `${formData.caste || ""} ${formData.subCaste || ""}`,
+      `${(formData.caste || "").toUpperCase()} ${(
+        formData.subCaste || ""
+      ).toUpperCase()}`,
     ],
     ["5", "Nationality", (formData.nationality || "").toUpperCase()],
     ["6", "Place of Birth", (formData.placeOfBirth || "").toUpperCase()],
@@ -192,7 +201,7 @@ export const generatePDF = (studentData, formData) => {
       "Year in which studying & since when",
       `${(formData.admissionMode || "").toUpperCase()} ${(
         formData.branch || ""
-      ).toUpperCase()}  ${(formData.yearOfAdmission || "").toUpperCase()}`,
+      ).toUpperCase()}  ${formData.yearOfAdmission || ""}`,
     ],
     [
       "14",

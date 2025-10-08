@@ -27,15 +27,29 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 import ENV from "../../env.js";
+import useSuperAdminStore from "../../store/superAdminStore.js";
 
 function AddSuperAdmin() {
   const token = localStorage.getItem("token");
-  const BASE_URL = `${ENV.BASE_URL}/admin` || "http://localhost:5000/admin";
   const navigate = useNavigate();
 
+  const {
+    superAdmins,
+    loadingStates,
+    fetchSuperAdmins,
+    addSuperAdmin,
+    updateSuperAdmin,
+    deleteSuperAdmin,
+    shouldFetchInitially,
+  } = useSuperAdminStore();
+
   // Configure axios defaults
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  axios.defaults.headers.common["Content-Type"] = "application/json";
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      axios.defaults.headers.common["Content-Type"] = "application/json";
+    }
+  }, [token]);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -43,14 +57,12 @@ function AddSuperAdmin() {
     password: "",
   });
 
-  const [superAdmins, setSuperAdmins] = useState([]);
   const [editing, setEditing] = useState(null);
   const [deleteAdmin, setDeleteAdmin] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -70,37 +82,24 @@ function AddSuperAdmin() {
     };
   }, []);
 
-  // Fetch SuperAdmins with Axios and Toast
-  const fetchSuperAdmins = async () => {
+  // Fetch SuperAdmins
+  const fetchSuperAdminsData = async (forceRefresh = false) => {
     setRefreshing(true);
-    const toastId = toast.loading("Fetching superadmins...");
-
     try {
-      const response = await axios.get(`${BASE_URL}/get-superAdmins`);
-      if (response.data.success) {
-        setSuperAdmins(
-          response.data.data.map(({ id, username, email }) => ({
-            id,
-            username,
-            email,
-          }))
-        );
-        toast.success("Data loaded successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Failed to fetch Data", {
-          id: toastId,
-        });
-      }
+      await fetchSuperAdmins(token, forceRefresh);
     } catch (error) {
-      console.error("Fetch superadmins error:", error);
-      toast.error("Error fetching superadmins", { id: toastId });
+      console.error("Error fetching super admins:", error);
+    } finally {
+      setRefreshing(false);
     }
-    setRefreshing(false);
   };
 
   useEffect(() => {
-    fetchSuperAdmins();
-  }, []);
+    if (token && shouldFetchInitially()) {
+      fetchSuperAdminsData();
+    }
+  }, [token, shouldFetchInitially]);
+
 
   // Export Functions
   const exportToExcel = () => {
@@ -223,7 +222,6 @@ function AddSuperAdmin() {
         admin.email,
       ]);
 
-      // Use autoTable as a function, passing doc as first parameter
       autoTable(doc, {
         startY: 35,
         head: [["ID", "Username", "Email"]],
@@ -260,87 +258,53 @@ function AddSuperAdmin() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (editing) {
-      setEditing((p) => ({ ...p, [name]: value }));
+      setEditing((prev) => ({ ...prev, [name]: value }));
     } else {
-      setFormData((p) => ({ ...p, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  // Add SuperAdmin with Axios and Toast
+  // Add SuperAdmin
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Adding superadmin...");
 
     try {
-      const response = await axios.post(`${BASE_URL}/add-superadmin`, formData);
-
-      if (response.data.success) {
-        await fetchSuperAdmins();
-        setFormData({ username: "", email: "", password: "" });
-        setShowAddModal(false);
-        toast.success("Superadmin added successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Failed to add superadmin", {
-          id: toastId,
-        });
-      }
+      await addSuperAdmin(token, formData);
+      setFormData({ username: "", email: "", password: "" });
+      setShowAddModal(false);
+      toast.success("Superadmin added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Error adding superadmin:", error);
       toast.error("Error adding superadmin", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Update SuperAdmin with Axios and Toast
+  // Update SuperAdmin
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Updating superadmin...");
 
     try {
-      const response = await axios.put(
-        `${BASE_URL}/update-superadmin/${editing.id}`,
-        editing
-      );
-
-      if (response.data.success) {
-        await fetchSuperAdmins();
-        setEditing(null);
-        toast.success("Superadmin updated successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Update failed", { id: toastId });
-      }
+      await updateSuperAdmin(token, editing.id, editing);
+      setEditing(null);
+      toast.success("Superadmin updated successfully!", { id: toastId });
     } catch (error) {
-      console.error("Update error:", error);
       toast.error("Error updating superadmin", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Delete SuperAdmin with Axios and Toast
+  // Delete SuperAdmin
   const handleDeleteConfirm = async () => {
     if (!deleteAdmin) return;
-    setLoading(true);
     const toastId = toast.loading("Deleting superadmin...");
 
     try {
-      const response = await axios.delete(
-        `${BASE_URL}/delete-superadmin/${deleteAdmin.id}`
-      );
-
-      if (response.data.success) {
-        await fetchSuperAdmins();
-        setDeleteAdmin(null);
-        toast.success("Superadmin deleted successfully!", { id: toastId });
-      } else {
-        toast.error("Failed to delete superadmin", { id: toastId });
-      }
+      await deleteSuperAdmin(token, deleteAdmin.id);
+      setDeleteAdmin(null);
+      toast.success("Superadmin deleted successfully!", { id: toastId });
     } catch (error) {
-      console.error("Delete error:", error);
       toast.error("Error deleting superadmin", { id: toastId });
     }
-    setLoading(false);
   };
 
   // Filtering + Pagination
@@ -379,7 +343,7 @@ function AddSuperAdmin() {
                 e.stopPropagation();
                 setShowExportDropdown(!showExportDropdown);
               }}
-              disabled={loading || superAdmins.length === 0}
+              disabled={loadingStates.operations || superAdmins.length === 0}
               className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
@@ -412,7 +376,7 @@ function AddSuperAdmin() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            disabled={loading}
+            disabled={loadingStates.operations}
             className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-[#004085] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
           >
             <FiPlus size={16} /> Add SuperAdmin
@@ -420,15 +384,6 @@ function AddSuperAdmin() {
         </div>
       </motion.header>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00539C]"></div>
-            <span className="text-sm">Processing...</span>
-          </div>
-        </div>
-      )}
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
         <div className="relative flex-1">
@@ -449,12 +404,12 @@ function AddSuperAdmin() {
         </div>
 
         <button
-          onClick={fetchSuperAdmins}
-          disabled={refreshing || loading}
-          className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-1 focus:ring-blue-400 focus:outline-none focus:shadow-sm"
+          onClick={() => fetchSuperAdminsData(true)} // Force refresh on manual click
+          disabled={refreshing || loadingStates.operations}
+          className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-2 focus:ring-gray-400 focus:outline-none focus:shadow-sm"
         >
           <FiRefreshCw
-            size={16}
+            size={18}
             className={`${refreshing ? "animate-spin" : ""}`}
           />
         </button>
@@ -490,7 +445,7 @@ function AddSuperAdmin() {
                       e.stopPropagation();
                       setActiveDropdown(activeDropdown === s.id ? null : s.id);
                     }}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
                   >
                     <FiMoreVertical size={18} className="text-gray-600" />
@@ -500,7 +455,6 @@ function AddSuperAdmin() {
                   {activeDropdown === s.id && (
                     <div
                       className={`absolute bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px] ${
-                        // Check if this is one of the last few rows and position dropdown above
                         index >= paginatedAdmins.length - 3
                           ? "bottom-full mb-2"
                           : "top-full mt-2"
@@ -511,7 +465,7 @@ function AddSuperAdmin() {
                           setEditing({ ...s, password: "" });
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -534,7 +488,7 @@ function AddSuperAdmin() {
                           setDeleteAdmin(s);
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -562,7 +516,21 @@ function AddSuperAdmin() {
                 <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center">
                     <FiShield className="h-12 w-12 text-gray-300 mb-2" />
-                    <p className="text-sm">No superadmins found</p>
+                    <p className="text-sm">
+                      {loadingStates.superAdmins && !refreshing
+                        ? "Loading superadmins..."
+                        : superAdmins.length === 0
+                        ? "No superadmins found"
+                        : "No superadmins match your search"}
+                    </p>
+                    {superAdmins.length === 0 && !loadingStates.superAdmins && (
+                      <button
+                        onClick={() => fetchSuperAdminsData(true)}
+                        className="mt-2 px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] text-sm"
+                      >
+                        Refresh Data
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -576,7 +544,7 @@ function AddSuperAdmin() {
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || loading}
+            disabled={currentPage === 1 || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Previous
@@ -586,7 +554,7 @@ function AddSuperAdmin() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              disabled={loading}
+              disabled={loadingStates.operations}
               className={`w-9 h-9 flex items-center justify-center border rounded-lg text-sm transition-colors duration-200 ${
                 currentPage === page
                   ? "bg-[#00539C] text-white border-[#00539C]"
@@ -599,7 +567,7 @@ function AddSuperAdmin() {
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || loading}
+            disabled={currentPage === totalPages || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Next
@@ -617,7 +585,7 @@ function AddSuperAdmin() {
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -636,7 +604,7 @@ function AddSuperAdmin() {
                     onChange={handleChange}
                     placeholder="Enter username"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -651,7 +619,7 @@ function AddSuperAdmin() {
                     onChange={handleChange}
                     placeholder="Enter email"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400  focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -666,7 +634,7 @@ function AddSuperAdmin() {
                     onChange={handleChange}
                     placeholder="Enter password"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -676,17 +644,17 @@ function AddSuperAdmin() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Adding..." : "Add SuperAdmin"}
+                  {loadingStates.operations ? "Adding..." : "Add SuperAdmin"}
                 </button>
               </div>
             </form>
@@ -704,7 +672,7 @@ function AddSuperAdmin() {
               </h2>
               <button
                 onClick={() => setEditing(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -733,7 +701,7 @@ function AddSuperAdmin() {
                     onChange={handleChange}
                     placeholder="Username"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -748,7 +716,7 @@ function AddSuperAdmin() {
                     onChange={handleChange}
                     placeholder="Email"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -762,7 +730,7 @@ function AddSuperAdmin() {
                     placeholder="Leave empty to keep current password"
                     value={editing.password || ""}
                     onChange={handleChange}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm  transition-all duration-200"
                   />
                 </div>
@@ -772,17 +740,19 @@ function AddSuperAdmin() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Updating..." : "Update SuperAdmin"}
+                  {loadingStates.operations
+                    ? "Updating..."
+                    : "Update SuperAdmin"}
                 </button>
               </div>
             </form>
@@ -800,7 +770,7 @@ function AddSuperAdmin() {
               </h2>
               <button
                 onClick={() => setDeleteAdmin(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -823,17 +793,17 @@ function AddSuperAdmin() {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteAdmin(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Deleting..." : "Delete"}
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

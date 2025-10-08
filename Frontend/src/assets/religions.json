@@ -1,7 +1,7 @@
 {
   "religions": [
     {
-      "religion": "Hinduism",
+      "religion": "Hindu",
       "castes": [
         "Brahmin",
         "Rajput",
@@ -50,11 +50,11 @@
       "castes": ["N/A"]
     },
     {
-      "religion": "Christianity",
+      "religion": "Christian",
       "castes": ["N/A"]
     },
     {
-      "religion": "Sikhism",
+      "religion": "Sikh",
       "castes": ["N/A"]
     },
     {

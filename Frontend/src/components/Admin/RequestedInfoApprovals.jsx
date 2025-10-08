@@ -20,13 +20,12 @@ import {
 } from "docx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import ENV from "../../env";
-import { toast } from "react-hot-toast";
-import axios from "axios";
+import useApprovalsStore from "../../store/approvalsStore";
+import toast from "react-hot-toast";
 
-function RequestedInfoApprovals() {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+import ENV from "../../env";
+
+function RequestedInfoApprovals({ title, subtitle, updateUrl }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -37,15 +36,14 @@ function RequestedInfoApprovals() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const { approvalsData, loadingStates, fetchApprovals, updateApproval } =
+    useApprovalsStore();
+
+  const approvals = approvalsData.requested;
+  const loading = loadingStates.requested;
+
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
-
-  const fetchUrl =
-    `${ENV.BASE_URL}/departments/approvals/requested-info` ||
-    "http://localhost:5000/departments/approvals/requested-info";
-  const updateUrl =
-    `${ENV.BASE_URL}/departments/update-status` ||
-    "http://localhost:5000/departments/update-status";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,44 +58,15 @@ function RequestedInfoApprovals() {
     };
   }, []);
 
-  // ✅ Fetch only REQUESTED_INFO approvals
-  const fetchApprovals = async () => {
+  // ✅ Fetch approvals using Zustand
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const response = await axios.get(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Use the standardized response format
-      const { success, data, message } = response.data;
-
-      if (success) {
-        setApprovals(data?.requestedInfoApprovals || []);
-      } else {
-        console.error("Fetch error:", message);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error("Error fetching requested-info approvals:", err);
-
-      // Enhanced error handling
-      if (err.response?.data?.message) {
-        console.error("Backend error:", err.response.data.message);
-      } else if (err.request) {
-        console.error("Network error");
-      }
-
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/approvals/requested-info` ||
+      "http://localhost:5000/departments/approvals/requested-info";
+    await fetchApprovals("requested", fetchUrl, token);
+    setRefreshing(false);
   };
-
-  useEffect(() => {
-    fetchApprovals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Export Functions
   const exportToExcel = () => {
@@ -202,7 +171,7 @@ function RequestedInfoApprovals() {
           {
             children: [
               new Paragraph({
-                text: "Requested Information Approvals Report",
+                text: `${title || "Requested Information Approvals"} Report`,
                 heading: "Heading1",
                 spacing: { after: 400 },
               }),
@@ -234,45 +203,47 @@ function RequestedInfoApprovals() {
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Word export error:", error);
-      toast.error("Error Exporting to Excel");
+      toast.error("Error exporting to Word");
     }
   };
 
   const exportToPDF = () => {
-      try {
-        const doc = new jsPDF();
-  
-        // Add autoTable to the jsPDF instance
-        autoTable(doc, {
-          startY: 35,
-          head: [
-            ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
-          ],
-          body: approvals.map((approval) => [
-            approval.student.studentName,
-            approval.student.prn,
-            approval.student.email,
-            approval.student.phoneNo || "N/A",
-            approval.deptName || "N/A",
-            approval.status,
-          ]),
-          theme: "grid",
-          headStyles: { fillColor: [0, 83, 156] },
-          styles: { fontSize: 7, cellPadding: 2 },
-        });
-  
-        doc.save(
-          `approvals_report_${new Date().toISOString().split("T")[0]}.pdf`
-        );
-        toast.success("Exported to PDF successfully!");
-        setShowExportDropdown(false);
-      } catch (error) {
-        console.error("PDF export error:", error);
-        toast.error("Error exporting to PDF");
-      }
-    };
+    try {
+      const doc = new jsPDF();
 
-  // ✅ Only Approve action
+      // Add autoTable to the jsPDF instance
+      autoTable(doc, {
+        startY: 35,
+        head: [
+          ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
+        ],
+        body: approvals.map((approval) => [
+          approval.student.studentName,
+          approval.student.prn,
+          approval.student.email,
+          approval.student.phoneNo || "N/A",
+          approval.deptName || "N/A",
+          approval.status,
+        ]),
+        theme: "grid",
+        headStyles: { fillColor: [0, 83, 156] },
+        styles: { fontSize: 7, cellPadding: 2 },
+      });
+
+      doc.save(
+        `requested_info_approvals_report_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
+      toast.success("Exported to PDF successfully!");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Error exporting to PDF");
+    }
+  };
+
+  // ✅ Only Approve action using Zustand
   const handleApprove = async () => {
     if (!selectedApproval) return;
     if (!remarks.trim()) {
@@ -280,47 +251,34 @@ function RequestedInfoApprovals() {
       return;
     }
 
-    try {
-      const response = await axios.post(
-        updateUrl,
-        {
+    const updatePromise = new Promise(async (resolve, reject) => {
+      try {
+        const result = await updateApproval(updateUrl, token, {
           approvalId: Number(selectedApproval.approvalId),
           status: "APPROVED",
           remarks,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        });
+
+        if (result.success) {
+          setSelectedApproval(null);
+          setRemarks("");
+          // Refresh the data using Zustand
+          await fetchData();
+          resolve(result.message || "Request approved successfully!");
+        } else {
+          reject(result.message || "Failed to approve request");
         }
-      );
-
-      // With axios, response.data contains the parsed JSON
-      const { success, message } = response.data;
-
-      if (success) {
-        toast.success(message || "Request approved successfully!");
-        setSelectedApproval(null);
-        setRemarks("");
-        fetchApprovals();
-      } else {
-        toast.error(message || "Failed to approve request");
+      } catch (err) {
+        console.error("Approve error:", err);
+        reject("Error approving request");
       }
-    } catch (err) {
-      console.error("Approve error:", err);
+    });
 
-      // Enhanced error handling
-      if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
-      } else if (err.response?.status === 403) {
-        toast.error("You don't have permission to approve this request");
-      } else if (err.request) {
-        toast.error("Network error - please check your connection");
-      } else {
-        toast.error("Error approving request");
-      }
-    }
+    toast.promise(updatePromise, {
+      loading: "Approving request...",
+      success: (message) => message,
+      error: (err) => err,
+    });
   };
 
   // ✅ Filtering + Pagination
@@ -344,14 +302,17 @@ function RequestedInfoApprovals() {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4  py-6 rounded-xl"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6 rounded-xl"
       >
         <div>
-          <h1 className="text-2xl font-bold text-[#00539C]">
-            {deptName ? `${deptName} - Requested Info` : "Department Dashboard"}
+          <h1 className="text-2xl font-bold pl-5 text-[#00539C]">
+            {title ||
+              (deptName
+                ? `${deptName} - Requested Info`
+                : "Requested Information")}
           </h1>
-          <p className="text-gray-600 mt-1 text-sm">
-            Requests for More Information
+          <p className="text-gray-600 mt-1 pl-5 text-sm">
+            {subtitle || "Requests for More Information"}
           </p>
         </div>
 
@@ -364,14 +325,14 @@ function RequestedInfoApprovals() {
                 setShowExportDropdown(!showExportDropdown);
               }}
               disabled={loading || approvals.length === 0}
-              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
 
             {/* Export Dropdown */}
             {showExportDropdown && (
-              <div className="absolute right-0 top-12 border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
+              <div className="absolute right-0 top-12 bg-gray-50 border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
                 <button
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
@@ -397,7 +358,7 @@ function RequestedInfoApprovals() {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm  py-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -415,7 +376,7 @@ function RequestedInfoApprovals() {
           />
         </div>
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData}
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >
@@ -424,7 +385,7 @@ function RequestedInfoApprovals() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-300 relative">
+      <div className="bg-gray-50 rounded-xl ml-3 shadow-sm border border-gray-300 relative">
         <table className="w-full text-left">
           <thead className="bg-[#00539C] text-white">
             <tr>
@@ -441,7 +402,7 @@ function RequestedInfoApprovals() {
             {paginatedApprovals.map((a, index) => (
               <tr
                 key={a.approvalId}
-                className=" transition-colors duration-150 rounded-lg"
+                className="transition-colors duration-150 rounded-lg"
               >
                 <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
                   {a.student.studentName}
@@ -451,7 +412,7 @@ function RequestedInfoApprovals() {
                 <td className="px-6 py-4 text-gray-700">
                   {a.student.phoneNo || "—"}
                 </td>
-                <td className="px-6 py-4 relative rounded-r-lg">
+                <td className="px-6 py-4 text-md relative rounded-r-lg">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -466,7 +427,7 @@ function RequestedInfoApprovals() {
 
                   {/* Dropdown Menu */}
                   {activeDropdown === a.approvalId && (
-                    <div className="absolute top-full right-5 mt-2  border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
+                    <div className="absolute top-full right-5 mt-2 bg-gray-50 border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
                       <button
                         onClick={() => {
                           setSelectedApproval(a);
@@ -522,6 +483,7 @@ function RequestedInfoApprovals() {
           </tbody>
         </table>
       </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
@@ -560,7 +522,7 @@ function RequestedInfoApprovals() {
       {/* Modal */}
       {selectedApproval && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className=" w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gray-50 w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
@@ -568,7 +530,7 @@ function RequestedInfoApprovals() {
               </h2>
               <button
                 onClick={() => setSelectedApproval(null)}
-                className="text-white hover:bg-gray-50/10 p-1 rounded-lg transition-colors duration-200"
+                className="text-white hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -576,7 +538,7 @@ function RequestedInfoApprovals() {
 
             {/* Body */}
             <div className="p-6 space-y-4">
-              <div className=" p-3 rounded-lg">
+              <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-700">
                   <span className="font-medium">Student:</span>{" "}
                   {selectedApproval.student.studentName}
@@ -600,14 +562,14 @@ function RequestedInfoApprovals() {
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Enter your approval remarks here..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                   required
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className=" px-6 py-4 flex justify-end gap-3 border-t border-gray-200">
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-200">
               <button
                 onClick={() => setSelectedApproval(null)}
                 className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-sm font-medium"

@@ -21,28 +21,42 @@ import {
   TableCell,
   TableRow,
   WidthType,
-  BorderStyle,
 } from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
-import ENV from "../../env.js"
+import ENV from "../../env.js";
+import useDepartmentStore from "../../store/departmentStore.js";
 
 const AddDepartmentForm = () => {
   const token = localStorage.getItem("token");
-  const BASE_URL = `${ENV.BASE_URL}/admin` || "http://localhost:5000/admin";
+
+  const {
+    departments,
+    allStaff,
+    loadingStates,
+    fetchDepartments,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
+    addStaff,
+    updateStaff,
+    deleteStaff,
+    getStaffByDepartment,
+    shouldFetchInitially,
+  } = useDepartmentStore();
 
   // Configure axios defaults
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  axios.defaults.headers.common["Content-Type"] = "application/json";
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      axios.defaults.headers.common["Content-Type"] = "application/json";
+    }
+  }, [token]);
 
-  const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
   const [collegeFilter, setCollegeFilter] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [allStaff, setAllStaff] = useState([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -53,88 +67,14 @@ const AddDepartmentForm = () => {
   const [staffList, setStaffList] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Add these states
+  // Staff management states - RENAMED to avoid conflict
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showEditStaffModal, setShowEditStaffModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
-  const [deleteStaff, setDeleteStaff] = useState(null);
+  const [staffToDelete, setStaffToDelete] = useState(null); // CHANGED: Renamed from deleteStaff
+
   const [staffDropdown, setStaffDropdown] = useState(null);
   const [refreshingStaff, setRefreshingStaff] = useState(false);
-
-  // Add Staff Handler
-  const handleAddStaff = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const toastId = toast.loading("Adding staff...");
-
-    try {
-      await axios.post(`${BASE_URL}/add-staff`, {
-        ...staffData,
-        deptId: staffDept.deptId,
-      });
-
-      await refreshStaffList(); // Refresh the staff list
-      setStaffData({ name: "", email: "", password: "" });
-      setShowAddStaffModal(false);
-      toast.success("Staff added successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Add staff error", error);
-      toast.error("Error adding staff", { id: toastId });
-    }
-    setLoading(false);
-  };
-
-  // Update Staff Handler
-  const handleUpdateStaff = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const toastId = toast.loading("Updating staff...");
-
-    try {
-      const payload = {
-        name: editingStaff.name,
-        email: editingStaff.email,
-        deptId: staffDept.deptId,
-      };
-
-      if (editingStaff.password && editingStaff.password.trim() !== "") {
-        payload.password = editingStaff.password;
-      }
-
-      await axios.put(
-        `${BASE_URL}/update-staff/${editingStaff.staffId}`,
-        payload
-      );
-
-      await refreshStaffList(); // Refresh the staff list
-      setShowEditStaffModal(false);
-      setEditingStaff(null);
-      toast.success("Staff updated successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Update staff error", error);
-      toast.error("Error updating staff", { id: toastId });
-    }
-    setLoading(false);
-  };
-
-  // Delete Staff Handler
-  const handleDeleteStaffConfirm = async () => {
-    if (!deleteStaff) return;
-    setLoading(true);
-    const toastId = toast.loading("Deleting staff...");
-
-    try {
-      await axios.delete(`${BASE_URL}/delete-staff/${deleteStaff.staffId}`);
-
-      await refreshStaffList(); // Refresh the staff list
-      setDeleteStaff(null);
-      toast.success("Staff deleted successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Delete staff error", error);
-      toast.error("Error deleting staff", { id: toastId });
-    }
-    setLoading(false);
-  };
 
   // Form states
   const [formData, setFormData] = useState({
@@ -158,48 +98,19 @@ const AddDepartmentForm = () => {
     { value: "ALL", label: "All - Common Departments For ICEM & IGSB" },
   ];
 
-  // Fetch departments with loading and toast
-  const fetchDepartments = async () => {
-    setRefreshing(true);
-    const toastId = toast.loading("Fetching departments...");
-
-    try {
-      const [deptResponse, staffResponse] = await Promise.all([
-        axios.get(`${BASE_URL}/departments`),
-        axios.get(`${BASE_URL}/staff`),
-      ]);
-
-      if (!deptResponse.data.success) {
-        throw new Error(
-          deptResponse.data.message || "Failed to fetch departments"
-        );
-      }
-
-      setDepartments(deptResponse.data.data);
-
-      if (staffResponse.data.success) {
-        setAllStaff(staffResponse.data.data);
-      }
-
-      // ✅ Show success toast only once here
-      toast.success("Data loaded successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Fetch data error:", error);
-      toast.error("Error fetching data", { id: toastId });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
+  // Fetch departments on component mount
   useEffect(() => {
-    fetchDepartments();
-  }, []);
+    if (token && shouldFetchInitially()) {
+      fetchDepartmentsData();
+    }
+  }, [token, shouldFetchInitially]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       setActiveDropdown(null);
       setShowExportDropdown(false);
+      setStaffDropdown(null);
     };
 
     document.addEventListener("click", handleClickOutside);
@@ -208,15 +119,30 @@ const AddDepartmentForm = () => {
     };
   }, []);
 
+  // Update staff list when staffDept changes
+  useEffect(() => {
+    if (staffDept && showStaffModal) {
+      refreshStaffList();
+    }
+  }, [staffDept, showStaffModal, allStaff]);
+
+  const fetchDepartmentsData = async (forceRefresh = false) => {
+    try {
+      await fetchDepartments(token, forceRefresh);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    }
+  };
+
   // Handle field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleStaffChange = (e) => {
     const { name, value } = e.target;
-    setStaffData((p) => ({ ...p, [name]: value }));
+    setStaffData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Export Functions
@@ -451,7 +377,6 @@ const AddDepartmentForm = () => {
         ];
       });
 
-      // Use autoTable as a function, not as doc.autoTable
       autoTable(doc, {
         startY: yPosition,
         head: [["Dept ID", "Dept Name", "Branch ID", "College", "Staff Count"]],
@@ -532,136 +457,112 @@ const AddDepartmentForm = () => {
   // Add Department + Staff
   const handleAdd = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Adding department...");
 
     try {
-      // Convert branchId to int or null
-      const deptPayload = {
-        ...formData,
-        branchId: formData.branchId ? parseInt(formData.branchId) : null,
-      };
-
-      // 1. Add department
-      const deptResponse = await axios.post(
-        `${BASE_URL}/add-department`,
-        deptPayload
-      );
-
-      if (!deptResponse.data.success) {
-        toast.error(deptResponse.data.message || "Failed to add department", {
-          id: toastId,
-        });
-        setLoading(false);
-        return;
-      }
-
-      const deptId = deptResponse.data.data.deptId;
-
-      // 2. Add staff if provided
-      if (staffData.name && staffData.email && staffData.password) {
-        await axios.post(`${BASE_URL}/add-staff`, { ...staffData, deptId });
-      }
-
-      await fetchDepartments();
+      await addDepartment(token, formData, staffData);
       setFormData({ deptName: "", branchId: "", college: "ICEM" });
       setStaffData({ name: "", email: "", password: "" });
       setShowAddModal(false);
       toast.success("Department added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Add error", error);
       toast.error("Error adding department", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Update Department + Staff
+  // Update Department
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Updating department...");
 
     try {
-      // 1. Update department
-      const deptPayload = {
-        deptId: editingDept.deptId,
-        college: editingDept.college,
-        branchId: editingDept.branchId ? parseInt(editingDept.branchId) : null,
-      };
-
-      await axios.put(`${BASE_URL}/update-department`, deptPayload);
-
-      // 2. Update staff if provided
-      if (editingDept.staff && editingDept.staff.staffId) {
-        const staffPayload = {
-          name: editingDept.staff.name,
-          email: editingDept.staff.email,
-          deptId: editingDept.deptId,
-        };
-
-        if (
-          editingDept.staff.password &&
-          editingDept.staff.password.trim() !== ""
-        ) {
-          staffPayload.password = editingDept.staff.password;
-        }
-
-        await axios.put(
-          `${BASE_URL}/update-staff/${editingDept.staff.staffId}`,
-          staffPayload
-        );
-      }
-
-      await fetchDepartments();
+      await updateDepartment(token, editingDept);
       setShowEditModal(false);
       setEditingDept(null);
       toast.success("Department updated successfully!", { id: toastId });
     } catch (error) {
-      console.error("Update error", error);
       toast.error("Error updating department", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Delete Department (delete staff first)
+  // Delete Department
   const handleDeleteConfirm = async () => {
     if (!deleteDept) return;
-    setLoading(true);
     const toastId = toast.loading("Deleting department...");
 
     try {
-      // Delete department
-      await axios.delete(`${BASE_URL}/delete-department/${deleteDept.deptId}`);
-
-      await fetchDepartments();
+      await deleteDepartment(token, deleteDept.deptId);
       setDeleteDept(null);
       toast.success("Department deleted successfully!", { id: toastId });
     } catch (error) {
-      console.error("Delete error", error);
       toast.error("Error deleting department", { id: toastId });
     }
-    setLoading(false);
   };
 
   // View staff of department
-  const handleViewStaff = async (dept) => {
-    const toastId = toast.loading("Fetching staff...");
+  const handleViewStaff = (dept) => {
+    setStaffDept(dept);
+    setShowStaffModal(true);
+  };
+
+  // Add Staff Handler
+  const handleAddStaff = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Adding staff...");
 
     try {
-      const response = await axios.get(`${BASE_URL}/staff`);
-      if (response.data.success) {
-        setStaffList(
-          response.data.data.filter((s) => s.deptId === dept.deptId)
-        );
-        toast.success("Staff loaded successfully!", { id: toastId });
-      } else {
-        toast.error("Failed to fetch staff", { id: toastId });
-      }
-      setStaffDept(dept);
-      setShowStaffModal(true);
+      await addStaff(token, { ...staffData, deptId: staffDept.deptId });
+      setStaffData({ name: "", email: "", password: "" });
+      setShowAddStaffModal(false);
+      toast.success("Staff added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Fetch staff error:", error);
-      toast.error("Error fetching staff", { id: toastId });
+      toast.error("Error adding staff", { id: toastId });
+    }
+  };
+
+  // Update Staff Handler
+  const handleUpdateStaff = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Updating staff...");
+
+    try {
+      await updateStaff(token, editingStaff.staffId, {
+        ...editingStaff,
+        deptId: staffDept.deptId,
+      });
+      setShowEditStaffModal(false);
+      setEditingStaff(null);
+      toast.success("Staff updated successfully!", { id: toastId });
+    } catch (error) {
+      toast.error("Error updating staff", { id: toastId });
+    }
+  };
+
+  // Delete Staff Handler - UPDATED to use staffToDelete
+  const handleDeleteStaffConfirm = async () => {
+    if (!staffToDelete) return;
+    const toastId = toast.loading("Deleting staff...");
+
+    try {
+      await deleteStaff(token, staffToDelete.staffId);
+      setStaffToDelete(null);
+      toast.success("Staff deleted successfully!", { id: toastId });
+    } catch (error) {
+      toast.error("Error deleting staff", { id: toastId });
+    }
+  };
+
+  // Refresh staff list
+  const refreshStaffList = () => {
+    setRefreshingStaff(true);
+    try {
+      const staffForDept = getStaffByDepartment(staffDept.deptId);
+      setStaffList(staffForDept);
+    } catch (error) {
+      console.error("Error refreshing staff:", error);
+      toast.error("Error refreshing staff data");
+    } finally {
+      setRefreshingStaff(false);
     }
   };
 
@@ -680,24 +581,6 @@ const AddDepartmentForm = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  // Add this function after your other handlers
-  const refreshStaffList = async () => {
-    setRefreshingStaff(true);
-    try {
-      const response = await axios.get(`${BASE_URL}/staff`);
-      if (response.data.success) {
-        setStaffList(
-          response.data.data.filter((s) => s.deptId === staffDept.deptId)
-        );
-      }
-    } catch (error) {
-      console.error("Error refreshing staff:", error);
-      toast.error("Error refreshing staff data");
-    } finally {
-      setRefreshingStaff(false);
-    }
-  };
 
   return (
     <div className="space-y-6 text-sm bg-gray-50 min-h-screen">
@@ -721,7 +604,7 @@ const AddDepartmentForm = () => {
                 e.stopPropagation();
                 setShowExportDropdown(!showExportDropdown);
               }}
-              disabled={loading || departments.length === 0}
+              disabled={loadingStates.operations || departments.length === 0}
               className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
@@ -754,7 +637,7 @@ const AddDepartmentForm = () => {
 
           <button
             onClick={() => setShowAddModal(true)}
-            disabled={loading}
+            disabled={loadingStates.operations}
             className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-[#00539C] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
           >
             <FiPlus size={16} /> Add Department
@@ -815,23 +698,34 @@ const AddDepartmentForm = () => {
         </div>
 
         <button
-          onClick={fetchDepartments}
-          disabled={refreshing || loading}
+          onClick={fetchDepartmentsData}
+          disabled={loadingStates.departments || loadingStates.operations}
           className="p-2.5 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
         >
-          <FiRefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+          <FiRefreshCw
+            size={16}
+            className={loadingStates.departments ? "animate-spin" : ""}
+          />
         </button>
       </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00539C]"></div>
-            <span className="text-sm">Processing...</span>
+      {loadingStates.departments ||
+        (loadingStates.operations && (
+          // ✅ Skeleton Loader
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 animate-pulse">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-lg shadow p-4 space-y-3 border border-gray-200"
+              >
+                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-10 bg-gray-300 rounded mt-3"></div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        ))}
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-300 relative">
@@ -875,7 +769,7 @@ const AddDepartmentForm = () => {
                         activeDropdown === dept.deptId ? null : dept.deptId
                       );
                     }}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
                   >
                     <FiMoreVertical size={18} className="text-gray-600" />
@@ -885,7 +779,6 @@ const AddDepartmentForm = () => {
                   {activeDropdown === dept.deptId && (
                     <div
                       className={`absolute bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px] ${
-                        // Check if this is one of the last few rows and position dropdown above
                         index >= paginatedDepts.length - 3
                           ? "bottom-full mb-2"
                           : "top-full "
@@ -896,7 +789,7 @@ const AddDepartmentForm = () => {
                           handleViewStaff(dept);
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <Users size={14} />
@@ -904,14 +797,11 @@ const AddDepartmentForm = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setEditingDept({
-                            ...dept,
-                            staff: { name: "", email: "", password: "" },
-                          });
+                          setEditingDept(dept);
                           setShowEditModal(true);
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -934,7 +824,7 @@ const AddDepartmentForm = () => {
                           setDeleteDept(dept);
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -976,7 +866,7 @@ const AddDepartmentForm = () => {
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || loading}
+            disabled={currentPage === 1 || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Previous
@@ -986,7 +876,7 @@ const AddDepartmentForm = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              disabled={loading}
+              disabled={loadingStates.operations}
               className={`w-9 h-9 flex items-center justify-center border rounded-lg text-sm transition-colors duration-200 ${
                 currentPage === page
                   ? "bg-[#00539C] text-white border-[#00539C]"
@@ -999,7 +889,7 @@ const AddDepartmentForm = () => {
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || loading}
+            disabled={currentPage === totalPages || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Next
@@ -1018,7 +908,7 @@ const AddDepartmentForm = () => {
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1044,7 +934,7 @@ const AddDepartmentForm = () => {
                       value={formData.deptName}
                       onChange={handleChange}
                       required
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1057,7 +947,7 @@ const AddDepartmentForm = () => {
                       name="branchId"
                       value={formData.branchId}
                       onChange={handleChange}
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1070,7 +960,7 @@ const AddDepartmentForm = () => {
                       name="college"
                       value={formData.college}
                       onChange={handleChange}
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       required
                       className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     >
@@ -1101,7 +991,7 @@ const AddDepartmentForm = () => {
                       value={staffData.name}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1116,7 +1006,7 @@ const AddDepartmentForm = () => {
                       value={staffData.email}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1131,7 +1021,7 @@ const AddDepartmentForm = () => {
                       value={staffData.password}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1143,17 +1033,17 @@ const AddDepartmentForm = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Adding..." : "Add Department"}
+                  {loadingStates.operations ? "Adding..." : "Add Department"}
                 </button>
               </div>
             </form>
@@ -1168,11 +1058,11 @@ const AddDepartmentForm = () => {
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
-                Edit Department & Staff
+                Edit Department
               </h2>
               <button
                 onClick={() => setShowEditModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1215,12 +1105,12 @@ const AddDepartmentForm = () => {
                     <input
                       value={editingDept.branchId || ""}
                       onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
+                        setEditingDept((prev) => ({
+                          ...prev,
                           branchId: e.target.value,
                         }))
                       }
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -1229,15 +1119,14 @@ const AddDepartmentForm = () => {
                       College
                     </label>
                     <select
-                      name="college"
                       value={editingDept.college}
                       onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
+                        setEditingDept((prev) => ({
+                          ...prev,
                           college: e.target.value,
                         }))
                       }
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     >
                       {collegeOptions.map((c) => (
@@ -1250,96 +1139,24 @@ const AddDepartmentForm = () => {
                 </div>
               </div>
 
-              {/* Staff Section */}
-              <div className="border border-gray-200 rounded-lg p-5 space-y-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Users className="h-5 w-5 text-[#00539C]" />
-                  Staff Details
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Name
-                    </label>
-                    <input
-                      name="name"
-                      value={editingDept.staff?.name || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, name: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={editingDept.staff?.email || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, email: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={editingDept.staff?.password || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, password: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Dept ID
-                    </label>
-                    <input
-                      value={editingDept.deptId}
-                      disabled
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-100 text-gray-600"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Footer */}
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Updating..." : "Update Department"}
+                  {loadingStates.operations
+                    ? "Updating..."
+                    : "Update Department"}
                 </button>
               </div>
             </form>
@@ -1358,7 +1175,7 @@ const AddDepartmentForm = () => {
               <div className="flex gap-2">
                 <button
                   onClick={refreshStaffList}
-                  disabled={refreshingStaff || loading}
+                  disabled={refreshingStaff || loadingStates.operations}
                   className="flex items-center gap-2 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 text-sm font-medium transition-colors duration-200 border border-gray-300"
                 >
                   <FiRefreshCw
@@ -1368,14 +1185,14 @@ const AddDepartmentForm = () => {
                 </button>
                 <button
                   onClick={() => setShowAddStaffModal(true)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
                 >
                   <FiPlus size={14} /> Add Staff
                 </button>
                 <button
                   onClick={() => setShowStaffModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -1414,7 +1231,7 @@ const AddDepartmentForm = () => {
                                   : staff.staffId
                               );
                             }}
-                            disabled={loading}
+                            disabled={loadingStates.operations}
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
                           >
                             <FiMoreVertical
@@ -1438,7 +1255,7 @@ const AddDepartmentForm = () => {
                                   setShowEditStaffModal(true);
                                   setStaffDropdown(null);
                                 }}
-                                disabled={loading}
+                                disabled={loadingStates.operations}
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                               >
                                 <svg
@@ -1458,10 +1275,10 @@ const AddDepartmentForm = () => {
                               </button>
                               <button
                                 onClick={() => {
-                                  setDeleteStaff(staff);
+                                  setStaffToDelete(staff); // UPDATED: Changed from setDeleteStaffState
                                   setStaffDropdown(null);
                                 }}
-                                disabled={loading}
+                                disabled={loadingStates.operations}
                                 className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                               >
                                 <svg
@@ -1507,7 +1324,7 @@ const AddDepartmentForm = () => {
               <h2 className="text-lg font-semibold text-white">Add Staff</h2>
               <button
                 onClick={() => setShowAddStaffModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1523,7 +1340,7 @@ const AddDepartmentForm = () => {
                   value={staffData.name}
                   onChange={handleStaffChange}
                   required
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1537,7 +1354,7 @@ const AddDepartmentForm = () => {
                   value={staffData.email}
                   onChange={handleStaffChange}
                   required
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1551,7 +1368,7 @@ const AddDepartmentForm = () => {
                   value={staffData.password}
                   onChange={handleStaffChange}
                   required
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full  p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1559,17 +1376,17 @@ const AddDepartmentForm = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddStaffModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50"
                 >
-                  {loading ? "Adding..." : "Add Staff"}
+                  {loadingStates.operations ? "Adding..." : "Add Staff"}
                 </button>
               </div>
             </form>
@@ -1585,7 +1402,7 @@ const AddDepartmentForm = () => {
               <h2 className="text-lg font-semibold text-white">Edit Staff</h2>
               <button
                 onClick={() => setShowEditStaffModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1602,7 +1419,7 @@ const AddDepartmentForm = () => {
                     setEditingStaff({ ...editingStaff, name: e.target.value })
                   }
                   required
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full  p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1617,7 +1434,7 @@ const AddDepartmentForm = () => {
                     setEditingStaff({ ...editingStaff, email: e.target.value })
                   }
                   required
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1634,7 +1451,7 @@ const AddDepartmentForm = () => {
                       password: e.target.value,
                     })
                   }
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                 />
               </div>
@@ -1642,17 +1459,17 @@ const AddDepartmentForm = () => {
                 <button
                   type="button"
                   onClick={() => setShowEditStaffModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50"
                 >
-                  {loading ? "Updating..." : "Update Staff"}
+                  {loadingStates.operations ? "Updating..." : "Update Staff"}
                 </button>
               </div>
             </form>
@@ -1660,8 +1477,8 @@ const AddDepartmentForm = () => {
         </div>
       )}
 
-      {/* Delete Staff Modal */}
-      {deleteStaff && (
+      {/* Delete Staff Modal - UPDATED to use staffToDelete */}
+      {staffToDelete && (
         <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
             <div className="bg-rose-600 px-6 py-4 flex justify-between items-center">
@@ -1669,8 +1486,8 @@ const AddDepartmentForm = () => {
                 Confirm Delete Staff
               </h2>
               <button
-                onClick={() => setDeleteStaff(null)}
-                disabled={loading}
+                onClick={() => setStaffToDelete(null)}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1679,22 +1496,22 @@ const AddDepartmentForm = () => {
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-700">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold">{deleteStaff.name}</span>?
+                <span className="font-semibold">{staffToDelete.name}</span>?
               </p>
               <div className="flex justify-end gap-3">
                 <button
-                  onClick={() => setDeleteStaff(null)}
-                  disabled={loading}
+                  onClick={() => setStaffToDelete(null)}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteStaffConfirm}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50"
                 >
-                  {loading ? "Deleting..." : "Delete"}
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
@@ -1702,7 +1519,7 @@ const AddDepartmentForm = () => {
         </div>
       )}
 
-      {/* Delete Modal */}
+      {/* Delete Department Modal */}
       {deleteDept && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
@@ -1712,7 +1529,7 @@ const AddDepartmentForm = () => {
               </h2>
               <button
                 onClick={() => setDeleteDept(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1734,17 +1551,17 @@ const AddDepartmentForm = () => {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteDept(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Deleting..." : "Delete"}
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

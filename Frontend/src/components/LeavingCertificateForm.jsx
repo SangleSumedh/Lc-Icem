@@ -71,22 +71,109 @@ const LeavingCertificateForm = ({
     const month = months[date.getMonth()];
     const year = date.getFullYear();
 
-    // Add ordinal suffix to day
-    const getOrdinalSuffix = (day) => {
-      if (day > 3 && day < 21) return "th";
-      switch (day % 10) {
-        case 1:
-          return "st";
-        case 2:
-          return "nd";
-        case 3:
-          return "rd";
-        default:
-          return "th";
-      }
+    const dayWords = [
+      "",
+      "First",
+      "Second",
+      "Third",
+      "Fourth",
+      "Fifth",
+      "Sixth",
+      "Seventh",
+      "Eighth",
+      "Ninth",
+      "Tenth",
+      "Eleventh",
+      "Twelfth",
+      "Thirteenth",
+      "Fourteenth",
+      "Fifteenth",
+      "Sixteenth",
+      "Seventeenth",
+      "Eighteenth",
+      "Nineteenth",
+      "Twentieth",
+      "Twenty First",
+      "Twenty Second",
+      "Twenty Third",
+      "Twenty Fourth",
+      "Twenty Fifth",
+      "Twenty Sixth",
+      "Twenty Seventh",
+      "Twenty Eighth",
+      "Twenty Ninth",
+      "Thirtieth",
+      "Thirty First",
+    ];
+
+    const numberToWords = (num) => {
+      const ones = [
+        "",
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine",
+        "Ten",
+        "Eleven",
+        "Twelve",
+        "Thirteen",
+        "Fourteen",
+        "Fifteen",
+        "Sixteen",
+        "Seventeen",
+        "Eighteen",
+        "Nineteen",
+      ];
+      const tens = [
+        "",
+        "",
+        "Twenty",
+        "Thirty",
+        "Forty",
+        "Fifty",
+        "Sixty",
+        "Seventy",
+        "Eighty",
+        "Ninety",
+      ];
+
+      if (num < 20) return ones[num];
+      if (num < 100)
+        return (
+          tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "")
+        );
+      if (num < 1000)
+        return (
+          ones[Math.floor(num / 100)] +
+          " Hundred" +
+          (num % 100 ? " " + numberToWords(num % 100) : "")
+        );
+      if (num < 1000000)
+        return (
+          numberToWords(Math.floor(num / 1000)) +
+          " Thousand" +
+          (num % 1000 ? " " + numberToWords(num % 1000) : "")
+        );
+      return num.toString(); // fallback for large numbers
     };
 
-    return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+    // Split year into parts for readability
+    const yearInWords = (() => {
+      if (year === 2000) return "Two Thousand";
+      if (year > 2000 && year < 2010)
+        return "Two Thousand " + numberToWords(year % 100);
+      if (year >= 2010 && year < 2100)
+        return "Two Thousand " + numberToWords(year % 100);
+      if (year < 2000) return numberToWords(year);
+      return numberToWords(year);
+    })();
+
+    return `${dayWords[day]} ${month} ${yearInWords}`;
   };
 
   // Auto-update DOB words when date changes
@@ -223,7 +310,6 @@ const LeavingCertificateForm = ({
     onSubmit(finalData);
   };
 
-
   // Prepare dropdown options from JSON data
   const religionOptions = [
     ...religionsData.religions.map((religion) => ({
@@ -304,8 +390,25 @@ const LeavingCertificateForm = ({
                 />
               </div>
 
+              {/* Student ID */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Student ID
+                </label>
+                <input
+                  type="text"
+                  name="studentID"
+                  value={formData.studentID}
+                  onChange={handleChange}
+                  disabled={viewMode}
+                  readOnly={viewMode}
+                  maxLength={8}
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
               {[
-                { label: "Student ID", name: "studentID", required: false },
                 { label: "Father's Name", name: "fatherName", required: true },
                 { label: "Mother's Name", name: "motherName", required: true },
                 {
@@ -352,7 +455,7 @@ const LeavingCertificateForm = ({
                   onChange={handleChange}
                   required={!viewMode}
                   disabled={viewMode}
-                  readOnly={viewMode}
+                  readOnly
                   placeholder="Auto-generated from date of birth"
                   className={`border p-2 rounded-lg w-full ${
                     viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50"
@@ -503,7 +606,8 @@ const LeavingCertificateForm = ({
               {/* Year of Admission */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Year of Admission <span className="text-rose-500">*</span>
+                  Year of Admission (only year){" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -513,6 +617,7 @@ const LeavingCertificateForm = ({
                   required={!viewMode}
                   disabled={viewMode}
                   readOnly={viewMode}
+                  placeholder="2022"
                   min="2000"
                   max="2030"
                   className={`border p-2 rounded-lg w-full ${
@@ -523,7 +628,7 @@ const LeavingCertificateForm = ({
 
               {/* Admission Mode Dropdown */}
               <CustomDropdown
-                label="Admission Mode"
+                label="Admission Type"
                 name="admissionMode"
                 value={formData.admissionMode}
                 options={admissionModeOptions}
@@ -536,12 +641,13 @@ const LeavingCertificateForm = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Last College Attended <span className="text-rose-500">*</span>
+                  Last College Attended (College Name){" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="lastCollege"
-                  placeholder="Enter last college"
+                  placeholder="Ex: XYZ Junior college"
                   value={formData.lastCollege}
                   onChange={handleChange}
                   required={!viewMode}

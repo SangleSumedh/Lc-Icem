@@ -1,9 +1,11 @@
+// DepartmentDashboard.js
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiClipboard, FiCheckCircle, FiInfo, FiXCircle } from "react-icons/fi";
 import RegistrarPendingLCs from "./RegistrarPendingLCs";
 import ENV from "../../env.js";
+import useApprovalsStore from "../../store/approvalsStore.js";
 
 // Lazy-loaded components
 const PendingApprovals = lazy(() => import("./PendingApprovals"));
@@ -23,6 +25,9 @@ const DepartmentDashboard = () => {
   const [isRegistrar, setIsRegistrar] = useState(false);
   const [isAccountDept, setIsAccountDept] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
+
+  // Use Zustand store - REMOVE clearTab
+  const { fetchApprovals } = useApprovalsStore();
 
   useEffect(() => {
     const stored = localStorage.getItem("deptName");
@@ -46,6 +51,35 @@ const DepartmentDashboard = () => {
   ];
 
   const tabs = isAccountDept ? accountTabs : baseTabs;
+
+  // Fetch data only once when component mounts or deptName changes
+  useEffect(() => {
+    if (!deptName || isRegistrar) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    // Fetch all tabs data initially
+    const fetchAllData = async () => {
+      for (const tab of tabs) {
+        const fetchUrl = getFetchUrl(tab.id);
+        await fetchApprovals(tab.id, fetchUrl, token);
+      }
+    };
+
+    fetchAllData();
+  }, [deptName, isRegistrar]); // Remove activeTab from dependencies
+
+  const getFetchUrl = (tab) => {
+    const baseUrl = ENV.BASE_URL || "http://localhost:5000";
+    const urls = {
+      pending: `${baseUrl}/departments/pending-approvals`,
+      approved: `${baseUrl}/departments/approvals/approved`,
+      requested: `${baseUrl}/departments/approvals/requested-info`,
+      rejected: `${baseUrl}/departments/approvals/rejected`,
+    };
+    return urls[tab];
+  };
 
   const getColorClasses = (color) => {
     const colors = {
@@ -75,21 +109,6 @@ const DepartmentDashboard = () => {
       },
     };
     return colors[color] || colors.blue;
-  };
-
-  const fetchUrls = {
-    pending:
-      `${ENV.BASE_URL}/departments/pending-approvals` ||
-      "http://localhost:5000/departments/pending-approvals",
-    approved:
-      `${ENV.BASE_URL}/departments/approvals/approved` ||
-      "http://localhost:5000/departments/approvals/approved",
-    requested:
-      `${ENV.BASE_URL}/departments/requests/infos` ||
-      "http://localhost:5000/departments/requests/info",
-    rejected:
-      `${ENV.BASE_URL}/departments/approvals/rejected` ||
-      "http://localhost:5000/departments/approvals/rejected",
   };
 
   const updateUrl =
@@ -143,8 +162,56 @@ const DepartmentDashboard = () => {
           >
             <Suspense
               fallback={
-                <div className="flex justify-center items-center min-h-[300px]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="space-y-6 min-h-[300px] p-6">
+                  {/* Header Skeleton */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6">
+                    <div className="space-y-2">
+                      <div className="h-8 bg-gray-200 rounded-lg w-64 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                    </div>
+                    <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
+                  </div>
+
+                  {/* Filters Skeleton */}
+                  <div className="flex flex-col sm:flex-row gap-3 py-4">
+                    <div className="flex-1">
+                      <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                    </div>
+                    <div className="h-12 w-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                  </div>
+
+                  {/* Table Skeleton */}
+                  <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-300">
+                    <div className="w-full">
+                      {/* Table Header Skeleton */}
+                      <div className="bg-gray-200 px-6 py-4 rounded-t-xl">
+                        <div className="grid grid-cols-5 gap-4">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="h-4 bg-gray-200 rounded animate-pulse"
+                            ></div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Table Rows Skeleton */}
+                      <div className="divide-y divide-gray-100">
+                        {[...Array(5)].map((_, index) => (
+                          <div
+                            key={index}
+                            className="px-6 py-4 grid grid-cols-5 gap-4"
+                          >
+                            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-8 bg-gray-200 rounded w-8 animate-pulse"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               }
             >
@@ -152,7 +219,6 @@ const DepartmentDashboard = () => {
                 <PendingApprovals
                   title={`${deptName} - Pending Approvals`}
                   subtitle={`Pending Approvals for ${deptName}`}
-                  fetchUrl={fetchUrls.pending}
                   updateUrl={updateUrl}
                 />
               )}
@@ -161,7 +227,7 @@ const DepartmentDashboard = () => {
                 <RequestedInfo
                   title={`${deptName} - Requested Info`}
                   subtitle={`Requested Information for ${deptName}`}
-                  fetchUrl={fetchUrls.requested}
+                  updateUrl={updateUrl}
                 />
               )}
 
@@ -169,16 +235,13 @@ const DepartmentDashboard = () => {
                 <ApprovedApprovalRequests
                   title={`${deptName} - Approved Requests`}
                   subtitle={`Approved Requests for ${deptName}`}
-                  fetchUrl={fetchUrls.approved}
                 />
               )}
 
-              {/* Only show RejectedApprovals for Account Department */}
               {activeTab === "rejected" && isAccountDept && (
                 <RejectedApprovals
                   title={`${deptName} - Rejected Requests`}
                   subtitle={`Rejected Requests for ${deptName}`}
-                  fetchUrl={fetchUrls.rejected}
                   updateUrl={updateUrl}
                 />
               )}

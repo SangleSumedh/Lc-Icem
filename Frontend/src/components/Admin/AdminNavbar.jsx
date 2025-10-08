@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings } from "lucide-react";
 import { jwtDecode } from "jwt-decode"; // Clean import
+import useAdminStore from "../../store/adminStore";
+import useApprovalsStore from "../../store/approvalsStore";
+import useDepartmentStore from "../../store/departmentStore";
+import useSuperAdminStore from "../../store/superAdminStore";
+import useStudentStore from "../../store/studentStore";
 
 import Logo from "/Logo.png";
 
@@ -37,6 +42,7 @@ function AdminNavbar() {
 
   const handleLogout = () => {
     const role = localStorage.getItem("role"); // assuming role is stored in localStorage
+
     localStorage.clear();
 
     if (role === "department" || role === "superadmin") {

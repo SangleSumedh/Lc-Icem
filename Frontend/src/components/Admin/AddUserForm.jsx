@@ -27,16 +27,30 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 import ENV from "../../env.js";
+import useStudentStore from "../../store/studentStore.js";
 
 function AddUserForm() {
   const token = localStorage.getItem("token");
-  const BASE_URL = `${ENV.BASE_URL}/admin` || "http://localhost:5000/admin";
+  const navigate = useNavigate();
+
+  const {
+    students,
+    loadingStates,
+    fetchStudents,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    shouldFetchInitially,
+  } = useStudentStore();
 
   // Configure axios defaults
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  axios.defaults.headers.common["Content-Type"] = "application/json";
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      axios.defaults.headers.common["Content-Type"] = "application/json";
+    }
+  }, [token]);
 
-  const [students, setStudents] = useState([]);
   const [formData, setFormData] = useState({
     prn: "",
     studentName: "",
@@ -55,12 +69,9 @@ function AddUserForm() {
   const [search, setSearch] = useState("");
   const [collegeFilter, setCollegeFilter] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -75,32 +86,24 @@ function AddUserForm() {
     };
   }, []);
 
-  // Fetch Students with Axios and Toast
-  const fetchStudents = async () => {
-    setRefreshing(true);
-    const toastId = toast.loading("Fetching students...");
-
-    try {
-      const response = await axios.get(`${BASE_URL}/students`);
-      if (response.data.success) {
-        setStudents(response.data.data);
-        toast.success("Data loaded successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Failed to fetch students", {
-          id: toastId,
-        });
-      }
-    } catch (error) {
-      console.error("Fetch students error:", error);
-      toast.error("Error fetching students", { id: toastId });
-    }
-    setRefreshing(false);
-  };
+  // Fetch Students
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    if (token && shouldFetchInitially()) {
+      fetchStudentsData();
+    }
+  }, [token, shouldFetchInitially]);
 
+  const fetchStudentsData = async (forceRefresh = false) => {
+    setRefreshing(true);
+    try {
+      await fetchStudents(token, forceRefresh);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   // Export Functions
   const exportToExcel = () => {
     try {
@@ -238,7 +241,6 @@ function AddUserForm() {
         student.college,
       ]);
 
-      // Use autoTable as a function, passing doc as first parameter
       autoTable(doc, {
         startY: 35,
         head: [["PRN", "Student Name", "Email", "Phone", "College"]],
@@ -276,94 +278,60 @@ function AddUserForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (editing) {
-      setEditing((p) => ({ ...p, [name]: value }));
+      setEditing((prev) => ({ ...prev, [name]: value }));
     } else {
-      setFormData((p) => ({ ...p, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  // Add Student with Axios and Toast
+  // Add Student
   const handleAdd = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Adding student...");
 
     try {
-      const response = await axios.post(`${BASE_URL}/add-student`, formData);
-
-      if (response.data.success) {
-        await fetchStudents();
-        setFormData({
-          prn: "",
-          studentName: "",
-          email: "",
-          phoneNo: "",
-          college: "ICEM",
-          password: "",
-        });
-        setShowAddModal(false);
-        toast.success("Student added successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Failed to add student", {
-          id: toastId,
-        });
-      }
+      await addStudent(token, formData);
+      setFormData({
+        prn: "",
+        studentName: "",
+        email: "",
+        phoneNo: "",
+        college: "ICEM",
+        password: "",
+      });
+      setShowAddModal(false);
+      toast.success("Student added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Add student error:", error);
       toast.error("Error adding student", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Update Student with Axios and Toast
+  // Update Student
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Updating student...");
 
     try {
-      const response = await axios.put(
-        `${BASE_URL}/update-student/${editing.prn}`,
-        editing
-      );
-
-      if (response.data.success) {
-        await fetchStudents();
-        setEditing(null);
-        toast.success("Student updated successfully!", { id: toastId });
-      } else {
-        toast.error(response.data.message || "Update failed", { id: toastId });
-      }
+      await updateStudent(token, editing.prn, editing);
+      setEditing(null);
+      toast.success("Student updated successfully!", { id: toastId });
     } catch (error) {
-      console.error("Update error", error);
       toast.error("Error updating student", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Delete Student with Axios and Toast
+  // Delete Student
   const handleDeleteConfirm = async () => {
     if (!deleteUser) return;
-    setLoading(true);
     const toastId = toast.loading("Deleting student...");
 
     try {
-      const response = await axios.delete(
-        `${BASE_URL}/delete-student/${deleteUser.prn}`
-      );
-
-      if (response.data.success) {
-        await fetchStudents();
-        setDeleteUser(null);
-        toast.success("Student deleted successfully!", { id: toastId });
-      } else {
-        toast.error("Failed to delete student", { id: toastId });
-      }
+      await deleteStudent(token, deleteUser.prn);
+      setDeleteUser(null);
+      toast.success("Student deleted successfully!", { id: toastId });
     } catch (error) {
-      console.error("Delete error", error);
       toast.error("Error deleting student", { id: toastId });
     }
-    setLoading(false);
   };
 
   // Filtering
@@ -403,7 +371,7 @@ function AddUserForm() {
                 e.stopPropagation();
                 setShowExportDropdown(!showExportDropdown);
               }}
-              disabled={loading || students.length === 0}
+              disabled={loadingStates.operations || students.length === 0}
               className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
@@ -436,23 +404,13 @@ function AddUserForm() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            disabled={loading}
+            disabled={loadingStates.operations}
             className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-[#004085] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
           >
             <FiPlus size={16} /> Add Student
           </button>
         </div>
       </motion.header>
-
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00539C]"></div>
-            <span className="text-sm">Processing...</span>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
@@ -490,8 +448,8 @@ function AddUserForm() {
         </select>
 
         <button
-          onClick={fetchStudents}
-          disabled={refreshing || loading}
+          onClick={fetchStudentsData}
+          disabled={refreshing || loadingStates.operations}
           className="p-2.5  rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
         >
           <FiRefreshCw
@@ -537,7 +495,7 @@ function AddUserForm() {
                         activeDropdown === s.prn ? null : s.prn
                       );
                     }}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
                   >
                     <FiMoreVertical size={18} className="text-gray-600" />
@@ -551,7 +509,7 @@ function AddUserForm() {
                           setEditing({ ...s, password: "" });
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -574,7 +532,7 @@ function AddUserForm() {
                           setDeleteUser(s);
                           setActiveDropdown(null);
                         }}
-                        disabled={loading}
+                        disabled={loadingStates.operations}
                         className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
                       >
                         <svg
@@ -616,7 +574,7 @@ function AddUserForm() {
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || loading}
+            disabled={currentPage === 1 || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Previous
@@ -626,7 +584,7 @@ function AddUserForm() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              disabled={loading}
+              disabled={loadingStates.operations}
               className={`w-9 h-9 flex items-center justify-center border rounded-lg text-sm transition-colors duration-200 ${
                 currentPage === page
                   ? "bg-[#00539C] text-white border-[#00539C]"
@@ -639,7 +597,7 @@ function AddUserForm() {
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || loading}
+            disabled={currentPage === totalPages || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Next
@@ -655,7 +613,7 @@ function AddUserForm() {
               <h2 className="text-lg font-semibold text-white">Add Student</h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -674,7 +632,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Enter PRN"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -688,7 +646,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Enter full name"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -706,7 +664,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Enter email"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -719,7 +677,7 @@ function AddUserForm() {
                     value={formData.phoneNo}
                     onChange={handleChange}
                     placeholder="Enter phone number"
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -734,7 +692,7 @@ function AddUserForm() {
                     name="college"
                     value={formData.college}
                     onChange={handleChange}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   >
                     <option value="ICEM">ICEM</option>
@@ -752,7 +710,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Enter password"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -762,17 +720,17 @@ function AddUserForm() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Adding..." : "Add Student"}
+                  {loadingStates.operations ? "Adding..." : "Add Student"}
                 </button>
               </div>
             </form>
@@ -790,7 +748,7 @@ function AddUserForm() {
               </h2>
               <button
                 onClick={() => setEditing(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -819,7 +777,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Full Name"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -836,7 +794,7 @@ function AddUserForm() {
                     onChange={handleChange}
                     placeholder="Email"
                     required
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -849,7 +807,7 @@ function AddUserForm() {
                     name="phoneNo"
                     onChange={handleChange}
                     placeholder="Phone Number"
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -864,7 +822,7 @@ function AddUserForm() {
                     value={editing.college}
                     name="college"
                     onChange={handleChange}
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   >
                     <option value="ICEM">ICEM</option>
@@ -881,7 +839,7 @@ function AddUserForm() {
                     value={editing.password || ""}
                     onChange={handleChange}
                     placeholder="Leave empty to keep current password"
-                    disabled={loading}
+                    disabled={loadingStates.operations}
                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -891,17 +849,17 @@ function AddUserForm() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Updating..." : "Update Student"}
+                  {loadingStates.operations ? "Updating..." : "Update Student"}
                 </button>
               </div>
             </form>
@@ -919,7 +877,7 @@ function AddUserForm() {
               </h2>
               <button
                 onClick={() => setDeleteUser(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -942,17 +900,17 @@ function AddUserForm() {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteUser(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Deleting..." : "Delete"}
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

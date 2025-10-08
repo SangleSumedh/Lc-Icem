@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
-import { sendEmail } from "../utils/mailer.js";
+import { sendEmail, emailTemplates } from "../utils/mailer.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import { handlePrismaError } from "../utils/handlePrismaError.js";
 

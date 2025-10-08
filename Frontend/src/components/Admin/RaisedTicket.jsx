@@ -8,155 +8,32 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
-import axios from "axios";
-import ENV from "../../env";
 import { toast } from "react-hot-toast";
+import useTicketStore from "../../store/ticketStore.js";
 
 const RaisedTicket = () => {
-  const [tickets, setTickets] = useState([]);
-  const [filteredTickets, setFilteredTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    tickets,
+    filteredTickets,
+    filters,
+    loadingStates,
+    errorStates,
+    fetchTickets,
+    updateTicketStatus,
+    setSearchTerm,
+    setStatusFilter,
+    getStatusCountsData,
+    shouldFetchInitially,
+  } = useTicketStore();
+
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [statusUpdate, setStatusUpdate] = useState({ status: "", remarks: "" });
 
-  // Search and filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const loading = loadingStates.tickets;
+  const error = errorStates.tickets;
 
-  // Get auth token from localStorage
-  const getAuthToken = () => {
-    return localStorage.getItem("token");
-  };
-
-  // Sort tickets by status priority
-  const sortTicketsByStatus = (tickets) => {
-    const statusPriority = {
-      IN_PROGRESS: 1,
-      OPEN: 2,
-      RESOLVED: 3,
-      CLOSED: 4,
-    };
-
-    return [...tickets].sort((a, b) => {
-      return statusPriority[a.status] - statusPriority[b.status];
-    });
-  };
-
-  // Fetch tickets
-  const fetchTickets = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const token = getAuthToken();
-
-      const response = await axios.get(`${ENV.BASE_URL}/tickets/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const { success, data, message } = response.data;
-
-      if (success) {
-        const tickets = data?.tickets || [];
-        const sortedTickets = sortTicketsByStatus(tickets);
-        setTickets(sortedTickets);
-        setFilteredTickets(sortedTickets);
-      } else {
-        throw new Error(message || "Failed to fetch tickets");
-      }
-    } catch (err) {
-      console.error("Error fetching tickets:", err);
-
-      // Enhanced error handling
-      let errorMessage = "Failed to fetch tickets";
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      } else if (err.request) {
-        errorMessage = "Network error - please check your connection";
-      }
-
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filter tickets based on search and status
-  useEffect(() => {
-    let filtered = tickets;
-
-    // Apply status filter
-    if (statusFilter !== "ALL") {
-      filtered = filtered.filter((ticket) => ticket.status === statusFilter);
-    }
-
-    // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (ticket) =>
-          ticket.subject.toLowerCase().includes(searchLower) ||
-          ticket.description.toLowerCase().includes(searchLower) ||
-          ticket.ticketId.toLowerCase().includes(searchLower) ||
-          ticket.student?.studentName?.toLowerCase().includes(searchLower) ||
-          ticket.student?.prn?.toLowerCase().includes(searchLower) ||
-          ticket.department.toLowerCase().includes(searchLower) ||
-          ticket.category.toLowerCase().includes(searchLower)
-      );
-    }
-
-    setFilteredTickets(filtered);
-  }, [tickets, searchTerm, statusFilter]);
-
-  // Update ticket status
-  const updateTicketStatus = async (ticketId) => {
-    try {
-      const token = getAuthToken();
-      const toastId = toast.loading("Updating ticket status...");
-
-      const response = await axios.patch(
-        `${ENV.BASE_URL}/tickets/${ticketId}/status`,
-        statusUpdate,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const { success, message } = response.data;
-
-      if (success) {
-        toast.success(message || "Ticket status updated successfully!", {
-          id: toastId,
-        });
-        setSelectedTicket(null);
-        setStatusUpdate({ status: "", remarks: "" });
-        fetchTickets(); // Refresh the list
-      } else {
-        throw new Error(message || "Failed to update ticket");
-      }
-    } catch (err) {
-      console.error("Error updating ticket:", err);
-
-      let errorMessage = "Failed to update ticket status";
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.status === 404) {
-        errorMessage = "Ticket not found";
-      } else if (err.request) {
-        errorMessage = "Network error - please check your connection";
-      }
-
-      toast.error(errorMessage);
-    }
-  };
+  // Get status counts from store
+  const statusCounts = getStatusCountsData();
 
   // Get status badge color
   const getStatusColor = (status) => {
@@ -190,29 +67,36 @@ const RaisedTicket = () => {
     }
   };
 
-  // Get status count for each category
-  const getStatusCounts = () => {
-    const counts = {
-      IN_PROGRESS: 0,
-      OPEN: 0,
-      RESOLVED: 0,
-      CLOSED: 0,
-    };
+  // Handle status update with toast
+  const handleUpdateStatus = async (ticketId) => {
+    const toastId = toast.loading("Updating ticket status...");
 
-    tickets.forEach((ticket) => {
-      if (counts.hasOwnProperty(ticket.status)) {
-        counts[ticket.status]++;
-      }
-    });
+    const result = await updateTicketStatus(ticketId, statusUpdate);
 
-    return counts;
+    if (result.success) {
+      toast.success(result.message || "Ticket status updated successfully!", {
+        id: toastId,
+      });
+      setSelectedTicket(null);
+      setStatusUpdate({ status: "", remarks: "" });
+    } else {
+      toast.error(result.error || "Failed to update ticket status", {
+        id: toastId,
+      });
+    }
   };
 
-  const statusCounts = getStatusCounts();
+  // Handle manual refresh
+  const handleRefresh = () => {
+    fetchTickets(true); // Force refresh
+  };
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    // Only fetch if we haven't initialized yet
+    if (shouldFetchInitially()) {
+      fetchTickets();
+    }
+  }, [fetchTickets, shouldFetchInitially]);
 
   if (loading) {
     return (
@@ -287,7 +171,7 @@ const RaisedTicket = () => {
               </p>
             </div>
             <button
-              onClick={fetchTickets}
+              onClick={handleRefresh}
               className="text-gray-700 border border-gray-300 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 focus:outline-none"
             >
               <ArrowPathIcon className="w-5 h-5" />
@@ -331,8 +215,8 @@ const RaisedTicket = () => {
                 <input
                   type="text"
                   placeholder="Search tickets by subject, description, student name, PRN, department, or category..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.searchTerm} // CHANGED: from searchTerm to filters.searchTerm
+                  onChange={(e) => setSearchTerm(e.target.value)} // CHANGED: this comes from store
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent focus:outline-none transition-all duration-200"
                 />
               </div>
@@ -340,8 +224,8 @@ const RaisedTicket = () => {
             <div className="relative">
               <FunnelIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={filters.statusFilter} // CHANGED: from statusFilter to filters.statusFilter
+                onChange={(e) => setStatusFilter(e.target.value)} // CHANGED: this comes from store
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent focus:outline-none appearance-none bg-white cursor-pointer"
               >
                 <option value="ALL">All Status</option>
@@ -629,6 +513,7 @@ const RaisedTicket = () => {
                       />
                     </div>
 
+                    {/* In the Ticket Details Modal - Status Update Section */}
                     <div className="flex justify-end gap-3">
                       <button
                         onClick={() => {
@@ -641,8 +526,8 @@ const RaisedTicket = () => {
                       </button>
                       <button
                         onClick={() =>
-                          updateTicketStatus(selectedTicket.ticketId)
-                        }
+                          handleUpdateStatus(selectedTicket.ticketId)
+                        } // CHANGED: from updateTicketStatus to handleUpdateStatus
                         disabled={!statusUpdate.status}
                         className="px-6 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:ring-2 focus:ring-gray-300 focus:outline-none"
                       >

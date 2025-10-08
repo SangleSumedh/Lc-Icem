@@ -410,7 +410,7 @@ const RegistrarPendingLCs = () => {
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-500  rounded-lg px-3 py-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-[#00539C] rounded-full animate-pulse"></div>
             <span>{filteredLCs.length} pending certificates</span>
           </div>
         </motion.header>
@@ -493,7 +493,7 @@ const RegistrarPendingLCs = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={fetchPendingLCs}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#00539C] text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#00539C] text-white rounded-lg text-sm font-medium hover:bg-blue-950 transition-all duration-200"
             >
               <FiRefreshCw size={14} />
               Check Again
@@ -669,7 +669,7 @@ const RegistrarPendingLCs = () => {
                     onClick={() => setCurrentPage(page)}
                     className={`w-10 h-10 flex items-center justify-center border rounded-lg text-sm font-medium transition-all duration-200 ${
                       currentPage === page
-                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent shadow-sm"
+                        ? "bg-[#00539C] text-white border-transparent shadow-sm"
                         : "border-gray-300 text-gray-700 hover:bg-gray-50"
                     }`}
                   >
@@ -745,7 +745,7 @@ const RegistrarPendingLCs = () => {
                   {/* Personal Details */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <UserCircleIcon className="h-5 w-5 text-blue-600" />
+                      <UserCircleIcon className="h-5 w-5 text-[#00539C]" />
                       Personal Details
                     </h3>
                     <hr className="border-gray-300 my-2" />
@@ -829,7 +829,7 @@ const RegistrarPendingLCs = () => {
                   {/* College Details */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <AcademicCapIcon className="h-5 w-5 text-blue-600" />
+                      <AcademicCapIcon className="h-5 w-5 text-[#00539C]" />
                       College Details
                     </h3>
                     <hr className="border-gray-300 my-2" />
@@ -859,13 +859,15 @@ const RegistrarPendingLCs = () => {
                           value={formData.yearOfAdmission || ""}
                           onChange={handleChange}
                           required
+                          min={2000}
+                          max={2050}
                           className="border p-2 rounded-lg w-full focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Admission Mode{" "}
+                          Admission Type{" "}
                           <span className="text-rose-500">*</span>
                         </label>
                         <select
@@ -890,7 +892,7 @@ const RegistrarPendingLCs = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Last College Attended{" "}
+                          Last College Attended (College Name){" "}
                           <span className="text-rose-500">*</span>
                         </label>
                         <input
@@ -912,10 +914,6 @@ const RegistrarPendingLCs = () => {
                           Reason for Leaving College{" "}
                           <span className="text-rose-500">*</span>
                         </label>
-                        <span className="text-xs text-gray-500 italic ml-2">
-                          Note: Mention the type of Leaving Certificate –
-                          Migration or Leaving / Transfer
-                        </span>
                       </div>
                       <textarea
                         name="reasonForLeaving"
@@ -932,7 +930,7 @@ const RegistrarPendingLCs = () => {
                   {/* Additional Fields */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <InformationCircleIcon className="h-5 w-5 text-blue-600" />
+                      <InformationCircleIcon className="h-5 w-5 text-[#00539C]" />
                       Additional Information
                     </h3>
                     <hr className="border-gray-300 my-2" />
@@ -1013,7 +1011,7 @@ const RegistrarPendingLCs = () => {
                           disabled={!isFormComplete() || generating}
                           className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 flex items-center gap-2 ${
                             isFormComplete() && !generating
-                              ? "bg-blue-600 hover:bg-blue-700"
+                              ? "bg-[#00539C] hover:bg-blue-700"
                               : "bg-gray-400 cursor-not-allowed"
                           }`}
                         >
@@ -1081,10 +1079,10 @@ const RegistrarPendingLCs = () => {
                 {/* Content */}
                 <div className="p-6 space-y-6">
                   {/* Student Info */}
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className=" rounded-lg p-4 border border-blue-200">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <UserCircleIcon className="h-6 w-6 text-blue-600" />
+                        <UserCircleIcon className="h-6 w-6 text-[#00539C]" />
                       </div>
                       <div>
                         <h3 className="font-medium text-gray-900">
@@ -1110,7 +1108,7 @@ const RegistrarPendingLCs = () => {
                     <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
                       {uploadFile ? (
                         <div className="space-y-2">
-                          <DocumentTextIcon className="h-12 w-12 text-green-500 mx-auto" />
+                          <DocumentTextIcon className="h-12 w-12 text-emerald-500 mx-auto" />
                           <p className="text-sm font-medium text-gray-900">
                             {uploadFile.name}
                           </p>
@@ -1129,7 +1127,7 @@ const RegistrarPendingLCs = () => {
                           <DocumentArrowUpIcon className="h-12 w-12 text-gray-400 mx-auto" />
                           <div>
                             <p className="text-sm text-gray-600">
-                              <span className="font-medium text-blue-600">
+                              <span className="font-medium text-[#00539C]">
                                 Click to upload
                               </span>{" "}
                               or drag and drop
@@ -1161,7 +1159,7 @@ const RegistrarPendingLCs = () => {
                       setUploadFile(null);
                     }}
                     disabled={!uploadFile || uploading}
-                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
+                    className="w-full px-4 py-3 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
                   >
                     {uploading ? (
                       <>

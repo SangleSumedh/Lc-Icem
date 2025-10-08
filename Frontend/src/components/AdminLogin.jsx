@@ -130,7 +130,7 @@ const AdminLogin = () => {
               localStorage.setItem("username", user.username || "");
               localStorage.setItem("email", user.email || "");
             }
-            toast.success( "Admin login successful!");
+            toast.success( "Welcome Admin");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
             // Store department staff data
@@ -327,7 +327,7 @@ const AdminLogin = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#00539C] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#003f8b]  transition"
         >
           {loading ? "Logging in..." : "Login"}
         </button>

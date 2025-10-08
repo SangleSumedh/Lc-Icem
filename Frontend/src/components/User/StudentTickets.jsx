@@ -10,6 +10,7 @@ import {
   ClockIcon,
   XCircleIcon,
   ArrowPathIcon,
+  AdjustmentsHorizontalIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { jwtDecode } from "jwt-decode";
@@ -205,7 +206,7 @@ function StudentTickets() {
               placeholder="Search tickets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 sm:py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200 hover:shadow-xl"
+              className="w-full pl-12 pr-4 py-3 sm:py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none transition-all duration-200 hover:shadow-xl"
             />
           </div>
           <div>
@@ -216,7 +217,7 @@ function StudentTickets() {
               {statusFilter === "ALL"
                 ? "All Status"
                 : statusFilter.replace("_", " ")}
-              <ArrowPathIcon className="w-5 h-5 text-gray-400" />
+              <AdjustmentsHorizontalIcon className="w-5 h-5 text-gray-400" />
             </button>
 
             {/* Modal */}
@@ -235,7 +236,7 @@ function StudentTickets() {
                             setStatusFilter(status);
                             setStatusModalOpen(false);
                           }}
-                          className="w-full px-4 py-2 rounded-xl text-gray-700 hover:bg-gray-100 font-medium"
+                          className="w-full px-4 py-2 rounded-xl text-gray-700 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none hover:bg-gray-100 font-medium"
                         >
                           {status === "ALL"
                             ? "All Status"

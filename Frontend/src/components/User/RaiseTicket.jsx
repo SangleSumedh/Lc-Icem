@@ -422,9 +422,13 @@ function RaiseTickets() {
                       name="contactPhone"
                       value={formData.contactPhone}
                       onChange={handleChange}
+                      maxLength={10}
                       placeholder="+91 9876543210"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none transition-all duration-200"
                     />
+                    {formData.contactPhone.length === 10 && 
+                      <span className="text-emerald-500 text-[12px]">* Contact Phone should be 10 digits only</span>
+                    }
                   </div>
                 </div>
 

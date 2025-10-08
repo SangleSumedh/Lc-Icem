@@ -201,11 +201,15 @@ const Register = () => {
               placeholder="e.g. 1234567890"
               value={formData.prn}
               onChange={handleInputChange}
+              maxLength={10}
               className="w-full text-sm outline-none"
             />
           </div>
           {formErrors.prn && (
             <p className="text-xs text-rose-500 mt-1">PRN is required</p>
+          )}
+          {formData.prn.length === 10 && (
+            <p className="text-xs text-emerald-500 mt-1">✓ PRN is complete</p>
           )}
         </div>
 
@@ -243,12 +247,18 @@ const Register = () => {
               placeholder="e.g. +91 9876543210"
               value={formData.phoneNo}
               onChange={handleInputChange}
+              maxLength={10}
               className="w-full text-sm outline-none"
             />
           </div>
           {formErrors.phoneNo && (
             <p className="text-xs text-rose-500 mt-1">
               Phone number is required
+            </p>
+          )}
+          {formData.phoneNo.length=== 10 && (
+            <p className="text-xs text-rose-500 mt-1">
+              10 digit number only !
             </p>
           )}
         </div>

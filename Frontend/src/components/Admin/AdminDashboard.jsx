@@ -3,7 +3,6 @@ import {
   FiHome,
   FiUsers,
   FiShield,
-  FiChevronRight,
   FiRefreshCw,
   FiLogIn,
 } from "react-icons/fi";
@@ -12,130 +11,64 @@ import { motion, AnimatePresence } from "framer-motion";
 import AddDepartmentForm from "./AddDepartmentForm";
 import AddSuperAdmin from "./AddSuperAdmin";
 import AddUserForm from "./AddUserForm";
-import ENV from "../../env.js";
-import axios from "axios";
 import { toast } from "react-hot-toast";
+import useAdminStore from "../../store/adminStore";
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    students: 0,
-    departments: 0,
-    superadmins: 0,
-    loginLogs: 0,
-  });
+  // Zustand store state and actions
+  const {
+    stats,
+    loginLogs,
+    loadingStates,
+    errorStates,
+    fetchStats,
+    fetchLoginLogs,
+    fetchAllAdminData,
+    shouldFetchInitially,
+    clearData,
+  } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [loading, setLoading] = useState(false);
-  const [loginLogs, setLoginLogs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 5;
 
   const token = localStorage.getItem("token");
 
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
-      const [studentsRes, departmentsRes, superadminsRes] = await Promise.all([
-        fetch(
-          `${ENV.BASE_URL}/admin/students` ||
-            "http://localhost:5000/admin/students",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        ).then((r) => r.json()),
-        fetch(
-          `${ENV.BASE_URL}/admin/departments` ||
-            "http://localhost:5000/admin/departments"
-        ).then((r) => r.json()),
-        fetch(
-          `${ENV.BASE_URL}/admin/get-superAdmins` ||
-            "http://localhost:5000/admin/get-superAdmins",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        ).then((r) => r.json()),
-      ]);
-
-      setStats({
-        students: studentsRes?.data?.length || 0,
-        departments: departmentsRes?.data?.length || 0,
-        superadmins: superadminsRes?.data?.length || 0,
-        loginLogs: loginLogs.length,
-      });
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-    }
-    setLoading(false);
-  };
-
-  const fetchLoginLogs = async () => {
-    try {
-      const response = await axios.get(
-        `${ENV.BASE_URL}/admin/staff-login-logs`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setLoginLogs(response.data.data || []);
-        setStats((prev) => ({
-          ...prev,
-          loginLogs: response.data.data?.length || 0,
-        }));
-
-        // Optional: Show success toast for larger datasets
-        if (response.data.data?.length > 0) {
-          toast.success(`Loaded ${response.data.data.length} login logs`);
-        }
-      } else {
-        toast.error(response.data.message || "Failed to fetch login logs");
-      }
-    } catch (err) {
-      console.error("Error fetching login logs:", err);
-
-      // Enhanced error handling with user-friendly messages
-      if (err.response) {
-        // Server responded with error status
-        const errorMessage =
-          err.response.data?.message || "Failed to load login logs";
-
-        // Handle specific backend error messages
-        if (err.response.status === 503) {
-          toast.error(
-            "Service temporarily unavailable. Please try again later."
-          );
-        } else if (err.response.status === 404) {
-          toast.error("No login logs found in the system.");
-        } else if (err.response.status === 408) {
-          toast.error("Request timeout. Please try again.");
-        } else if (err.response.status === 401) {
-          toast.error("Session expired. Please login again.");
-          // Optional: Redirect to login
-          // navigate('/login');
-        } else if (err.response.status === 403) {
-          toast.error("Access denied. Insufficient permissions.");
-        } else {
-          toast.error(errorMessage);
-        }
-      } else if (err.request) {
-        // Request was made but no response received
-        toast.error("Network error. Please check your internet connection.");
-      } else {
-        // Something else happened
-        toast.error("An unexpected error occurred. Please try again.");
-      }
-    }
-  };
-
+  // Fetch data on component mount
   useEffect(() => {
-    fetchStats();
-    fetchLoginLogs();
-  }, []);
+    const { allData } = shouldFetchInitially();
+    if (allData) {
+      fetchAllAdminData(token);
+    }
+  }, [fetchAllAdminData, shouldFetchInitially, token]);
+
+  // Manual refresh function - force refresh all data
+  const handleRefresh = () => {
+    fetchAllAdminData(token, true); // Force refresh all data
+  };
+
+  // Error handling
+  useEffect(() => {
+    if (errorStates.stats) {
+      toast.error(`Failed to load stats: ${errorStates.stats}`);
+    }
+    if (errorStates.loginLogs) {
+      toast.error(`Failed to load login logs: ${errorStates.loginLogs}`);
+    }
+    if (errorStates.allData) {
+      toast.error(`Failed to refresh data: ${errorStates.allData}`);
+    }
+  }, [errorStates.stats, errorStates.loginLogs, errorStates.allData]);
+
+  // Error handling
+  useEffect(() => {
+    if (errorStates.stats) {
+      toast.error(`Failed to load stats: ${errorStates.stats}`);
+    }
+    if (errorStates.loginLogs) {
+      toast.error(`Failed to load login logs: ${errorStates.loginLogs}`);
+    }
+  }, [errorStates.stats, errorStates.loginLogs]);
 
   const tabs = [
     {
@@ -217,7 +150,7 @@ const AdminDashboard = () => {
           <div>
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
             {loading ? (
-              <div className="h-8 w-16  rounded-lg animate-pulse"></div>
+              <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse"></div>
             ) : (
               <p className={`text-3xl font-bold ${colorClass.text}`}>{value}</p>
             )}
@@ -235,6 +168,8 @@ const AdminDashboard = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const totalPages = Math.ceil(loginLogs.length / itemsPerPage);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString("en-US", {
@@ -270,21 +205,21 @@ const AdminDashboard = () => {
                 value={stats.students}
                 color="blue"
                 icon={FiUsers}
-                loading={loading}
+                loading={loadingStates.stats}
               />
               <StatCard
                 title="Departments"
                 value={stats.departments}
                 color="green"
                 icon={FaBuilding}
-                loading={loading}
+                loading={loadingStates.stats}
               />
               <StatCard
                 title="Super Admins"
                 value={stats.superadmins}
                 color="orange"
                 icon={FiShield}
-                loading={loading}
+                loading={loadingStates.stats}
               />
             </motion.section>
 
@@ -295,7 +230,7 @@ const AdminDashboard = () => {
               transition={{ delay: 0.1 }}
               className="space-y-6"
             >
-              <div className="flex justify-between items-center ">
+              <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-[#00539C] mt-5">
                     Staff Login Logs
@@ -304,16 +239,23 @@ const AdminDashboard = () => {
                     Recent staff login activities
                   </p>
                 </div>
-                <button
-                  onClick={fetchLoginLogs}
-                  disabled={loading}
-                  className="flex items-center gap-2  text-black px-4 py-2.5 rounded-lg disabled:opacity-50 transition-colors duration-200 border border-gray-300"
-                >
-                  <FiRefreshCw
-                    size={16}
-                    className={loading ? "animate-spin" : ""}
-                  />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleRefresh}
+                    disabled={loadingStates.stats || loadingStates.loginLogs}
+                    className="flex items-center gap-2 text-black px-4 py-2.5 rounded-lg disabled:opacity-50 transition-colors duration-200 border border-gray-300"
+                    title="Refresh Data"
+                  >
+                    <FiRefreshCw
+                      size={16}
+                      className={
+                        loadingStates.stats || loadingStates.loginLogs
+                          ? "animate-spin"
+                          : ""
+                      }
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Login Logs Table */}
@@ -339,39 +281,52 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {paginatedLogs.map((log) => (
-                      <tr
-                        key={log.id}
-                        className="transition-colors duration-150 hover:bg-gray-50"
-                      >
-                        <td className="px-6 py-4 text-gray-700">
-                          {log.staffId}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {log.staffName}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {formatDate(log.loginAt)}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {log.ipAddress === "::1"
-                            ? "N/A"
-                            : log.ipAddress || "N/A"}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700 rounded-r-lg">
-                          <div
-                            className="max-w-xs truncate"
-                            title={log.userAgent}
-                          >
-                            {log.userAgent || "N/A"}
+                    {loadingStates.loginLogs ? (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          <div className="flex items-center justify-center">
+                            <FiRefreshCw className="h-6 w-6 animate-spin mr-2" />
+                            <p>Loading login logs...</p>
                           </div>
                         </td>
                       </tr>
-                    ))}
-                    {paginatedLogs.length === 0 && (
+                    ) : paginatedLogs.length > 0 ? (
+                      paginatedLogs.map((log) => (
+                        <tr
+                          key={log.id}
+                          className="transition-colors duration-150 hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 text-gray-700">
+                            {log.staffId}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {log.staffName}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {formatDate(log.loginAt)}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {log.ipAddress === "::1"
+                              ? "N/A"
+                              : log.ipAddress || "N/A"}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700 rounded-r-lg">
+                            <div
+                              className="max-w-xs truncate"
+                              title={log.userAgent}
+                            >
+                              {log.userAgent || "N/A"}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
                       <tr>
                         <td
-                          colSpan="6"
+                          colSpan="5"
                           className="px-6 py-8 text-center text-gray-500"
                         >
                           <div className="flex flex-col items-center justify-center">
@@ -385,8 +340,8 @@ const AdminDashboard = () => {
                 </table>
               </div>
 
-              {/* Pagination - Simplified with Ellipsis */}
-              {loginLogs.length > itemsPerPage && (
+              {/* Pagination */}
+              {loginLogs.length > itemsPerPage && !loadingStates.loginLogs && (
                 <div className="flex justify-center items-center gap-1 mt-6">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

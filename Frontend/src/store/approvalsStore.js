@@ -1,3 +1,4 @@
+// stores/useApprovalsStore.js
 import { create } from "zustand";
 import axios from "axios";
 
@@ -14,10 +15,17 @@ const useApprovalsStore = create((set, get) => ({
     rejected: false,
     requested: false,
   },
+  errorStates: {
+    pending: null,
+    approved: null,
+    rejected: null,
+    requested: null,
+  },
 
   fetchApprovals: async (tab, url, token) => {
     set((state) => ({
       loadingStates: { ...state.loadingStates, [tab]: true },
+      errorStates: { ...state.errorStates, [tab]: null },
     }));
 
     try {
@@ -28,9 +36,7 @@ const useApprovalsStore = create((set, get) => ({
       const { success, data } = response.data;
 
       if (success) {
-        // Handle different response field names for different tabs
         let approvals = [];
-
         switch (tab) {
           case "pending":
             approvals = data?.pendingApprovals || data?.approvals || [];
@@ -55,13 +61,15 @@ const useApprovalsStore = create((set, get) => ({
           },
         }));
       } else {
-        set((state) => ({
-          approvalsData: { ...state.approvalsData, [tab]: [] },
-        }));
+        throw new Error(data?.message || `Failed to fetch ${tab} approvals`);
       }
     } catch (err) {
       console.error(`Error fetching ${tab} approvals:`, err);
       set((state) => ({
+        errorStates: {
+          ...state.errorStates,
+          [tab]: err.response?.data?.message || err.message,
+        },
         approvalsData: { ...state.approvalsData, [tab]: [] },
       }));
     } finally {
@@ -71,7 +79,6 @@ const useApprovalsStore = create((set, get) => ({
     }
   },
 
-  // Add updateApproval function that's missing from your store
   updateApproval: async (url, token, updateData) => {
     try {
       const response = await axios.post(url, updateData, {
@@ -95,8 +102,14 @@ const useApprovalsStore = create((set, get) => ({
   clearTab: (tab) => {
     set((state) => ({
       approvalsData: { ...state.approvalsData, [tab]: [] },
+      errorStates: { ...state.errorStates, [tab]: null },
     }));
   },
+
+  // Optional: Add utility functions
+  getApprovalsByTab: (tab) => get().approvalsData[tab],
+  getLoadingByTab: (tab) => get().loadingStates[tab],
+  getErrorByTab: (tab) => get().errorStates[tab],
 }));
 
 export default useApprovalsStore;

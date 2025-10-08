@@ -22,11 +22,9 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ENV from "../../env";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import useApprovalsStore from "../../store/approvalsStore";
 
-function RejectedApprovals() {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+function RejectedApprovals({ title, subtitle }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -40,9 +38,12 @@ function RejectedApprovals() {
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
 
-  const fetchUrl =
-    `${ENV.BASE_URL}/departments/approvals/rejected` ||
-    "http://localhost:5000/departments/approvals/rejected";
+  const { approvalsData, loadingStates, fetchApprovals, updateApproval } =
+    useApprovalsStore();
+
+  const approvals = approvalsData.rejected;
+  const loading = loadingStates.rejected;
+
   const updateUrl =
     `${ENV.BASE_URL}/departments/update-status` ||
     "http://localhost:5000/departments/update-status";
@@ -60,45 +61,14 @@ function RejectedApprovals() {
     };
   }, []);
 
-  // ✅ Fetch only rejected approvals
-  const fetchApprovals = async () => {
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const response = await axios.get(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Use the standardized response format
-      const { success, data, message } = response.data;
-
-      if (success) {
-        // Change this line to match what backend sends
-        setApprovals(data?.rejectedApprovals || []);
-      } else {
-        console.error("Fetch error:", message);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error("Error fetching rejected approvals:", err);
-
-      // Enhanced error handling
-      if (err.response?.data?.message) {
-        console.error("Backend error:", err.response.data.message);
-      } else if (err.request) {
-        console.error("Network error");
-      }
-
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/approvals/rejected` ||
+      "http://localhost:5000/departments/approvals/rejected";
+    await fetchApprovals("rejected", fetchUrl, token);
+    setRefreshing(false);
   };
-
-  useEffect(() => {
-    fetchApprovals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Export Functions
   const exportToExcel = () => {
@@ -273,7 +243,7 @@ function RejectedApprovals() {
     }
   };
 
-  // ✅ Only Approve action
+  // ✅ Only Approve action using Zustand
   const handleApprove = async () => {
     if (!selectedApproval) return;
     if (!remarks.trim()) {
@@ -281,47 +251,34 @@ function RejectedApprovals() {
       return;
     }
 
-    try {
-      const response = await axios.post(
-        updateUrl,
-        {
+    const updatePromise = new Promise(async (resolve, reject) => {
+      try {
+        const result = await updateApproval(updateUrl, token, {
           approvalId: Number(selectedApproval.approvalId),
           status: "APPROVED",
           remarks,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        });
+
+        if (result.success) {
+          setSelectedApproval(null);
+          setRemarks("");
+          // Refresh the data using Zustand
+          await fetchData();
+          resolve(result.message || "Request approved successfully!");
+        } else {
+          reject(result.message || "Failed to approve request");
         }
-      );
-
-      // With axios, response.data contains the parsed JSON
-      const { success, message } = response.data;
-
-      if (success) {
-        toast.success(message || "Request approved successfully!");
-        setSelectedApproval(null);
-        setRemarks("");
-        fetchApprovals();
-      } else {
-        toast.error(message || "Failed to approve request");
+      } catch (err) {
+        console.error("Approve error:", err);
+        reject("Error approving request");
       }
-    } catch (err) {
-      console.error("Approve error:", err);
+    });
 
-      // Enhanced error handling
-      if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
-      } else if (err.response?.status === 403) {
-        toast.error("You don't have permission to approve this request");
-      } else if (err.request) {
-        toast.error("Network error - please check your connection");
-      } else {
-        toast.error("Error approving request");
-      }
-    }
+    toast.promise(updatePromise, {
+      loading: "Approving request...",
+      success: (message) => message,
+      error: (err) => err,
+    });
   };
 
   // ✅ Filtering + Pagination
@@ -415,8 +372,9 @@ function RejectedApprovals() {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
           />
         </div>
+
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData} // CHANGE from fetchApprovals to fetchData
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >

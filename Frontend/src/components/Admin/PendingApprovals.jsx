@@ -20,13 +20,12 @@ import {
 } from "docx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import useApprovalsStore from "../../store/approvalsStore";
 import toast from "react-hot-toast";
-import ENV from "../../env";
-import axios from "axios";
 
-function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+import ENV from "../../env";
+
+function PendingApprovals({ title, subtitle, updateUrl }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -39,6 +38,14 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const staffEmail = localStorage.getItem("email");
+
+  const { approvalsData, loadingStates, fetchApprovals, updateApproval } =
+    useApprovalsStore();
+
+  const approvals = approvalsData.pending;
+  const loading = loadingStates.pending;
 
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
@@ -56,49 +63,17 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     };
   }, []);
 
-  // ✅ Fetch approvals
-  const fetchApprovals = async () => {
+  // ✅ Fetch approvals using Zustand
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const response = await axios.get(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const { success, data, message } = response.data;
-
-      if (success) {
-        const approvals = data?.pendingApprovals || [];
-        setApprovals(approvals);
-
-        // Optional: Show success message if no approvals
-        if (approvals.length === 0) {
-          console.log("No pending approvals found");
-        }
-      } else {
-        console.error("Fetch error:", message);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error("Error fetching approvals:", err);
-
-      let errorMessage = "Failed to fetch approvals";
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.request) {
-        errorMessage = "Network error - please check your connection";
-      }
-
-      console.error(errorMessage);
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/pending-approvals` ||
+      "http://localhost:5000/departments/pending-approvals";
+    await fetchApprovals("pending", fetchUrl, token);
+    setRefreshing(false);
   };
-  useEffect(() => {
-    fetchApprovals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+
 
   // Export Functions
   const exportToExcel = () => {
@@ -271,7 +246,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     }
   };
 
-  // ✅ Update approval status
+  // ✅ Update approval status using Zustand
   const handleUpdateStatus = async () => {
     if (!status) {
       toast.error("Please select a status");
@@ -290,48 +265,27 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
     const updatePromise = new Promise(async (resolve, reject) => {
       try {
-        const response = await axios.post(
-          updateUrl,
-          {
-            approvalId: Number(selectedApproval.approvalId),
-            status,
-            remarks: finalRemarks,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const result = await updateApproval(updateUrl, token, {
+          approvalId: Number(selectedApproval.approvalId),
+          status,
+          remarks: finalRemarks,
+        });
 
-        // With axios, response.data contains the parsed JSON
-        const { success, message } = response.data;
-
-        if (success) {
+        if (result.success) {
           setSelectedApproval(null);
           setStatus("");
           setRemarks("");
           setPhone("");
           setEmail("");
-          fetchApprovals();
-          resolve(message || "Approval updated successfully");
+          // Refresh the data using Zustand
+          await fetchData();
+          resolve(result.message || "Approval updated successfully");
         } else {
-          reject(message || "Failed to update approval");
+          reject(result.message || "Failed to update approval");
         }
       } catch (err) {
         console.error("Error updating approval:", err);
-
-        // Enhanced error handling
-        if (err.response?.data?.message) {
-          reject(err.response.data.message);
-        } else if (err.response?.data?.error) {
-          reject(err.response.data.error);
-        } else if (err.request) {
-          reject("Network error - please check your connection");
-        } else {
-          reject("Error updating approval");
-        }
+        reject("Error updating approval");
       }
     });
 
@@ -430,7 +384,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
           />
         </div>
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData}
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >
@@ -683,7 +637,8 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                       type="text"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Enter phone number for follow-up"
+                      required
+                      placeholder="Enter your phone number for follow-up"
                       className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
@@ -693,11 +648,20 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                     </label>
                     <input
                       type="email"
-                      value={email}
+                      value={email || staffEmail} // Use manual email first, fallback to staffEmail
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter email for follow-up"
-                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
+                      placeholder={
+                        staffEmail
+                          ? `Default: ${staffEmail}`
+                          : "Enter email for follow-up"
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
+                    {staffEmail && !email && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Using default email. Type to override.
+                      </p>
+                    )}
                   </div>
                 </>
               )}
