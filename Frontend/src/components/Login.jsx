@@ -70,7 +70,7 @@ const Login = () => {
             localStorage.setItem("studentName", user.studentName);
           }
 
-          toast.success(response.data.message || "Login successful!");
+          toast.success(`Welcome ${user.studentName || "Student"}`);
           navigate("/student");
         } else {
           // Use message from sendResponse format

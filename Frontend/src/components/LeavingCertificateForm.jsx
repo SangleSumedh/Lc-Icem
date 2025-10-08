@@ -5,7 +5,6 @@ import { ChevronDown } from "lucide-react";
 
 // Import JSON data
 import religionsData from "../assets/religions.json";
-import castesData from "../assets/castes.json";
 import nationsData from "../assets/nations.json";
 
 const LeavingCertificateForm = ({
@@ -194,9 +193,21 @@ const LeavingCertificateForm = ({
   const handleFormSubmit = (e) => {
     e.preventDefault();
 
-    // Prepare data for backend - use custom values if "Other" is selected
+    // Validate custom inputs when "Other" is selected
+    if (formData.caste === "Other" && !formData.customReligion.trim()) {
+      alert("Please specify your religion");
+      return;
+    }
+
+    if (formData.subCaste === "Other" && !formData.customCaste.trim()) {
+      alert("Please specify your caste");
+      return;
+    }
+
+    // Prepare the final data with proper string values
     const submitData = {
       ...formData,
+      // Convert "Other" selections to actual custom values
       caste:
         formData.caste === "Other" ? formData.customReligion : formData.caste,
       subCaste:
@@ -205,8 +216,13 @@ const LeavingCertificateForm = ({
           : formData.subCaste,
     };
 
-    onSubmit(submitData);
+    // Remove the temporary custom fields since backend doesn't need them
+    const { customReligion, customCaste, ...finalData } = submitData;
+
+    console.log("Final data being sent:", finalData);
+    onSubmit(finalData);
   };
+
 
   // Prepare dropdown options from JSON data
   const religionOptions = [

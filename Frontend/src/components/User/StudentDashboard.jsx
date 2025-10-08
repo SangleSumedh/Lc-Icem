@@ -219,6 +219,12 @@ const StudentDashboard = () => {
       setShowRemarksDialog(true);
     }
   };
+  const statusPriority = {
+    REJECTED: 0, // show rejected first
+    REQUESTED_INFO: 1,
+    PENDING: 2,
+    APPROVED: 3,
+  };
 
   const closeRemarksDialog = () => {
     setShowRemarksDialog(false);
@@ -235,8 +241,40 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-center mt-2 md:mt-0 text-gray-800 mb-6">
+          LC Form Approval Status
+        </h2>
+
+        <div className="mb-3 p-2  w-full h-[20vh]"></div>
+
+        {/* Skeleton Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {[...Array(10)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 border-gray-200 animate-pulse min-h-[140px]"
+            >
+              {/* Department Icon Placeholder */}
+              <div className="mb-3 p-2 rounded-full bg-gray-200 w-12 h-12"></div>
+
+              {/* Department Name */}
+              <div className="h-4 w-3/4 bg-gray-200 rounded mb-3"></div>
+
+              {/* Status Row */}
+              <div className="flex items-center gap-2 mt-1">
+                <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </div>
+
+              {/* Optional Remarks Indicator */}
+              <div className="mt-2 h-3 w-24 bg-gray-200 rounded"></div>
+
+              {/* Date Placeholder */}
+              <div className="h-3 w-16 bg-gray-200 rounded mt-3"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -265,48 +303,80 @@ const StudentDashboard = () => {
     );
   }
 
-  const approvalsToRender = [...approvals];
+  const getRejectionNotice = (approval) => {
+    if (!approval || approval.status !== "REJECTED") return null;
+
+    const reason =
+      approval.remarks ||
+      "You may not be part of the organization, or there is some discrepancy.";
+
+    return `Your approval from Account Department has been rejected. Reason: ${reason}. Please contact the admin office or visit the college manually for assistance.`;
+  };
+
+  const rejectedApprovals = approvals.filter(
+    (approval) => approval.status === "REJECTED"
+  );
+
+  const approvalsToRender = [...approvals].sort((a, b) => {
+    return (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99);
+  });
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+    <div className="container mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-6">
+      <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
         LC Form Approval Status
       </h2>
 
-      {/* Approval Timeline Component */}
+      {/* Approval Timeline */}
       {!allApproved && <ApprovalTimeline approvals={approvals} />}
 
-      {/* LC Generated Card - Show when LC is actually generated */}
+      {rejectedApprovals.length > 0 && (
+        <div className="w-full sm:max-w-md mx-auto bg-rose-50 border-2 border-rose-300 rounded-lg p-5 shadow-md mb-6">
+          <h3 className="text-lg sm:text-xl font-semibold text-rose-600 mb-3 text-center">
+            Approval Rejected
+          </h3>
+          {rejectedApprovals.map((approval) => (
+            <p
+              key={approval.approvalId}
+              className="text-sm sm:text-base text-rose-700 text-center mb-2"
+            >
+              {getRejectionNotice(approval)}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* LC Generated Card */}
       {lcCard && (
-        <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all ">
-          <h3 className="text-lg font-semibold text-gray-800 mb-5 text-center">
+        <div className="w-full sm:max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-5 text-center">
             Your LC is Generated!
           </h3>
           <button
             onClick={() => window.open(lcCard.lcUrl, "_blank")}
-            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-[#004988] transition-colors"
+            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-[#004988] transition-colors w-full sm:w-auto"
           >
             Open LC
           </button>
-          <p className="text-xs text-gray-400 mt-2 text-center">
+          <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
             Generated on: {new Date(lcCard.updatedAt).toLocaleDateString()}
           </p>
         </div>
       )}
 
-      {/* LC Being Generated Card - Show when all approved but LC not generated yet */}
+      {/* LC Being Generated Card */}
       {allApproved && !lcCard && (
-        <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+        <div className="w-full sm:max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 text-center">
             Your LC is Being Generated!
           </h3>
-          <p className="text-sm text-gray-600 text-center mb-3">
+          <p className="text-sm sm:text-base text-gray-600 text-center mb-3">
             All departments have approved. Your LC will be available shortly.
           </p>
-          <div className="px-4 py-2 bg-blue-500 text-white rounded cursor-not-allowed opacity-75">
+          <div className="px-4 py-2 bg-blue-500 text-white rounded cursor-not-allowed opacity-75 w-full sm:w-auto text-center">
             Generating LC...
           </div>
-          <p className="text-xs text-gray-400 mt-2 text-center">
+          <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
             Please check back later
           </p>
         </div>
@@ -314,14 +384,14 @@ const StudentDashboard = () => {
 
       {/* Approvals Grid */}
       {approvals && approvalsToRender.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {approvalsToRender.reverse().map((approval) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
+          {approvalsToRender.map((approval) => {
             const hasRemarks =
               approval.remarks && approval.status === "REQUESTED_INFO";
             return (
               <div
                 key={approval.approvalId}
-                className={`bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 hover:shadow-lg transition-all duration-200 min-h-[140px] relative group ${
+                className={`bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 hover:shadow-lg transition-all duration-200 min-h-[160px] relative group ${
                   hasRemarks
                     ? "border-orange-300 bg-orange-50 hover:bg-orange-100"
                     : "border-gray-200 hover:border-gray-300"
@@ -345,14 +415,14 @@ const StudentDashboard = () => {
                   {getDepartmentIcon(approval.department.deptName)}
                 </div>
 
-                <h3 className="text-sm font-semibold text-gray-800 text-center mb-2 leading-tight">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 text-center mb-2 leading-tight break-words">
                   {approval.department.deptName}
                 </h3>
 
                 <div className="flex items-center gap-2 mt-1">
                   {renderStatusIcon(approval.status)}
                   <span
-                    className={`text-sm font-medium ${getStatusColor(
+                    className={`text-sm sm:text-base font-medium ${getStatusColor(
                       approval.status
                     )}`}
                   >
@@ -362,14 +432,14 @@ const StudentDashboard = () => {
 
                 {hasRemarks && (
                   <div className="mt-2 text-center">
-                    <p className="text-xs text-orange-600 font-medium">
+                    <p className="text-xs sm:text-sm text-orange-600 font-medium">
                       Click icon for details
                     </p>
                   </div>
                 )}
 
                 {approval.updatedAt && (
-                  <p className="text-xs text-gray-400 mt-2 text-center">
+                  <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
                     {new Date(approval.updatedAt).toLocaleDateString()}
                   </p>
                 )}

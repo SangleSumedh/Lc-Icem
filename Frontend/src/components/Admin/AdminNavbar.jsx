@@ -12,16 +12,19 @@ function AdminNavbar() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const staffName = localStorage.getItem("staffName");
+    const studentName = localStorage.getItem("studentName");
+
     if (token) {
       try {
         const decoded = jwtDecode(token); // ✅ Clean usage without .default
 
         if (decoded.role === "student") {
-          setDisplayName("Student");
+          setDisplayName(studentName || "Student");
         } else if (decoded.role === "superadmin") {
-          setDisplayName("Super Admin");
+          setDisplayName("Admin");
         } else if (decoded.role === "department") {
-          setDisplayName(decoded.deptName || "Department");
+          setDisplayName(staffName || "Department");
         } else {
           setDisplayName("User");
         }
@@ -33,8 +36,14 @@ function AdminNavbar() {
   }, []);
 
   const handleLogout = () => {
+    const role = localStorage.getItem("role"); // assuming role is stored in localStorage
     localStorage.clear();
-    navigate("/");
+
+    if (role === "department" || role === "superadmin") {
+      navigate("/admin-login");
+    } else {
+      navigate("/");
+    }
   };
 
   const goToProfile = () => {

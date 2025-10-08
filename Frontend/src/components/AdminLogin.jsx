@@ -130,7 +130,7 @@ const AdminLogin = () => {
               localStorage.setItem("username", user.username || "");
               localStorage.setItem("email", user.email || "");
             }
-            toast.success(response.data.message || "Admin login successful!");
+            toast.success( "Admin login successful!");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
             // Store department staff data
@@ -151,7 +151,7 @@ const AdminLogin = () => {
 
             const slug = slugify(deptName);
             toast.success(
-              response.data.message || `Welcome ${deptName} Department!`
+              `Welcome ${user.name || decoded.name || deptName + "Department"} `
             );
             navigate(`/admin-dashboard/${slug}`);
           }

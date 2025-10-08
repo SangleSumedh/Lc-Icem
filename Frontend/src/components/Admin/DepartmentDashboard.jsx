@@ -1,7 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiClipboard, FiCheckCircle, FiInfo } from "react-icons/fi";
+import { FiClipboard, FiCheckCircle, FiInfo, FiXCircle } from "react-icons/fi";
 import RegistrarPendingLCs from "./RegistrarPendingLCs";
 import ENV from "../../env.js";
 
@@ -11,6 +11,7 @@ const ApprovedApprovalRequests = lazy(() =>
   import("./ApprovedApprovalRequests")
 );
 const RequestedInfo = lazy(() => import("./RequestedInfoApprovals"));
+const RejectedApprovals = lazy(() => import("./RejectedApprovals"));
 
 // Utility to deslugify
 const deslugify = (slug) =>
@@ -20,6 +21,7 @@ const DepartmentDashboard = () => {
   const { deptKey } = useParams();
   const [deptName, setDeptName] = useState("");
   const [isRegistrar, setIsRegistrar] = useState(false);
+  const [isAccountDept, setIsAccountDept] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
@@ -27,13 +29,23 @@ const DepartmentDashboard = () => {
     const name = stored || deslugify(deptKey);
     setDeptName(name);
     setIsRegistrar(name.toLowerCase() === "registrar");
+    setIsAccountDept(name.toLowerCase().includes("account"));
   }, [deptKey]);
 
-  const tabs = [
+  // Base tabs for all departments
+  const baseTabs = [
     { id: "pending", label: "Pending", icon: FiClipboard, color: "red" },
     { id: "requested", label: "Requested Info", icon: FiInfo, color: "blue" },
     { id: "approved", label: "Approved", icon: FiCheckCircle, color: "green" },
   ];
+
+  // Add rejected tab only for Account Department
+  const accountTabs = [
+    ...baseTabs,
+    { id: "rejected", label: "Rejected", icon: FiXCircle, color: "orange" },
+  ];
+
+  const tabs = isAccountDept ? accountTabs : baseTabs;
 
   const getColorClasses = (color) => {
     const colors = {
@@ -55,6 +67,12 @@ const DepartmentDashboard = () => {
         text: "text-rose-600",
         dark: "bg-rose-500",
       },
+      orange: {
+        bg: "bg-orange-50",
+        border: "border-orange-200",
+        text: "text-orange-600",
+        dark: "bg-orange-500",
+      },
     };
     return colors[color] || colors.blue;
   };
@@ -69,7 +87,11 @@ const DepartmentDashboard = () => {
     requested:
       `${ENV.BASE_URL}/departments/requests/infos` ||
       "http://localhost:5000/departments/requests/info",
+    rejected:
+      `${ENV.BASE_URL}/departments/approvals/rejected` ||
+      "http://localhost:5000/departments/approvals/rejected",
   };
+
   const updateUrl =
     `${ENV.BASE_URL}/departments/update-status` ||
     "http://localhost:5000/departments/update-status";
@@ -89,7 +111,7 @@ const DepartmentDashboard = () => {
       <div className="space-y-6">
         {/* Navigation */}
         <div className="px-6">
-          <div className="flex space-x-2  rounded-xl p-1 backdrop-blur-sm">
+          <div className="flex space-x-2 rounded-xl p-1 backdrop-blur-sm">
             {tabs.map((tab) => {
               const colorClass = getColorClasses(tab.color);
               return (
@@ -142,11 +164,22 @@ const DepartmentDashboard = () => {
                   fetchUrl={fetchUrls.requested}
                 />
               )}
+
               {activeTab === "approved" && (
                 <ApprovedApprovalRequests
                   title={`${deptName} - Approved Requests`}
                   subtitle={`Approved Requests for ${deptName}`}
                   fetchUrl={fetchUrls.approved}
+                />
+              )}
+
+              {/* Only show RejectedApprovals for Account Department */}
+              {activeTab === "rejected" && isAccountDept && (
+                <RejectedApprovals
+                  title={`${deptName} - Rejected Requests`}
+                  subtitle={`Rejected Requests for ${deptName}`}
+                  fetchUrl={fetchUrls.rejected}
+                  updateUrl={updateUrl}
                 />
               )}
             </Suspense>
@@ -156,11 +189,7 @@ const DepartmentDashboard = () => {
     );
   };
 
-  return (
-    <main className="min-h-screen bg-white p-6">
-      {renderContent()}
-    </main>
-  );
+  return <main className="min-h-screen bg-white p-6">{renderContent()}</main>;
 };
 
 export default DepartmentDashboard;

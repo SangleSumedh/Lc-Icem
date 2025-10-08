@@ -21,7 +21,7 @@ function Admin() {
 
         {/* Main Content (scrollable) */}
         <main
-          className={`${collapsed ? "ml-20" : "ml-64"} flex-1 overflow-y-auto p-6 transition-all duration-300`}
+          className={`${collapsed ? " md:ml-20" : "md:ml-64"} flex-1 overflow-y-auto p-6 transition-all duration-300`}
         >
           <Outlet />
         </main>

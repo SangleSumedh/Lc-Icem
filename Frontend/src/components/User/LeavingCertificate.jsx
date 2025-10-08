@@ -288,18 +288,43 @@ const LeavingCertificate = () => {
     setFormData(originalFormData);
   };
 
-  if (checkingStatus) {
-    return (
-      <div className="flex items-center h-[90vh] justify-center ">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+ if (checkingStatus) {
+   return (
+     <div className="flex flex-col w-full h-full p-6 space-y-6 overflow-y-auto animate-pulse">
+       {/* Page Title Skeleton */}
+       <div className="h-8 w-2/5 bg-gray-300 rounded-lg mb-4"></div>
+
+       {/* Instruction Card Skeleton */}
+       <div className="bg-white border border-gray-200 rounded-xl shadow-md p-6 space-y-3">
+         <div className="h-5 w-1/3 bg-gray-300 rounded"></div>
+         <ul className="space-y-2 mt-3">
+           {[...Array(4)].map((_, i) => (
+             <li key={i} className="h-4 w-full bg-gray-200 rounded"></li>
+           ))}
+         </ul>
+       </div>
+
+       {/* Submitted Status Card Skeleton */}
+       <div className="bg-white border border-gray-200 rounded-xl shadow-md p-6">
+         <div className="flex items-center gap-2 mb-3">
+           <div className="h-5 w-5 bg-gray-300 rounded-full"></div>
+           <div className="h-5 w-1/4 bg-gray-300 rounded"></div>
+         </div>
+         <div className="h-4 w-3/4 bg-gray-200 rounded mb-2"></div>
+         <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+       </div>
+
+       {/* CTA Button Skeleton */}
+       <div className="h-10 w-40 bg-gray-300 rounded-xl shadow"></div>
+     </div>
+   );
+ }
+
 
   return (
     <div className="flex flex-col w-full h-full p-6 space-y-6 overflow-y-auto">
       {/* Page Title */}
-      <h1 className="text-3xl font-bold text-[#00539C]">
+      <h1 className="text-2xl sm:text-3xl text-center md:text-left text-nowrap font-bold text-[#00539C]">
         Leaving Certificate Dashboard
       </h1>
 
