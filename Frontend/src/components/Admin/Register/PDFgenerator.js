@@ -30,11 +30,10 @@ export const generatePDF = (studentData, formData) => {
   const margin = 15;
 
   // ==== Check for Migration Flag ====
-  const isMigration =
-    studentData?.forMigrationFlag || formData?.forMigrationFlag;
+  const isMigration = formData?.forMigrationFlag;
   const certificateTitle = isMigration
-    ? "TRANSFER CERTIFICATE"
-    : "MIGRATION CERTIFICATE";
+    ? "MIGRATION CERTIFICATE"
+    : "TRANSFER CERTIFICATE";
 
   // ==== HEADER ====
   // Logo (top right)
@@ -170,6 +169,20 @@ export const generatePDF = (studentData, formData) => {
     align: "center",
   });
 
+  const getAdmissionModeDisplay = (mode) => {
+    if (!mode) return "";
+
+    const modeUpper = mode.toUpperCase();
+    switch (modeUpper) {
+      case "FIRSTYEAR":
+        return "FIRST-YEAR";
+      case "DIRECTSECONDYEAR":
+        return "DSE";
+      default:
+        return modeUpper; // MBA, MCA stay as is
+    }
+  };
+
   // ==== TABLE ====
   const tableColumns = ["", "", ""];
   const tableRows = [
@@ -199,7 +212,7 @@ export const generatePDF = (studentData, formData) => {
     [
       "13",
       "Year in which studying & since when",
-      `${(formData.admissionMode || "").toUpperCase()} ${(
+      `${getAdmissionModeDisplay(formData.admissionMode)} ${(
         formData.branch || ""
       ).toUpperCase()}  ${formData.yearOfAdmission || ""}`,
     ],
