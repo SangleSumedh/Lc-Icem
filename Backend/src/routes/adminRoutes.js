@@ -24,6 +24,8 @@ import {
   getStaffById,
   updateStaff,
   deleteStaff,
+  // 🔹 Staff Logs
+  getStaffLoginLogs,
 } from "../controllers/Admin.Controller.js";
 
 const router = Router();
@@ -86,5 +88,13 @@ router.delete(
   verifyToken(["superadmin"]),
   deleteStaff
 );
+
+/* 
+================================
+   📌 Staff Login Logs Route
+================================
+ */
+router.get("/staff-login-logs", verifyToken(["superadmin"]), getStaffLoginLogs);
+
 
 export default router;

@@ -6,6 +6,7 @@ import {
   superAdminLogin,
   changeStaffPassword,
   changeStudentPassword,
+  changeSuperAdminPassword,
 } from "../controllers/Auth.Controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
@@ -33,7 +34,7 @@ router.post("/admin/login", superAdminLogin);
 router.post(
   "/admin/change-password",
   verifyToken(["superadmin"]),
-  changeStaffPassword
+  changeSuperAdminPassword
 );
 
 export default router;

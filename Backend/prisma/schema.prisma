@@ -16,6 +16,7 @@ model Student {
   college     College           @default(ICEM)
   approvals   ApprovalRequest[]
   profile     StudentProfile?
+  tickets     Ticket[]
 }
 
 model StudentProfile {
@@ -31,7 +32,7 @@ model StudentProfile {
   dateOfBirth        DateTime?
   dobWords           String?
   lastCollege        String?
-  yearOfAdmission    Int?          
+  yearOfAdmission    Int?
   branch             String?
   admissionMode      AdmissionMode
   reasonForLeaving   String?
@@ -47,7 +48,6 @@ model StudentProfile {
   deletedRequests    Boolean       @default(false)
   student            Student       @relation(fields: [prn], references: [prn])
 }
-
 
 model Department {
   deptId           Int               @id @default(autoincrement())
@@ -70,7 +70,6 @@ model Staff {
   createdRequests  ApprovalRequest[] @relation("StaffRequests")
   headedDepartment Department?       @relation("DepartmentHead")
   department       Department        @relation(fields: [deptId], references: [deptId])
-  
 }
 
 model StaffLoginLog {
@@ -82,7 +81,6 @@ model StaffLoginLog {
   userAgent String?
 }
 
-
 model ApprovalRequest {
   approvalId       Int              @id @default(autoincrement())
   deptId           Int
@@ -92,7 +90,7 @@ model ApprovalRequest {
   deptName         String?
   branch           String?
   studentName      String?
-  yearOfAdmission  Int?             
+  yearOfAdmission  Int?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   studentPrn       String
@@ -128,6 +126,30 @@ model SuperAdmin {
   @@map("SuperAdmin")
 }
 
+model Ticket {
+  id           Int     @id @default(autoincrement())
+  ticketId     String  @unique // TKT-1234567890
+  subject      String
+  description  String
+  category     String
+  department   String // Department name from your API
+  contactEmail String
+  contactPhone String?
+  relatedTo    String?
+  status       Status  @default(OPEN)
+
+  // Student reference (if logged in)
+  studentPrn String?
+  student    Student? @relation(fields: [studentPrn], references: [prn])
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+
+  @@map("tickets")
+}
+
 enum AdmissionMode {
   FIRSTYEAR
   DIRECTSECONDYEAR
@@ -154,4 +176,11 @@ enum College {
   ICEM
   IGSB
   ALL
+}
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

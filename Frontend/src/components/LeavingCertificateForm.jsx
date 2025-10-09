@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { ChevronDown } from "lucide-react";
+
+// Import JSON data
+import religionsData from "../assets/religions.json";
+import nationsData from "../assets/nations.json";
 
 const LeavingCertificateForm = ({
   showModal,
@@ -20,8 +24,8 @@ const LeavingCertificateForm = ({
     studentID: "",
     fatherName: "",
     motherName: "",
-    caste: "",
-    subCaste: "",
+    caste: "", // Will store religion
+    subCaste: "", // Will store caste
     nationality: "",
     placeOfBirth: "",
     dateOfBirth: "",
@@ -32,18 +36,184 @@ const LeavingCertificateForm = ({
     branch: "",
     admissionMode: "",
     reasonForLeaving: "",
-    forMigrationFlag: false, // Added migration flag
+    forMigrationFlag: false,
+    customReligion: "",
+    customCaste: "",
     ...initialFormData,
   });
 
   const [dropdownOpen, setDropdownOpen] = useState({});
+  const [filteredCastes, setFilteredCastes] = useState([]);
+
+  // Function to convert date to words
+  const convertDateToWords = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    const dayWords = [
+      "",
+      "First",
+      "Second",
+      "Third",
+      "Fourth",
+      "Fifth",
+      "Sixth",
+      "Seventh",
+      "Eighth",
+      "Ninth",
+      "Tenth",
+      "Eleventh",
+      "Twelfth",
+      "Thirteenth",
+      "Fourteenth",
+      "Fifteenth",
+      "Sixteenth",
+      "Seventeenth",
+      "Eighteenth",
+      "Nineteenth",
+      "Twentieth",
+      "Twenty First",
+      "Twenty Second",
+      "Twenty Third",
+      "Twenty Fourth",
+      "Twenty Fifth",
+      "Twenty Sixth",
+      "Twenty Seventh",
+      "Twenty Eighth",
+      "Twenty Ninth",
+      "Thirtieth",
+      "Thirty First",
+    ];
+
+    const numberToWords = (num) => {
+      const ones = [
+        "",
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine",
+        "Ten",
+        "Eleven",
+        "Twelve",
+        "Thirteen",
+        "Fourteen",
+        "Fifteen",
+        "Sixteen",
+        "Seventeen",
+        "Eighteen",
+        "Nineteen",
+      ];
+      const tens = [
+        "",
+        "",
+        "Twenty",
+        "Thirty",
+        "Forty",
+        "Fifty",
+        "Sixty",
+        "Seventy",
+        "Eighty",
+        "Ninety",
+      ];
+
+      if (num < 20) return ones[num];
+      if (num < 100)
+        return (
+          tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "")
+        );
+      if (num < 1000)
+        return (
+          ones[Math.floor(num / 100)] +
+          " Hundred" +
+          (num % 100 ? " " + numberToWords(num % 100) : "")
+        );
+      if (num < 1000000)
+        return (
+          numberToWords(Math.floor(num / 1000)) +
+          " Thousand" +
+          (num % 1000 ? " " + numberToWords(num % 1000) : "")
+        );
+      return num.toString(); // fallback for large numbers
+    };
+
+    // Split year into parts for readability
+    const yearInWords = (() => {
+      if (year === 2000) return "Two Thousand";
+      if (year > 2000 && year < 2010)
+        return "Two Thousand " + numberToWords(year % 100);
+      if (year >= 2010 && year < 2100)
+        return "Two Thousand " + numberToWords(year % 100);
+      if (year < 2000) return numberToWords(year);
+      return numberToWords(year);
+    })();
+
+    return `${dayWords[day]} ${month} ${yearInWords}`;
+  };
+
+  // Auto-update DOB words when date changes
+  useEffect(() => {
+    if (formData.dateOfBirth && !viewMode && !editMode) {
+      const dobWords = convertDateToWords(formData.dateOfBirth);
+      setFormData((prev) => ({ ...prev, dobWords }));
+    }
+  }, [formData.dateOfBirth, viewMode, editMode]);
+
+  // Filter castes based on selected religion
+  useEffect(() => {
+    if (formData.caste && formData.caste !== "Other") {
+      const religion = religionsData.religions.find(
+        (r) => r.religion === formData.caste
+      );
+      setFilteredCastes(religion?.castes || []);
+    } else {
+      setFilteredCastes([]);
+    }
+  }, [formData.caste]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ 
-      ...formData, 
-      [name]: type === 'checkbox' ? checked : value 
-    });
+
+    if (name === "caste") {
+      // Reset caste when religion changes
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCaste: "",
+        customReligion: "",
+        customCaste: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === "checkbox" ? checked : value,
+      });
+    }
   };
 
   const toggleDropdown = (field) =>
@@ -54,12 +224,12 @@ const LeavingCertificateForm = ({
     name,
     value,
     options,
-    required,
+    required = false,
     disabled,
   }) => (
     <div className="relative w-full">
-      <label className="block text-sm font-medium text-gray-700 mb-0.5">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block text-sm font-medium text-gray-700 mb-0.5 text-nowrap">
+        {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <div
         onClick={() => !disabled && !viewMode && toggleDropdown(name)}
@@ -70,10 +240,8 @@ const LeavingCertificateForm = ({
         <span
           className={value ? "text-gray-800 text-sm" : "text-gray-400 text-sm"}
         >
-          {branchesLoading
-            ? "Loading..."
-            : options.length === 0
-            ? "No branches available"
+          {options.length === 0
+            ? "No options available"
             : value
             ? options.find((opt) => opt.value === value)?.label
             : "Select option"}
@@ -84,8 +252,8 @@ const LeavingCertificateForm = ({
           }`}
         />
       </div>
-      {dropdownOpen[name] && !disabled && !branchesLoading && !viewMode && (
-        <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
+      {dropdownOpen[name] && !disabled && !viewMode && (
+        <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-60 overflow-y-auto">
           {options.length > 0 ? (
             options.map((opt) => (
               <div
@@ -101,7 +269,7 @@ const LeavingCertificateForm = ({
             ))
           ) : (
             <div className="px-3 py-2 text-sm text-gray-500">
-              No branches available
+              No options available
             </div>
           )}
         </div>
@@ -111,8 +279,65 @@ const LeavingCertificateForm = ({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Validate custom inputs when "Other" is selected
+    if (formData.caste === "Other" && !formData.customReligion.trim()) {
+      alert("Please specify your religion");
+      return;
+    }
+
+    if (formData.subCaste === "Other" && !formData.customCaste.trim()) {
+      alert("Please specify your caste");
+      return;
+    }
+
+    // Prepare the final data with proper string values
+    const submitData = {
+      ...formData,
+      // Convert "Other" selections to actual custom values
+      caste:
+        formData.caste === "Other" ? formData.customReligion : formData.caste,
+      subCaste:
+        formData.subCaste === "Other"
+          ? formData.customCaste
+          : formData.subCaste,
+    };
+
+    // Remove the temporary custom fields since backend doesn't need them
+    const { customReligion, customCaste, ...finalData } = submitData;
+
+    console.log("Final data being sent:", finalData);
+    onSubmit(finalData);
   };
+
+  // Prepare dropdown options from JSON data
+  const religionOptions = [
+    ...religionsData.religions.map((religion) => ({
+      value: religion.religion,
+      label: religion.religion,
+    })),
+    { value: "Other", label: "Other" },
+  ];
+
+  const casteOptions = [
+    ...filteredCastes.map((caste) => ({
+      value: caste,
+      label: caste,
+    })),
+    { value: "Other", label: "Other" },
+  ];
+
+  const nationalityOptions = nationsData.nations.map((nation) => ({
+    value: nation,
+    label: nation,
+  }));
+
+  const admissionModeOptions = [
+    { value: "FIRSTYEAR", label: "First Year" },
+    { value: "DIRECTSECONDYEAR", label: "Direct Second Year" },
+    { value: "MBA", label: "MBA" },
+    { value: "MCA", label: "MCA" },
+  ];
 
   if (!showModal) return null;
 
@@ -120,7 +345,7 @@ const LeavingCertificateForm = ({
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+        <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-white">
             {viewMode
               ? "View LC Form"
@@ -141,7 +366,7 @@ const LeavingCertificateForm = ({
           {/* Personal Details */}
           <div>
             <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-              <UserCircleIcon className="h-5 w-5 text-blue-600" /> Personal
+              <UserCircleIcon className="h-5 w-5 text-[#00539C]" /> Personal
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
@@ -149,7 +374,7 @@ const LeavingCertificateForm = ({
               {/* Student Name */}
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Student Full Name <span className="text-red-500">*</span>
+                  Student Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -165,13 +390,27 @@ const LeavingCertificateForm = ({
                 />
               </div>
 
+              {/* Student ID */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Student ID
+                </label>
+                <input
+                  type="text"
+                  name="studentID"
+                  value={formData.studentID}
+                  onChange={handleChange}
+                  disabled={viewMode}
+                  readOnly={viewMode}
+                  maxLength={8}
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
               {[
-                { label: "Student ID", name: "studentID", required: false },
                 { label: "Father's Name", name: "fatherName", required: true },
                 { label: "Mother's Name", name: "motherName", required: true },
-                { label: "Caste", name: "caste", required: true },
-                { label: "Sub-Caste", name: "subCaste", required: true },
-                { label: "Nationality", name: "nationality", required: true },
                 {
                   label: "Place of Birth",
                   name: "placeOfBirth",
@@ -183,12 +422,11 @@ const LeavingCertificateForm = ({
                   type: "date",
                   required: true,
                 },
-                { label: "DOB (in words)", name: "dobWords", required: true },
               ].map((field, idx) => (
                 <div key={idx} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     {field.label}{" "}
-                    {field.required && <span className="text-red-500">*</span>}
+                    {field.required && <span className="text-rose-500">*</span>}
                   </label>
                   <input
                     type={field.type || "text"}
@@ -204,54 +442,172 @@ const LeavingCertificateForm = ({
                   />
                 </div>
               ))}
+
+              {/* DOB in Words (Auto-generated) */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  DOB (in words) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="dobWords"
+                  value={formData.dobWords}
+                  onChange={handleChange}
+                  required={!viewMode}
+                  disabled={viewMode}
+                  readOnly
+                  placeholder="Auto-generated from date of birth"
+                  className={`border p-2 rounded-lg w-full ${
+                    viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50"
+                  }`}
+                />
+                {!viewMode && formData.dateOfBirth && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Auto-generated from selected date
+                  </p>
+                )}
+              </div>
+
+              {/* Religion Dropdown (stored in caste field) */}
+              <div className="space-y-1">
+                <CustomDropdown
+                  label="Religion"
+                  name="caste"
+                  value={formData.caste}
+                  options={religionOptions}
+                  required={true}
+                  disabled={viewMode}
+                />
+                {/* Custom Religion Input */}
+                {formData.caste === "Other" && !viewMode && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="customReligion"
+                      placeholder="Specify your religion"
+                      value={formData.customReligion}
+                      onChange={handleChange}
+                      className="border p-2 rounded-lg w-full"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Caste Dropdown (stored in subCaste field) */}
+              <div className="space-y-1">
+                <CustomDropdown
+                  label="Caste"
+                  name="subCaste"
+                  value={formData.subCaste}
+                  options={casteOptions}
+                  required={true}
+                  disabled={viewMode || !formData.caste}
+                />
+                {/* Custom Caste Input */}
+                {formData.subCaste === "Other" && !viewMode && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="customCaste"
+                      placeholder="Specify your caste"
+                      value={formData.customCaste}
+                      onChange={handleChange}
+                      className="border p-2 rounded-lg w-full"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Nationality Dropdown */}
+              <div className="space-y-1">
+                <CustomDropdown
+                  label="Nationality"
+                  name="nationality"
+                  value={formData.nationality}
+                  options={nationalityOptions}
+                  required={true}
+                  disabled={viewMode}
+                />
+              </div>
             </div>
           </div>
 
           {/* College Details */}
           <div>
             <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-              <AcademicCapIcon className="h-5 w-5 text-blue-600" /> College
+              <AcademicCapIcon className="h-5 w-5 text-[#00539C]" /> College
               Details
             </h3>
             <hr className="border-gray-300 my-2" />
-            
-            {/* Migration Flag - Added this section */}
+
+            {/* Certificate Type - Radio Buttons */}
             <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="forMigrationFlag"
-                  name="forMigrationFlag"
-                  checked={formData.forMigrationFlag}
-                  onChange={handleChange}
-                  disabled={viewMode}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <label 
-                  htmlFor="forMigrationFlag" 
-                  className="text-sm font-medium text-gray-700"
-                >
-                  This is a Migration Certificate
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Certificate Type
+              </label>
+              <div className="flex items-center space-x-6">
+                {/* Transfer Certificate */}
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="certificateType"
+                    value="transfer"
+                    checked={!formData.forMigrationFlag}
+                    onChange={() =>
+                      !viewMode &&
+                      setFormData({ ...formData, forMigrationFlag: false })
+                    }
+                    disabled={viewMode}
+                    className="h-4 w-4 text-[#00539C] focus:ring-1 focus:ring-gray-400 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Transfer Certificate
+                  </span>
+                </label>
+
+                {/* Migration Certificate */}
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="certificateType"
+                    value="migration"
+                    checked={formData.forMigrationFlag}
+                    onChange={() =>
+                      !viewMode &&
+                      setFormData({ ...formData, forMigrationFlag: true })
+                    }
+                    disabled={viewMode}
+                    className="h-4 w-4 text-[#00539C] focus:ring-1 focus:ring-gray-400 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Migration Certificate
+                  </span>
                 </label>
               </div>
-              <p className="text-xs text-gray-600 mt-1 ml-7">
-                Check this box if you need a Migration Certificate instead of a regular Leaving Certificate
+              <p className="text-xs text-gray-600 mt-2">
+                Selecting "Migration Certificate" will request a migration
+                certificate instead of a regular leaving certificate.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Branch Dropdown */}
               <CustomDropdown
                 label="Branch"
                 name="branch"
-                required
                 value={formData.branch}
                 options={branches}
-                disabled={viewMode}
+                required={true}
+                disabled={viewMode || branchesLoading}
               />
 
+              {/* Year of Admission */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Year of Admission <span className="text-red-500">*</span>
+                  Year of Admission (only year){" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -261,37 +617,37 @@ const LeavingCertificateForm = ({
                   required={!viewMode}
                   disabled={viewMode}
                   readOnly={viewMode}
+                  placeholder="2022"
+                  min="2000"
+                  max="2030"
                   className={`border p-2 rounded-lg w-full ${
                     viewMode ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
                 />
               </div>
 
+              {/* Admission Mode Dropdown */}
               <CustomDropdown
-                label="Admission Mode"
+                label="Admission Type"
                 name="admissionMode"
-                required
                 value={formData.admissionMode}
-                options={[
-                  { value: "FIRSTYEAR", label: "First Year" },
-                  { value: "DIRECTSECONDYEAR", label: "Direct Second Year" },
-                  { value: "MBA", label: "MBA" },
-                  { value: "MCA", label: "MCA" },
-                ]}
+                options={admissionModeOptions}
+                required={true}
                 disabled={viewMode}
               />
             </div>
 
-            {/* Last College + Certificate Type */}
+            {/* Last College */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Last College Attended <span className="text-red-500">*</span>
+                  Last College Attended (College Name){" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="lastCollege"
-                  placeholder="Enter last college"
+                  placeholder="Ex: XYZ Junior college"
                   value={formData.lastCollege}
                   onChange={handleChange}
                   required={!viewMode}
@@ -304,26 +660,20 @@ const LeavingCertificateForm = ({
               </div>
             </div>
 
-            {/* Reason */}
+            {/* Reason for Leaving */}
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
                   Reason for Leaving College{" "}
-                  <span className="text-red-500">*</span>
+                  <span className="text-rose-500">*</span>
                 </label>
-                <span className="text-xs text-gray-500 italic ml-2">
-                  {formData.forMigrationFlag 
-                    ? "Note: This is a Migration Certificate application"
-                    : "Note: Mention the type of Leaving Certificate – Migration or Leaving / Transfer"
-                  }
-                </span>
               </div>
               <textarea
                 name="reasonForLeaving"
                 placeholder={
-                  formData.forMigrationFlag 
-                    ? "Mention your reason for migration(Course Name and year)" 
-                    : "Mention your reason for leaving(Course Name and year)"
+                  formData.forMigrationFlag
+                    ? "Mention your reason for migration (Course Name and year)"
+                    : "Mention your reason for leaving (Course Name and year)"
                 }
                 rows={3}
                 value={formData.reasonForLeaving}
@@ -344,7 +694,7 @@ const LeavingCertificateForm = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700"
               >
                 Close
               </button>
@@ -360,7 +710,7 @@ const LeavingCertificateForm = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? "Updating..." : "Update"}
                 </button>
@@ -377,7 +727,7 @@ const LeavingCertificateForm = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? "Submitting..." : "Submit"}
                 </button>

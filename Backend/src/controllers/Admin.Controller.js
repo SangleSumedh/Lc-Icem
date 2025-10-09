@@ -1,13 +1,8 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
-import { sendEmail } from "../utils/mailer.js";
-
-/**
- * Utility: Standard response
- */
-const sendResponse = (res, success, message, data = null, status = 200) => {
-  return res.status(status).json({ success, message, data });
-};
+import { sendEmail, emailTemplates } from "../utils/mailer.js";
+import { sendResponse } from "../utils/sendResponse.js";
+import { handlePrismaError } from "../utils/handlePrismaError.js";
 
 /* ================================
    📌 SuperAdmin CRUD
@@ -17,27 +12,81 @@ const sendResponse = (res, success, message, data = null, status = 200) => {
 export const addSuperAdmin = async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password)
+
+    // Validate required fields
+    if (!username || !email || !password) {
       return sendResponse(res, false, "All fields are required", null, 400);
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return sendResponse(
+        res,
+        false,
+        "Please provide a valid email address",
+        null,
+        400
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return sendResponse(
+        res,
+        false,
+        "Password must be at least 6 characters long",
+        null,
+        400
+      );
+    }
+
+    // Validate username
+    if (username.length < 3) {
+      return sendResponse(
+        res,
+        false,
+        "Username must be at least 3 characters long",
+        null,
+        400
+      );
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const superAdmin = await prisma.superAdmin.create({
-      data: { username, email, password: hashedPassword },
-      select: { id: true, username: true, email: true },
+      data: {
+        username: username.trim(),
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        createdAt: true,
+      },
     });
 
-    console.log(`✅ SuperAdmin created: ${username}`);
+    console.log(`✅ SuperAdmin created: ${username} (${email})`);
+
     return sendResponse(
       res,
       true,
-      "SuperAdmin created successfully",
-      superAdmin
+      "Super admin created successfully",
+      superAdmin,
+      201
     );
   } catch (err) {
-    if (err.code === "P2002")
-      return sendResponse(res, false, "Email already exists", null, 400);
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Add super admin error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "create_super_admin",
+      email: req.body.email,
+      username: req.body.username,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -47,28 +96,145 @@ export const updateSuperAdmin = async (req, res) => {
     const { id } = req.params;
     const { username, email, password } = req.body;
 
-    const data = {};
-    if (username) data.username = username;
-    if (email) data.email = email;
-    if (password) data.password = await bcrypt.hash(password, 10);
+    // Validate ID parameter
+    if (!id || isNaN(parseInt(id))) {
+      return sendResponse(
+        res,
+        false,
+        "Valid super admin ID is required",
+        null,
+        400
+      );
+    }
 
-    const superAdmin = await prisma.superAdmin.update({
-      where: { id: parseInt(id) },
-      data,
-      select: { id: true, username: true, email: true },
+    const adminId = parseInt(id);
+
+    // Check if at least one field is provided for update
+    if (!username && !email && !password) {
+      return sendResponse(
+        res,
+        false,
+        "At least one field (username, email, or password) is required for update",
+        null,
+        400
+      );
+    }
+
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return sendResponse(
+          res,
+          false,
+          "Please provide a valid email address",
+          null,
+          400
+        );
+      }
+    }
+
+    // Validate password strength if provided
+    if (password && password.length < 6) {
+      return sendResponse(
+        res,
+        false,
+        "Password must be at least 6 characters long",
+        null,
+        400
+      );
+    }
+
+    // Validate username if provided
+    if (username && username.length < 3) {
+      return sendResponse(
+        res,
+        false,
+        "Username must be at least 3 characters long",
+        null,
+        400
+      );
+    }
+
+    // Check if super admin exists before updating
+    const existingAdmin = await prisma.superAdmin.findUnique({
+      where: { id: adminId },
     });
 
-    console.log(`✅ SuperAdmin updated: ID ${id}`);
+    if (!existingAdmin) {
+      return sendResponse(res, false, "Super admin not found", null, 404);
+    }
+
+    // Check for duplicate email/username if they are being updated
+    if (email || username) {
+      const duplicateCondition = {
+        OR: [],
+        NOT: { id: adminId }, // Exclude current admin from duplicate check
+      };
+
+      if (email)
+        duplicateCondition.OR.push({ email: email.toLowerCase().trim() });
+      if (username) duplicateCondition.OR.push({ username: username.trim() });
+
+      const duplicateAdmin = await prisma.superAdmin.findFirst({
+        where: duplicateCondition,
+      });
+
+      if (duplicateAdmin) {
+        if (duplicateAdmin.email === email?.toLowerCase().trim()) {
+          return sendResponse(
+            res,
+            false,
+            "Email address already exists",
+            null,
+            409
+          );
+        }
+        if (duplicateAdmin.username === username?.trim()) {
+          return sendResponse(res, false, "Username already exists", null, 409);
+        }
+      }
+    }
+
+    // Prepare update data
+    const data = {};
+    if (username) data.username = username.trim();
+    if (email) data.email = email.toLowerCase().trim();
+    if (password) data.password = await bcrypt.hash(password, 10);
+    data.updatedAt = new Date();
+
+    const superAdmin = await prisma.superAdmin.update({
+      where: { id: adminId },
+      data,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        updatedAt: true,
+      },
+    });
+
+    console.log(
+      `✅ SuperAdmin updated: ID ${adminId} (${superAdmin.username})`
+    );
+
     return sendResponse(
       res,
       true,
-      "SuperAdmin updated successfully",
+      "Super admin updated successfully",
       superAdmin
     );
   } catch (err) {
-    if (err.code === "P2002")
-      return sendResponse(res, false, "Email already exists", null, 400);
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Update super admin error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "update_super_admin",
+      adminId: req.params.id,
+      attemptedEmail: req.body.email,
+      attemptedUsername: req.body.username,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -76,11 +242,80 @@ export const updateSuperAdmin = async (req, res) => {
 export const deleteSuperAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.superAdmin.delete({ where: { id: parseInt(id) } });
-    console.log(`🗑️ SuperAdmin deleted: ID ${id}`);
-    return sendResponse(res, true, "SuperAdmin deleted successfully");
+
+    // Validate ID parameter
+    if (!id || isNaN(parseInt(id))) {
+      return sendResponse(
+        res,
+        false,
+        "Valid super admin ID is required",
+        null,
+        400
+      );
+    }
+
+    const adminId = parseInt(id);
+
+    // Prevent deletion of the last super admin
+    const totalAdmins = await prisma.superAdmin.count();
+    if (totalAdmins <= 1) {
+      return sendResponse(
+        res,
+        false,
+        "Cannot delete the last super admin. At least one super admin must remain in the system.",
+        null,
+        400
+      );
+    }
+
+    // Check if super admin exists before attempting deletion
+    const existingAdmin = await prisma.superAdmin.findUnique({
+      where: { id: adminId },
+      select: { id: true, username: true, email: true },
+    });
+
+    if (!existingAdmin) {
+      return sendResponse(res, false, "Super admin not found", null, 404);
+    }
+
+    // Optional: Prevent self-deletion (if the authenticated user is deleting themselves)
+    const currentUserId = req.user?.id; // Assuming user info is in req.user
+    if (currentUserId && currentUserId === adminId) {
+      return sendResponse(
+        res,
+        false,
+        "You cannot delete your own account",
+        null,
+        400
+      );
+    }
+
+    // Perform the deletion
+    await prisma.superAdmin.delete({
+      where: { id: adminId },
+    });
+
+    console.log(
+      `🗑️ SuperAdmin deleted: ID ${adminId} (${existingAdmin.username})`
+    );
+
+    // Log the deletion activity for audit
+    console.log(
+      `📝 SuperAdmin deletion audit - ID: ${adminId}, Username: ${
+        existingAdmin.username
+      }, Email: ${existingAdmin.email}, Deleted at: ${new Date().toISOString()}`
+    );
+
+    return sendResponse(res, true, "Super admin deleted successfully");
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Delete super admin error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "delete_super_admin",
+      adminId: req.params.id,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -90,16 +325,25 @@ export const getSuperAdmins = async (req, res) => {
     const superAdmins = await prisma.superAdmin.findMany({
       select: { id: true, username: true, email: true },
     });
-    if (!superAdmins.length)
-      return sendResponse(res, false, "No SuperAdmins found", []);
+
+    if (!superAdmins.length) {
+      return sendResponse(res, true, "No super admins found", []);
+    }
+
     return sendResponse(
       res,
       true,
-      "SuperAdmins fetched successfully",
+      "Super admins fetched successfully",
       superAdmins
     );
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get super admins error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_super_admins",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -111,34 +355,135 @@ export const getSuperAdmins = async (req, res) => {
 export const addDepartment = async (req, res) => {
   try {
     const { deptName, deptHeadId, branchId, college } = req.body;
-    if (!deptName || !college)
+
+    // Validate required fields
+    if (!deptName || !college) {
       return sendResponse(
         res,
         false,
-        "deptName and college are required",
+        "Department name and college are required",
         null,
         400
       );
+    }
+
+    // Validate department name
+    if (deptName.trim().length < 2) {
+      return sendResponse(
+        res,
+        false,
+        "Department name must be at least 2 characters long",
+        null,
+        400
+      );
+    }
+
+    if (deptName.trim().length > 100) {
+      return sendResponse(
+        res,
+        false,
+        "Department name must be less than 100 characters",
+        null,
+        400
+      );
+    }
+
+    // Validate college
+    const validColleges = ["ICEM", "IGSB"];
+    if (!validColleges.includes(college)) {
+      return sendResponse(
+        res,
+        false,
+        `Invalid college. Must be one of: ${validColleges.join(", ")}`,
+        null,
+        400
+      );
+    }
+
+    // Validate deptHeadId if provided
+    if (deptHeadId) {
+      if (isNaN(parseInt(deptHeadId))) {
+        return sendResponse(
+          res,
+          false,
+          "Department head ID must be a valid number",
+          null,
+          400
+        );
+      }
+    }
+
+    // Validate branchId if provided
+    if (branchId) {
+      if (isNaN(parseInt(branchId))) {
+        return sendResponse(
+          res,
+          false,
+          "Branch ID must be a valid number",
+          null,
+          400
+        );
+      }
+    }
+
+    // Check for duplicate department name in the same college
+    const existingDepartment = await prisma.department.findFirst({
+      where: {
+        deptName: {
+          equals: deptName.trim(),
+          mode: "insensitive",
+        },
+        college: college,
+      },
+    });
+
+    if (existingDepartment) {
+      return sendResponse(
+        res,
+        false,
+        `Department '${deptName}' already exists in ${college}`,
+        null,
+        409
+      );
+    }
 
     const department = await prisma.department.create({
       data: {
-        deptName,
-        deptHeadId: deptHeadId || null,
-        branchId: branchId || null,
-        college,
+        deptName: deptName.trim(),
+        deptHeadId: deptHeadId ? parseInt(deptHeadId) : null,
+        branchId: branchId ? parseInt(branchId) : null,
+        college: college.trim(),
       },
-      select: { deptId: true, deptName: true, deptHeadId: true, college: true },
+      select: {
+        deptId: true,
+        deptName: true,
+        deptHeadId: true,
+        branchId: true,
+        college: true,
+      },
     });
 
-    console.log(`✅ Department created: ${deptName} | College: ${college}`);
+    console.log(
+      `✅ Department created: ${deptName} | College: ${college} | ID: ${department.deptId}`
+    );
+
     return sendResponse(
       res,
       true,
       "Department created successfully",
-      department
+      department,
+      201
     );
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Add department error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "create_department",
+      deptName: req.body.deptName,
+      college: req.body.college,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -146,19 +491,132 @@ export const addDepartment = async (req, res) => {
 export const updateDepartment = async (req, res) => {
   try {
     const { deptId, deptName, deptHeadId, branchId, college } = req.body;
-    if (!deptId)
-      return sendResponse(res, false, "deptId is required", null, 400);
 
+    // ✅ Validate deptId
+    if (!deptId || isNaN(parseInt(deptId))) {
+      return sendResponse(res, false, "Valid deptId is required", null, 400);
+    }
+
+    // ✅ Validate at least one field to update
+    if (!deptName && !deptHeadId && !branchId && !college) {
+      return sendResponse(
+        res,
+        false,
+        "No fields provided to update",
+        null,
+        400
+      );
+    }
+
+    // ✅ Build update data object dynamically
     const data = {};
-    if (deptName) data.deptName = deptName;
-    if (deptHeadId) data.deptHeadId = deptHeadId;
-    if (branchId) data.branchId = branchId;
-    if (college) data.college = college;
 
-    const department = await prisma.department.update({
+    if (deptName) {
+      if (deptName.trim().length < 2)
+        return sendResponse(
+          res,
+          false,
+          "Department name must be at least 2 characters long",
+          null,
+          400
+        );
+      if (deptName.trim().length > 100)
+        return sendResponse(
+          res,
+          false,
+          "Department name must be less than 100 characters",
+          null,
+          400
+        );
+      data.deptName = deptName.trim();
+    }
+
+    if (deptHeadId) {
+      if (isNaN(parseInt(deptHeadId))) {
+        return sendResponse(
+          res,
+          false,
+          "Department head ID must be a valid number",
+          null,
+          400
+        );
+      }
+      data.deptHeadId = parseInt(deptHeadId);
+    }
+
+    if (branchId) {
+      if (isNaN(parseInt(branchId))) {
+        return sendResponse(
+          res,
+          false,
+          "Branch ID must be a valid number",
+          null,
+          400
+        );
+      }
+      data.branchId = parseInt(branchId);
+    }
+
+    if (college) {
+      const validColleges = ["ICEM", "IGSB"];
+      if (!validColleges.includes(college)) {
+        return sendResponse(
+          res,
+          false,
+          `Invalid college. Must be one of: ${validColleges.join(", ")}`,
+          null,
+          400
+        );
+      }
+      data.college = college.trim();
+    }
+
+    // ✅ Check if department exists
+    const existingDept = await prisma.department.findUnique({
+      where: { deptId: parseInt(deptId) },
+    });
+
+    if (!existingDept) {
+      return sendResponse(
+        res,
+        false,
+        `Department with ID ${deptId} not found`,
+        null,
+        404
+      );
+    }
+
+    // ✅ Prevent duplicate name in same college
+    if (deptName && college) {
+      const duplicate = await prisma.department.findFirst({
+        where: {
+          deptName: { equals: deptName.trim(), mode: "insensitive" },
+          college: college.trim(),
+          NOT: { deptId: parseInt(deptId) },
+        },
+      });
+      if (duplicate) {
+        return sendResponse(
+          res,
+          false,
+          `Department '${deptName}' already exists in ${college}`,
+          null,
+          409
+        );
+      }
+    }
+
+    // ✅ Update operation
+    const updatedDepartment = await prisma.department.update({
       where: { deptId: parseInt(deptId) },
       data,
-      select: { deptId: true, deptName: true, deptHeadId: true, college: true },
+      select: {
+        deptId: true,
+        deptName: true,
+        deptHeadId: true,
+        branchId: true,
+        college: true,
+      },
     });
 
     console.log(`✅ Department updated: Dept ID ${deptId}`);
@@ -166,10 +624,19 @@ export const updateDepartment = async (req, res) => {
       res,
       true,
       "Department updated successfully",
-      department
+      updatedDepartment
     );
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Update department error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "update_department",
+      deptId: req.body.deptId,
+      deptName: req.body.deptName,
+      college: req.body.college,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -177,35 +644,71 @@ export const updateDepartment = async (req, res) => {
 export const deleteDepartment = async (req, res) => {
   try {
     const { deptId } = req.params;
+
+    // ✅ Validate deptId
+    if (!deptId || isNaN(parseInt(deptId))) {
+      return sendResponse(res, false, "Valid deptId is required", null, 400);
+    }
+
     const id = parseInt(deptId);
 
+    // ✅ Check if department exists before attempting deletion
+    const existingDepartment = await prisma.department.findUnique({
+      where: { deptId: id },
+      select: { deptId: true, deptName: true, college: true },
+    });
+
+    if (!existingDepartment) {
+      return sendResponse(
+        res,
+        false,
+        `Department with ID ${deptId} not found`,
+        null,
+        404
+      );
+    }
+
+    // ✅ Execute cascading deletion in a transaction
     await prisma.$transaction(async (tx) => {
-      // 1. Delete approval actions linked to requests of this dept
+      // 1️⃣ Delete approval actions linked to approval requests of this dept
       await tx.approvalAction.deleteMany({
         where: { approval: { deptId: id } },
       });
 
-      // 2. Delete approval requests linked to this dept
+      // 2️⃣ Delete approval requests linked to this dept
       await tx.approvalRequest.deleteMany({
         where: { deptId: id },
       });
 
-      // 3. Delete staff in this department
+      // 3️⃣ Delete staff in this department
       await tx.staff.deleteMany({
         where: { deptId: id },
       });
 
-      // 4. Finally delete the department
+      // 4️⃣ Finally delete the department itself
       await tx.department.delete({
         where: { deptId: id },
       });
     });
 
-    console.log(`🗑️ Department and staff deleted (Dept ID: ${deptId})`);
-    return sendResponse(res, true, "Department and staff deleted successfully");
+    console.log(
+      `🗑️ Department deleted: ${existingDepartment.deptName} (${existingDepartment.college}) | ID: ${deptId}`
+    );
+
+    return sendResponse(
+      res,
+      true,
+      `Department '${existingDepartment.deptName}' and related data deleted successfully`
+    );
   } catch (err) {
-    console.error("Delete Department error:", err);
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("❌ Delete Department error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "delete_department",
+      deptId: req.params.deptId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -220,7 +723,11 @@ export const getDepartments = async (req, res) => {
         deptHeadId: true,
         college: true,
       },
+      orderBy: {
+        deptId: "asc", // ✅ Sort by deptId in ascending order
+      },
     });
+
     return sendResponse(
       res,
       true,
@@ -228,9 +735,16 @@ export const getDepartments = async (req, res) => {
       departments
     );
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("❌ Get departments error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_departments",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
+
 
 // 🔍 Get Department by ID
 export const getDepartmentById = async (req, res) => {
@@ -249,7 +763,14 @@ export const getDepartmentById = async (req, res) => {
       department
     );
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get department by ID error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_department_by_id",
+      deptId: req.params.deptId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -261,7 +782,9 @@ export const getDepartmentById = async (req, res) => {
 export const addStudent = async (req, res) => {
   try {
     const { prn, studentName, email, phoneNo, password, college } = req.body;
-    if (!prn || !studentName || !email || !password)
+
+    // ✅ Validate required fields
+    if (!prn || !studentName || !email || !password) {
       return sendResponse(
         res,
         false,
@@ -269,17 +792,88 @@ export const addStudent = async (req, res) => {
         null,
         400
       );
+    }
 
+    // ✅ Validate PRN format (optional — customize as per your system)
+    if (!/^\d{5,}$/.test(prn)) {
+      return sendResponse(
+        res,
+        false,
+        "Invalid PRN format. Must be numeric and at least 5 digits.",
+        null,
+        400
+      );
+    }
+
+    // ✅ Validate student name
+    if (studentName.trim().length < 2) {
+      return sendResponse(
+        res,
+        false,
+        "Student name must be at least 2 characters long",
+        null,
+        400
+      );
+    }
+
+    // ✅ Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return sendResponse(res, false, "Invalid email format", null, 400);
+    }
+
+    // ✅ Validate phone number if provided
+    if (phoneNo && !/^\d{10}$/.test(phoneNo)) {
+      return sendResponse(
+        res,
+        false,
+        "Phone number must be 10 digits long",
+        null,
+        400
+      );
+    }
+
+    // ✅ Validate college
+    const validColleges = ["ICEM", "IGSB"];
+    const selectedCollege = college ? college.trim() : "ICEM";
+    if (!validColleges.includes(selectedCollege)) {
+      return sendResponse(
+        res,
+        false,
+        `Invalid college. Must be one of: ${validColleges.join(", ")}`,
+        null,
+        400
+      );
+    }
+
+    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // ✅ Check for duplicates before insert
+    const existingStudent = await prisma.student.findFirst({
+      where: {
+        OR: [{ prn }, { email }],
+      },
+    });
+
+    if (existingStudent) {
+      return sendResponse(
+        res,
+        false,
+        "PRN or email already exists. Please use unique values.",
+        null,
+        409
+      );
+    }
+
+    // ✅ Create new student
     const student = await prisma.student.create({
       data: {
         prn,
-        studentName,
-        email,
+        studentName: studentName.trim(),
+        email: email.toLowerCase(),
         phoneNo: phoneNo || null,
         password: hashedPassword,
-        college: college || "ICEM",
+        college: selectedCollege,
       },
       select: {
         prn: true,
@@ -291,11 +885,19 @@ export const addStudent = async (req, res) => {
     });
 
     console.log(`✅ Student created: ${studentName} | PRN: ${prn}`);
+
     return sendResponse(res, true, "Student created successfully", student);
   } catch (err) {
-    if (err.code === "P2002")
-      return sendResponse(res, false, "PRN or email already exists", null, 400);
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("❌ Add Student error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "create_student",
+      prn: req.body.prn,
+      email: req.body.email,
+      studentName: req.body.studentName,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -311,9 +913,16 @@ export const getStudents = async (req, res) => {
         college: true,
       },
     });
+
     return sendResponse(res, true, "Students fetched successfully", students);
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get students error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_students",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -335,7 +944,14 @@ export const getStudentByPrn = async (req, res) => {
       return sendResponse(res, false, "Student not found", null, 404);
     return sendResponse(res, true, "Student fetched successfully", student);
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get student by PRN error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_student_by_prn",
+      prn: req.params.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -345,14 +961,13 @@ export const updateStudent = async (req, res) => {
     const { prn } = req.params;
     const { studentName, email, phoneNo, password, college } = req.body;
 
-    const data = {};
-    if (studentName) data.studentName = studentName;
-    if (email) data.email = email;
-    if (phoneNo) data.phoneNo = phoneNo;
-    if (college) data.college = college;
-    if (password) data.password = await bcrypt.hash(password, 10);
+    // ✅ Validate PRN
+    if (!prn || !/^\d{5,}$/.test(prn)) {
+      return sendResponse(res, false, "Valid PRN is required", null, 400);
+    }
 
-    if (!Object.keys(data).length)
+    // ✅ Ensure at least one field is provided
+    if (!studentName && !email && !phoneNo && !password && !college) {
       return sendResponse(
         res,
         false,
@@ -360,8 +975,85 @@ export const updateStudent = async (req, res) => {
         null,
         400
       );
+    }
 
-    const student = await prisma.student.update({
+    // ✅ Check if student exists
+    const existingStudent = await prisma.student.findUnique({
+      where: { prn },
+    });
+    if (!existingStudent) {
+      return sendResponse(
+        res,
+        false,
+        `Student with PRN ${prn} not found`,
+        null,
+        404
+      );
+    }
+
+    // ✅ Build update object with validation
+    const data = {};
+
+    if (studentName) {
+      if (studentName.trim().length < 2)
+        return sendResponse(
+          res,
+          false,
+          "Student name must be at least 2 characters long",
+          null,
+          400
+        );
+      data.studentName = studentName.trim();
+    }
+
+    if (email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return sendResponse(res, false, "Invalid email format", null, 400);
+      }
+      data.email = email.toLowerCase();
+    }
+
+    if (phoneNo) {
+      if (!/^\d{10}$/.test(phoneNo)) {
+        return sendResponse(
+          res,
+          false,
+          "Phone number must be 10 digits long",
+          null,
+          400
+        );
+      }
+      data.phoneNo = phoneNo;
+    }
+
+    if (college) {
+      const validColleges = ["ICEM", "IGSB"];
+      if (!validColleges.includes(college.trim())) {
+        return sendResponse(
+          res,
+          false,
+          `Invalid college. Must be one of: ${validColleges.join(", ")}`,
+          null,
+          400
+        );
+      }
+      data.college = college.trim();
+    }
+
+    if (password) {
+      if (password.length < 6)
+        return sendResponse(
+          res,
+          false,
+          "Password must be at least 6 characters long",
+          null,
+          400
+        );
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    // ✅ Update student record
+    const updatedStudent = await prisma.student.update({
       where: { prn },
       data,
       select: {
@@ -374,38 +1066,91 @@ export const updateStudent = async (req, res) => {
     });
 
     console.log(`✅ Student updated: PRN ${prn}`);
-    return sendResponse(res, true, "Student updated successfully", student);
+
+    return sendResponse(
+      res,
+      true,
+      "Student updated successfully",
+      updatedStudent
+    );
   } catch (err) {
-    if (err.code === "P2002")
-      return sendResponse(res, false, "Email already exists", null, 400);
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("❌ Update Student error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "update_student",
+      prn: req.params.prn,
+      email: req.body.email,
+      college: req.body.college,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 // ❌ Delete Student
 export const deleteStudent = async (req, res) => {
+  const { prn } = req.params;
+
   try {
-    const { prn } = req.params;
+    // 1️⃣ Validate PRN
+    if (!prn || typeof prn !== "string" || !prn.trim()) {
+      console.warn("⚠️ Invalid or missing PRN in delete request");
+      return sendResponse(res, false, "Invalid or missing PRN", null, 400);
+    }
+
+    // 2️⃣ Check if the student exists
+    const existingStudent = await prisma.student.findUnique({
+      where: { prn },
+      select: { prn: true, studentName: true },
+    });
+
+    if (!existingStudent) {
+      console.warn(`⚠️ Student not found for PRN: ${prn}`);
+      return sendResponse(res, false, "Student not found", null, 404);
+    }
+
+    // 3️⃣ Attempt deletion in a transaction
     await prisma.$transaction(async (tx) => {
+      // Delete approval actions linked to approvals by student
       await tx.approvalAction.deleteMany({
         where: { approval: { studentPrn: prn } },
       });
-      await tx.approvalRequest.deleteMany({ where: { studentPrn: prn } });
-      await tx.studentProfile.deleteMany({ where: { prn } });
-      await tx.student.delete({ where: { prn } });
+
+      // Delete approval requests
+      await tx.approvalRequest.deleteMany({
+        where: { studentPrn: prn },
+      });
+
+      // Delete student profiles
+      await tx.studentProfile.deleteMany({
+        where: { prn },
+      });
+
+      // Finally delete the student
+      await tx.student.delete({
+        where: { prn },
+      });
     });
-    console.log(`🗑️ Student deleted (PRN: ${prn})`);
+
+    console.log(
+      `🗑️ Successfully deleted student: ${existingStudent.studentName} (PRN: ${prn})`
+    );
     return sendResponse(res, true, "Student deleted successfully");
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("❌ Error deleting student:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "delete_student",
+      prn: req.params.prn,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
 /* ================================
    📌 Staff CRUD
    ================================ */
-
-// ➕ Create Staff
 
 // ➕ Add Staff
 export const addStaff = async (req, res) => {
@@ -428,184 +1173,18 @@ export const addStaff = async (req, res) => {
       select: { staffId: true, name: true, email: true, deptId: true },
     });
 
-    // -------------------------------
-    // Send HTML Email using sendEmail()
-    // -------------------------------
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Account Created - LC-ICEM Portal</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; padding: 40px 0;">
-        <tr>
-            <td align="center">
-                <!-- Header with Branding -->
-                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0; padding: 30px;">
-                    <tr>
-                        <td align="center">
-                            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">LC-ICEM Portal</h1>
-                            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Staff Account Activation</p>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Main Content Card -->
-                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff; border-radius: 0 0 12px 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                    <tr>
-                        <td style="padding: 40px;">
-                            <!-- Welcome Icon -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td align="center" style="padding-bottom: 30px;">
-                                        <div style="background: #10b981; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                                <path d="M9 12l2 2 4-4"/>
-                                            </svg>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Title -->
-                            <h2 style="color: #1f2937; text-align: center; margin: 0 0 16px 0; font-size: 24px; font-weight: 700;">
-                                Staff Account Created Successfully
-                            </h2>
-
-                            <!-- Greeting -->
-                            <p style="color: #6b7280; text-align: center; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                                Welcome to the <strong style="color: #374151;">LC-ICEM Portal</strong>, 
-                                <strong style="color: #4f46e5;">${name}</strong>
-                            </p>
-
-                            <!-- Introduction -->
-                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                                Your staff account has been successfully created. You now have access to the Leaving Certificate management system of Indira College of Engineering and Management.
-                            </p>
-
-                            <!-- Credentials Card -->
-                            <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 8px; padding: 25px; margin: 25px 0;">
-                                <h3 style="color: #0369a1; margin: 0 0 20px 0; font-size: 18px; text-align: center;">
-                                    🔐 Your Login Credentials
-                                </h3>
-                                
-                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                    <tr>
-                                        <td width="30%" style="padding: 8px 0;">
-                                            <strong style="color: #075985;">Email:</strong>
-                                        </td>
-                                        <td style="padding: 8px 0;">
-                                            <code style="background: #ffffff; padding: 6px 12px; border-radius: 4px; color: #0c4a6e; font-weight: 600; border: 1px solid #bae6fd;">
-                                                ${email}
-                                            </code>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td width="30%" style="padding: 8px 0;">
-                                            <strong style="color: #075985;">Password:</strong>
-                                        </td>
-                                        <td style="padding: 8px 0;">
-                                            <code style="background: #ffffff; padding: 6px 12px; border-radius: 4px; color: #0c4a6e; font-weight: 600; border: 1px solid #bae6fd;">
-                                                ${password}
-                                            </code>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-
-                            <!-- Security Notice -->
-                            <div style="background: #fefce8; border: 1px solid #fef08a; padding: 16px; border-radius: 8px; margin: 25px 0;">
-                                <p style="color: #854d0e; margin: 0; font-size: 14px; text-align: center;">
-                                    <strong>🔒 Security Notice:</strong> For security reasons, please change your password immediately after first login.
-                                </p>
-                            </div>
-
-                            <!-- Action Button -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
-                                <tr>
-                                    <td align="center">
-                                        <a href="https://debug-den.vercel.app/login" 
-                                           target="_blank"
-                                           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                                  color: white; 
-                                                  text-decoration: none; 
-                                                  padding: 16px 32px; 
-                                                  border-radius: 8px; 
-                                                  font-weight: 600; 
-                                                  font-size: 16px;
-                                                  display: inline-block;
-                                                  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-                                                  transition: all 0.3s ease;">
-                                            🚀 Access LC-ICEM Portal
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Portal Features -->
-                            <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 25px 0;">
-                                <h4 style="color: #374151; margin: 0 0 15px 0; font-size: 16px; text-align: center;">
-                                    📋 Portal Features Available:
-                                </h4>
-                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                    <tr>
-                                        <td align="center" width="33%" style="padding: 10px;">
-                                            <div style="color: #059669; font-size: 14px;">• Student Management</div>
-                                        </td>
-                                        <td align="center" width="33%" style="padding: 10px;">
-                                            <div style="color: #059669; font-size: 14px;">• LC Generation</div>
-                                        </td>
-                                        <td align="center" width="33%" style="padding: 10px;">
-                                            <div style="color: #059669; font-size: 14px;">• Document Tracking</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-
-                            <!-- Support Information -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
-                                <tr>
-                                    <td align="center">
-                                        <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0;">
-                                            Need assistance? Contact the admin team:
-                                        </p>
-                                        <p style="color: #374151; font-size: 14px; margin: 0; font-weight: 600;">
-                                            📧 admin@indiraicem.ac.in | 📞 System Administrator
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Footer -->
-                <table width="600" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
-                    <tr>
-                        <td align="center">
-                            <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0;">
-                                This account provides access to the LC-ICEM Portal for official college use only.<br>
-                                &copy; ${new Date().getFullYear()} Indira College of Engineering and Management. All rights reserved.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-`;
+    // Use the email template from mailer
+    const emailTemplate = emailTemplates.staffCredentials(
+      name,
+      email,
+      password
+    );
 
     await sendEmail({
       to: email,
-      subject: "Your Staff Account Credentials",
-      text: `Hi ${name}, Your staff account has been created. Email: ${email} | Password: ${password}`,
-      html: htmlContent,
+      subject: emailTemplate.subject,
+      text: emailTemplate.text,
+      html: emailTemplate.html,
     });
 
     console.log(
@@ -613,10 +1192,15 @@ export const addStaff = async (req, res) => {
     );
     return sendResponse(res, true, "Staff created successfully", staff);
   } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "Email already exists", null, 400);
-    }
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Add staff error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "create_staff",
+      email: req.body.email,
+      name: req.body.name,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -628,7 +1212,13 @@ export const getStaff = async (req, res) => {
     });
     return sendResponse(res, true, "Staff fetched successfully", staffList);
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get staff error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_staff",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -644,7 +1234,14 @@ export const getStaffById = async (req, res) => {
     if (!staff) return sendResponse(res, false, "Staff not found", null, 404);
     return sendResponse(res, true, "Staff fetched successfully", staff);
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Get staff by ID error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_staff_by_id",
+      staffId: req.params.staffId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -681,10 +1278,15 @@ export const updateStaff = async (req, res) => {
     console.log(`✅ Staff updated: ID ${staffId}`);
     return sendResponse(res, true, "Staff updated successfully", staff);
   } catch (err) {
-    if (err.code === "P2002") {
-      return sendResponse(res, false, "Email already exists", null, 400);
-    }
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Update staff error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "update_staff",
+      staffId: req.params.staffId,
+      email: req.body.email,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };
 
@@ -695,9 +1297,8 @@ export const deleteStaff = async (req, res) => {
 
     await prisma.$transaction(async (tx) => {
       // Unlink staff from actions & requests before delete
-      await tx.approvalAction.updateMany({
+      await tx.approvalAction.deleteMany({
         where: { staffId: parseInt(staffId) },
-        data: { staffId: null },
       });
 
       await tx.approvalRequest.updateMany({
@@ -713,6 +1314,48 @@ export const deleteStaff = async (req, res) => {
     console.log(`🗑️ Staff deleted: ID ${staffId}`);
     return sendResponse(res, true, "Staff deleted successfully");
   } catch (err) {
-    return sendResponse(res, false, err.message, null, 500);
+    console.error("Delete staff error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "delete_staff",
+      staffId: req.params.staffId,
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
+  }
+};
+
+// 🔍 Get All Staff Login Logs (Sorted by latest first)
+export const getStaffLoginLogs = async (req, res) => {
+  try {
+    const loginLogs = await prisma.staffLoginLog.findMany({
+      orderBy: {
+        loginAt: "desc", // Latest logs first
+      },
+      select: {
+        id: true,
+        staffId: true,
+        staffName: true,
+        loginAt: true,
+        ipAddress: true,
+        userAgent: true,
+      },
+    });
+    console.log("Staff login logs fetched successfully");
+
+    return sendResponse(
+      res,
+      true,
+      "Staff login logs fetched successfully",
+      loginLogs
+    );
+  } catch (err) {
+    console.error("Get staff login logs error:", err);
+
+    const { message, statusCode } = handlePrismaError(err, {
+      operation: "get_staff_login_logs",
+    });
+
+    return sendResponse(res, false, message, null, statusCode);
   }
 };

@@ -12,7 +12,9 @@ import {
   X,
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import ENV from "../env";
+import axios from "axios";
 
 // ✅ Utility to generate safe slugs
 const slugify = (str) =>
@@ -94,41 +96,82 @@ const AdminLogin = () => {
     if (!errors.email && !errors.password && !errors.loginType) {
       try {
         setLoading(true);
-        const url =
+
+        // Determine the correct endpoint
+        const endpoint =
           loginType === "superadmin"
-            ? "http://localhost:5000/auth/admin/login"
-            : "http://localhost:5000/auth/department/login";
+            ? "/auth/admin/login"
+            : "/auth/department/login";
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+        const response = await axios.post(
+          `${ENV.BASE_URL}${endpoint}`,
+          formData,
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
+        // Handle sendResponse format
+        if (response.data.success) {
+          // Access token from response.data.data
+          const { token, user } = response.data.data;
 
-          const decoded = jwtDecode(data.token);
+          // Ensure token is a string before storing
+          const tokenString = String(token).trim();
+          localStorage.setItem("token", tokenString);
+
+          const decoded = jwtDecode(tokenString);
           localStorage.setItem("role", decoded.role);
 
           if (decoded.role === "superadmin") {
-            toast.success("✅ Admin login successful!");
+            // Store superadmin data
+            if (user) {
+              localStorage.setItem("adminId", user.id || "");
+              localStorage.setItem("username", user.username || "");
+              localStorage.setItem("email", user.email || "");
+            }
+            toast.success( "Welcome Admin");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
+            // Store department staff data
             const deptName = decoded.deptName;
             localStorage.setItem("deptName", deptName);
+            localStorage.setItem("staffId", decoded.staffId || "");
+            localStorage.setItem("deptId", decoded.deptId || "");
+            localStorage.setItem("staffName", decoded.name || "");
+
+            // Also store from user object if available
+            if (user) {
+              localStorage.setItem(
+                "staffName",
+                user.name || decoded.name || ""
+              );
+              localStorage.setItem("email", user.email || "");
+            }
 
             const slug = slugify(deptName);
-            toast.success(`✅ Welcome ${deptName} Department!`);
+            toast.success(
+              `Welcome ${user.name || decoded.name || deptName + "Department"} `
+            );
             navigate(`/admin-dashboard/${slug}`);
           }
         } else {
-          toast.error(data.error || "❌ Login failed");
+          // Use message from sendResponse format
+          toast.error(response.data.message || "Login failed");
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        toast.error("⚠️ Could not connect to backend.");
+        console.error("❌ Login error:", err);
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage = err.response.data?.message || "Login failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during login");
+        }
       } finally {
         setLoading(false);
       }
@@ -146,9 +189,6 @@ const AdminLogin = () => {
         "Application management dashboard",
       ]}
     >
-      {/* 🔥 Toaster */}
-      <Toaster position="top-right" reverseOrder={false} />
-
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Admin Login</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -212,7 +252,7 @@ const AdminLogin = () => {
           </div>
         )}
         {formErrors.loginType && (
-          <p className="text-xs text-red-500 mt-1">
+          <p className="text-xs text-rose-500 mt-1">
             Please select a login type
           </p>
         )}
@@ -239,7 +279,7 @@ const AdminLogin = () => {
             />
           </div>
           {formErrors.email && (
-            <p className="text-sm text-red-500 mt-1">Email id is required</p>
+            <p className="text-sm text-rose-500 mt-1">Email id is required</p>
           )}
         </div>
 
@@ -280,14 +320,14 @@ const AdminLogin = () => {
             </button>
           </div>
           {formErrors.password && (
-            <p className="text-sm text-red-500 mt-1">Password is required</p>
+            <p className="text-sm text-rose-500 mt-1">Password is required</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#00539C] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#003f8b]  transition"
         >
           {loading ? "Logging in..." : "Login"}
         </button>

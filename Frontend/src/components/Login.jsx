@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import ENV from "../env";
+import axios from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -34,31 +36,59 @@ const Login = () => {
     if (!errors.email && !errors.password) {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/auth/student/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
+        // Using axios for better error handling
+        const response = await axios.post(
+          `${ENV.BASE_URL}/auth/student/login`,
+          formData,
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
-          const decoded = jwtDecode(data.token);
+        // Handle sendResponse format
+        if (response.data.success) {
+          // Access token and user data from response.data.data
+          const { token, user } = response.data.data;
+
+          // Ensure token is a string before storing
+          const tokenString = String(token).trim();
+          localStorage.setItem("token", tokenString);
+
+          // Decode token to get role
+          const decoded = jwtDecode(tokenString);
           localStorage.setItem("role", decoded.role);
 
-          if (data.user && data.user.college) {
-            localStorage.setItem("college", data.user.college);
+          // Store user data
+          if (user && user.college) {
+            localStorage.setItem("college", user.college);
+          }
+          if (user && user.prn) {
+            localStorage.setItem("prn", user.prn);
+          }
+          if (user && user.studentName) {
+            localStorage.setItem("studentName", user.studentName);
           }
 
-          toast.success("✅ Login successful!");
+          toast.success(`Welcome ${user.studentName || "Student"}`);
           navigate("/student");
         } else {
-          toast.error(data.error || "❌ Login failed");
+          // Use message from sendResponse format
+          toast.error(response.data.message || "Login failed");
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        toast.error("⚠️ Could not connect to backend.");
+        console.error("Login error:", err);
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage = err.response.data?.message || "Login failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during login");
+        }
       } finally {
         setLoading(false);
       }
@@ -76,9 +106,6 @@ const Login = () => {
         "Track application status",
       ]}
     >
-      {/* 🔥 Toaster */}
-      <Toaster position="top-right" reverseOrder={false} />
-
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-[#003C84]">Student Login</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -107,7 +134,7 @@ const Login = () => {
             />
           </div>
           {formErrors.email && (
-            <p className="text-sm text-red-500 mt-1">Email is required</p>
+            <p className="text-sm text-rose-500 mt-1">Email is required</p>
           )}
         </div>
 
@@ -149,7 +176,7 @@ const Login = () => {
             </button>
           </div>
           {formErrors.password && (
-            <p className="text-sm text-red-500 mt-1">Password is required</p>
+            <p className="text-sm text-rose-500 mt-1">Password is required</p>
           )}
         </div>
 
@@ -157,7 +184,7 @@ const Login = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#00539C] text-white py-3 px-4 rounded-lg text-base font-medium hover:bg-[#003C84] transition"
         >
           {loading ? "Logging in..." : "Login"}
         </button>

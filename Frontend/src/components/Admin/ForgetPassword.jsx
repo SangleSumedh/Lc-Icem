@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ENV from "../../env";
 
 function ForgetPassword() {
   const [email, setEmail] = useState("");
@@ -42,7 +43,7 @@ function ForgetPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#00539C] focus:border-[#00539C]"
+              className="w-full px-3 py-2  rounded-md focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
             />
           </div>
 

@@ -19,11 +19,13 @@ import {
   WidthType,
 } from "docx";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+import useApprovalsStore from "../../store/approvalsStore";
+import toast from "react-hot-toast";
 
-function RequestedInfoApprovals() {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+import ENV from "../../env";
+
+function RequestedInfoApprovals({ title, subtitle, updateUrl }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -34,11 +36,14 @@ function RequestedInfoApprovals() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const { approvalsData, loadingStates, fetchApprovals, updateApproval } =
+    useApprovalsStore();
+
+  const approvals = approvalsData.requested;
+  const loading = loadingStates.requested;
+
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
-
-  const fetchUrl = "http://localhost:5000/departments/approvals/requested-info";
-  const updateUrl = "http://localhost:5000/departments/update-status";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -53,39 +58,15 @@ function RequestedInfoApprovals() {
     };
   }, []);
 
-  // ✅ Fetch only REQUESTED_INFO approvals
-  const fetchApprovals = async () => {
+  // ✅ Fetch approvals using Zustand
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const res = await fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (res.ok && data.success) {
-          setApprovals(data.requestedInfoApprovals || []);
-        } else {
-          console.error("Fetch error:", data);
-          setApprovals([]);
-        }
-      } catch {
-        console.error("Non-JSON response:", text);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error("Error fetching requested-info approvals:", err);
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/approvals/requested-info` ||
+      "http://localhost:5000/departments/approvals/requested-info";
+    await fetchApprovals("requested", fetchUrl, token);
+    setRefreshing(false);
   };
-
-  useEffect(() => {
-    fetchApprovals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Export Functions
   const exportToExcel = () => {
@@ -119,11 +100,11 @@ function RequestedInfoApprovals() {
           new Date().toISOString().split("T")[0]
         }.xlsx`
       );
-      alert("✅ Exported to Excel successfully!");
+      toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Excel export error:", error);
-      alert("❌ Error exporting to Excel");
+      toast.error("Error exporting to Excel!");
     }
   };
 
@@ -190,7 +171,7 @@ function RequestedInfoApprovals() {
           {
             children: [
               new Paragraph({
-                text: "Requested Information Approvals Report",
+                text: `${title || "Requested Information Approvals"} Report`,
                 heading: "Heading1",
                 spacing: { after: 400 },
               }),
@@ -218,11 +199,11 @@ function RequestedInfoApprovals() {
           new Date().toISOString().split("T")[0]
         }.docx`
       );
-      alert("✅ Exported to Word successfully!");
+      toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Word export error:", error);
-      alert("❌ Error exporting to Word");
+      toast.error("Error exporting to Word");
     }
   };
 
@@ -230,48 +211,23 @@ function RequestedInfoApprovals() {
     try {
       const doc = new jsPDF();
 
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text("Requested Information Approvals Report", 105, 15, {
-        align: "center",
-      });
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, {
-        align: "center",
-      });
-      doc.text(`Total Records: ${approvals.length}`, 105, 28, {
-        align: "center",
-      });
-
-      const tableData = approvals.map((approval) => [
-        approval.student.studentName,
-        approval.student.prn,
-        approval.student.email,
-        approval.student.phoneNo || "N/A",
-        approval.deptName || "N/A",
-        approval.branch || "N/A",
-      ]);
-
-      doc.autoTable({
+      // Add autoTable to the jsPDF instance
+      autoTable(doc, {
         startY: 35,
         head: [
-          ["Student Name", "PRN", "Email", "Phone", "Department", "Branch"],
+          ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
         ],
-        body: tableData,
+        body: approvals.map((approval) => [
+          approval.student.studentName,
+          approval.student.prn,
+          approval.student.email,
+          approval.student.phoneNo || "N/A",
+          approval.deptName || "N/A",
+          approval.status,
+        ]),
         theme: "grid",
         headStyles: { fillColor: [0, 83, 156] },
         styles: { fontSize: 7, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 25 },
-        },
       });
 
       doc.save(
@@ -279,48 +235,50 @@ function RequestedInfoApprovals() {
           new Date().toISOString().split("T")[0]
         }.pdf`
       );
-      alert("✅ Exported to PDF successfully!");
+      toast.success("Exported to PDF successfully!");
       setShowExportDropdown(false);
     } catch (error) {
       console.error("PDF export error:", error);
-      alert("❌ Error exporting to PDF");
+      toast.error("Error exporting to PDF");
     }
   };
 
-  // ✅ Only Approve action
+  // ✅ Only Approve action using Zustand
   const handleApprove = async () => {
     if (!selectedApproval) return;
     if (!remarks.trim()) {
-      alert("Remarks are required");
+      toast.error("Remarks are required");
       return;
     }
 
-    try {
-      const res = await fetch(updateUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+    const updatePromise = new Promise(async (resolve, reject) => {
+      try {
+        const result = await updateApproval(updateUrl, token, {
           approvalId: Number(selectedApproval.approvalId),
           status: "APPROVED",
           remarks,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert("✅ Request approved");
-        setSelectedApproval(null);
-        setRemarks("");
-        fetchApprovals();
-      } else {
-        alert(data.error || "❌ Failed to approve");
+        });
+
+        if (result.success) {
+          setSelectedApproval(null);
+          setRemarks("");
+          // Refresh the data using Zustand
+          await fetchData();
+          resolve(result.message || "Request approved successfully!");
+        } else {
+          reject(result.message || "Failed to approve request");
+        }
+      } catch (err) {
+        console.error("Approve error:", err);
+        reject("Error approving request");
       }
-    } catch (err) {
-      console.error("Approve error:", err);
-      alert("❌ Error approving request");
-    }
+    });
+
+    toast.promise(updatePromise, {
+      loading: "Approving request...",
+      success: (message) => message,
+      error: (err) => err,
+    });
   };
 
   // ✅ Filtering + Pagination
@@ -339,19 +297,22 @@ function RequestedInfoApprovals() {
   );
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen p-6">
+    <div className="space-y-6 text-sm min-h-screen">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6 rounded-xl"
       >
         <div>
-          <h1 className="text-2xl font-bold text-[#00539C]">
-            {deptName ? `${deptName} Dashboard` : "Department Dashboard"}
+          <h1 className="text-2xl font-bold pl-5 text-[#00539C]">
+            {title ||
+              (deptName
+                ? `${deptName} - Requested Info`
+                : "Requested Information")}
           </h1>
-          <p className="text-gray-600 mt-1 text-sm">
-            Requests for More Information
+          <p className="text-gray-600 mt-1 pl-5 text-sm">
+            {subtitle || "Requests for More Information"}
           </p>
         </div>
 
@@ -364,31 +325,31 @@ function RequestedInfoApprovals() {
                 setShowExportDropdown(!showExportDropdown);
               }}
               disabled={loading || approvals.length === 0}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
 
             {/* Export Dropdown */}
             {showExportDropdown && (
-              <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
+              <div className="absolute right-0 top-12 bg-gray-50 border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
                 <button
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-green-600 font-medium">Excel</span>
+                  <span className="text-emerald-600 font-medium">Excel</span>
                 </button>
                 <button
                   onClick={exportToWord}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-blue-600 font-medium">Word</span>
+                  <span className="text-sky-600 font-medium">Word</span>
                 </button>
                 <button
                   onClick={exportToPDF}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-red-600 font-medium">PDF</span>
+                  <span className="text-rose-600 font-medium">PDF</span>
                 </button>
               </div>
             )}
@@ -397,7 +358,7 @@ function RequestedInfoApprovals() {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white p-4 rounded-xl shadow-sm border">
+      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -411,11 +372,11 @@ function RequestedInfoApprovals() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
           />
         </div>
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData}
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >
@@ -424,104 +385,105 @@ function RequestedInfoApprovals() {
       </div>
 
       {/* Table */}
-<div className="bg-white rounded-xl shadow-sm border relative">
-  <table className="w-full text-left">
-    <thead className="bg-[#00539C] text-white">
-      <tr>
-        <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
-        <th className="px-6 py-4 font-semibold text-sm">PRN</th>
-        <th className="px-6 py-4 font-semibold text-sm">Email</th>
-        <th className="px-6 py-4 font-semibold text-sm">Phone</th>
-        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-100">
-      {paginatedApprovals.map((a, index) => (
-        <tr
-          key={a.approvalId}
-          className=" transition-colors duration-150 rounded-lg"
-        >
-          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
-            {a.student.studentName}
-          </td>
-          <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
-          <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
-          <td className="px-6 py-4 text-gray-700">
-            {a.student.phoneNo || "—"}
-          </td>
-          <td className="px-6 py-4 relative rounded-r-lg">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(
-                  activeDropdown === a.approvalId ? null : a.approvalId
-                );
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <FiMoreVertical size={18} className="text-gray-600" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {activeDropdown === a.approvalId && (
-              <div
-                className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]"
+      <div className="bg-gray-50 rounded-xl ml-3 shadow-sm border border-gray-300 relative">
+        <table className="w-full text-left">
+          <thead className="bg-[#00539C] text-white">
+            <tr>
+              <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">
+                Student Name
+              </th>
+              <th className="px-6 py-4 font-semibold text-sm">PRN</th>
+              <th className="px-6 py-4 font-semibold text-sm">Email</th>
+              <th className="px-6 py-4 font-semibold text-sm">Phone</th>
+              <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {paginatedApprovals.map((a, index) => (
+              <tr
+                key={a.approvalId}
+                className="transition-colors duration-150 rounded-lg"
               >
-                <button
-                  onClick={() => {
-                    setSelectedApproval(a);
-                    setRemarks("");
-                    setActiveDropdown(null);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
+                  {a.student.studentName}
+                </td>
+                <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
+                <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
+                <td className="px-6 py-4 text-gray-700">
+                  {a.student.phoneNo || "—"}
+                </td>
+                <td className="px-6 py-4 text-md relative rounded-r-lg">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDropdown(
+                        activeDropdown === a.approvalId ? null : a.approvalId
+                      );
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Approve
-                </button>
-              </div>
+                    <FiMoreVertical size={18} className="text-gray-600" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {activeDropdown === a.approvalId && (
+                    <div className="absolute top-full right-5 mt-2 bg-gray-50 border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
+                      <button
+                        onClick={() => {
+                          setSelectedApproval(a);
+                          setRemarks("");
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Approve
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {paginatedApprovals.length === 0 && !loading && (
+              <tr>
+                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg
+                      className="h-12 w-12 text-gray-300 mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="text-sm">
+                      No requests pending for more information
+                    </p>
+                  </div>
+                </td>
+              </tr>
             )}
-          </td>
-        </tr>
-      ))}
-      {paginatedApprovals.length === 0 && !loading && (
-        <tr>
-          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-            <div className="flex flex-col items-center justify-center">
-              <svg
-                className="h-12 w-12 text-gray-300 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <p className="text-sm">
-                No requests pending for more information
-              </p>
-            </div>
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>  
-</div>
+          </tbody>
+        </table>
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
@@ -560,7 +522,7 @@ function RequestedInfoApprovals() {
       {/* Modal */}
       {selectedApproval && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gray-50 w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
@@ -593,14 +555,14 @@ function RequestedInfoApprovals() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remarks <span className="text-red-500">*</span>
+                  Remarks <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Enter your approval remarks here..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                   required
                 />
               </div>
@@ -616,7 +578,7 @@ function RequestedInfoApprovals() {
               </button>
               <button
                 onClick={handleApprove}
-                className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
+                className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 text-sm font-medium"
               >
                 Approve Request
               </button>

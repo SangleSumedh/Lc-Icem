@@ -23,9 +23,9 @@ const AuthLayout = ({ title, description, points, children, currentPage }) => {
 
       {/* Centered Container */}
       <div className="flex flex-1 items-center justify-center py-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex w-full max-w-6xl h-auto min-h-[500px] sm:h-[580px] lg:h-[620px] shadow-xl sm:shadow-2xl rounded-xl overflow-hidden bg-white">
+        <div className="flex w-full max-w-6xl h-auto min-h-[450px] sm:h-[580px] lg:h-[620px] shadow-xl sm:shadow-2xl rounded-xl overflow-hidden bg-white">
           {/* 🔹 Left Info Section - Hidden on mobile, visible on tablet and up */}
-          <div className="hidden md:flex md:w-1/2 p-6 lg:p-8 xl:p-12 bg-gradient-to-b from-[#00539C] to-[#003C84] text-white flex flex-col justify-center">
+          <div className="hidden md:flex md:w-1/2 p-6 lg:p-8 xl:p-12 bg-[#00539C] text-white flex-col justify-center">
             <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold mb-4">{title}</h1>
             <p className="mb-6 text-sm lg:text-base">{description}</p>
             <ul className="space-y-2 lg:space-y-3 text-xs lg:text-sm">

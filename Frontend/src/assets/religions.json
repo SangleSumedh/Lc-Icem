@@ -1,0 +1,77 @@
+{
+  "religions": [
+    {
+      "religion": "Hindu",
+      "castes": [
+        "Brahmin",
+        "Rajput",
+        "Bhumihar",
+        "Tyagi",
+        "Bania",
+        "Kayastha",
+        "Khatri",
+        "Arora",
+        "Maratha",
+        "Nair",
+        "Reddy",
+        "Kamma",
+        "Kapu",
+        "Vellalar",
+        "Nadar",
+        "Yadav",
+        "Kurmi",
+        "Gurjar",
+        "Jat",
+        "Ahir",
+        "Lodh",
+        "Teli",
+        "Kumhar",
+        "Lohar",
+        "Nai",
+        "Chamar",
+        "Mahar",
+        "Mala",
+        "Madiga",
+        "Pasi",
+        "Dhobi",
+        "Balmiki",
+        "Gond",
+        "Bhil",
+        "Santhal",
+        "Munda",
+        "Oraon",
+        "Lingayat",
+        "Jain",
+        "Sindhi"
+      ]
+    },
+    {
+      "religion": "Islam",
+      "castes": ["N/A"]
+    },
+    {
+      "religion": "Christian",
+      "castes": ["N/A"]
+    },
+    {
+      "religion": "Sikh",
+      "castes": ["N/A"]
+    },
+    {
+      "religion": "Buddhism",
+      "castes": ["Mahayana", "Theravada", "Vajrayana"]
+    },
+    {
+      "religion": "Jainism",
+      "castes": ["Digambara", "Shwetambara"]
+    },
+    {
+      "religion": "Zoroastrianism",
+      "castes": ["Parsi", "Irani"]
+    },
+    {
+      "religion": "Judaism",
+      "castes": ["Bene Israel", "Cochin Jews", "Baghdadi Jews"]
+    }
+  ]
+}

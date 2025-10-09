@@ -5,4 +5,3 @@ node_modules
 /src/generated/prisma
 /prisma/*
 /prisma/migrations
-/prisma/schema.prisma

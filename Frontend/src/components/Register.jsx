@@ -10,6 +10,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
+import ENV from "../env";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -46,25 +49,49 @@ const Register = () => {
     if (Object.values(errors).every((v) => !v)) {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/auth/student/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+        const toastId = toast.loading("Registering...");
 
-        const data = await res.json();
-        if (res.ok) {
-          alert("✅ Registration successful!");
+        const response = await axios.post(
+          `${ENV.BASE_URL}/auth/student/register`,
+          formData,
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        // Handle consistent response format
+        if (response.data.success) {
+          toast.success("Registration successful!", { id: toastId });
           navigate("/");
         } else {
-          alert(data.error || "❌ Failed to register");
+          // Use message instead of error for sendResponse format
+          toast.error(response.data.message || "Failed to register", {
+            id: toastId,
+          });
         }
       } catch (err) {
-        console.error("❌ Network error:", err);
-        alert("Could not connect to backend.");
+        console.error("❌ Registration error:", err);
+        // Dismiss the loading toast first
+        toast.dismiss();
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, errors are in response.data.message
+          const errorMessage =
+            err.response.data?.message ||
+            err.response.data?.error ||
+            "Registration failed";
+          toast.error(errorMessage);
+        } else if (err.request) {
+          toast.error("Network error - please check your connection");
+        } else {
+          toast.error("An error occurred during registration");
+        }
       } finally {
         setLoading(false);
       }
+    } else {
+      toast.error("Please fill all required fields");
     }
   };
 
@@ -76,7 +103,7 @@ const Register = () => {
     {
       value: "ICEM",
       label: "ICEM",
-      description: "Indira College of Engineering",
+      description: "Indira College of Engineering and Management",
     },
     {
       value: "IGSB",
@@ -156,6 +183,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.studentName && (
+            <p className="text-xs text-rose-500 mt-1">Full name is required</p>
+          )}
         </div>
 
         {/* PRN */}
@@ -171,9 +201,16 @@ const Register = () => {
               placeholder="e.g. 1234567890"
               value={formData.prn}
               onChange={handleInputChange}
+              maxLength={10}
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.prn && (
+            <p className="text-xs text-rose-500 mt-1">PRN is required</p>
+          )}
+          {formData.prn.length === 10 && (
+            <p className="text-xs text-emerald-500 mt-1">✓ PRN is complete</p>
+          )}
         </div>
 
         {/* Email */}
@@ -192,6 +229,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.email && (
+            <p className="text-xs text-rose-500 mt-1">Email is required</p>
+          )}
         </div>
 
         {/* Phone */}
@@ -207,9 +247,20 @@ const Register = () => {
               placeholder="e.g. +91 9876543210"
               value={formData.phoneNo}
               onChange={handleInputChange}
+              maxLength={10}
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.phoneNo && (
+            <p className="text-xs text-rose-500 mt-1">
+              Phone number is required
+            </p>
+          )}
+          {formData.phoneNo.length=== 10 && (
+            <p className="text-xs text-rose-500 mt-1">
+              10 digit number only !
+            </p>
+          )}
         </div>
 
         {/* Password */}
@@ -228,6 +279,9 @@ const Register = () => {
               className="w-full text-sm outline-none"
             />
           </div>
+          {formErrors.password && (
+            <p className="text-xs text-rose-500 mt-1">Password is required</p>
+          )}
         </div>
 
         {/* College - Custom Dropdown */}
@@ -262,18 +316,7 @@ const Register = () => {
 
           {dropdownOpen && (
             <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 animate-scaleIn">
-              {[
-                {
-                  value: "ICEM",
-                  label: "ICEM",
-                  description: "Indira College of Engineering and Management",
-                },
-                {
-                  value: "IGSB",
-                  label: "IGSB",
-                  description: "Indira Global School of Business",
-                },
-              ].map((option) => (
+              {collegeOptions.map((option) => (
                 <div
                   key={option.value}
                   onClick={() => handleCollegeSelect(option)}
@@ -290,7 +333,9 @@ const Register = () => {
             </div>
           )}
           {formErrors.college && (
-            <p className="text-xs text-red-500 mt-1">Please select a college</p>
+            <p className="text-xs text-rose-500 mt-1">
+              Please select a college
+            </p>
           )}
         </div>
 
@@ -298,7 +343,7 @@ const Register = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#003C84] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#00539C] transition"
+          className="w-full bg-[#003C84] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#00539C] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Registering..." : "Register"}
         </button>

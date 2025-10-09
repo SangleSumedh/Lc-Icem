@@ -34,6 +34,7 @@ import {
   BanknotesIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
+import ENV from "../../env.js";
 
 const StudentDashboard = () => {
   const [approvals, setApprovals] = useState([]);
@@ -47,14 +48,44 @@ const StudentDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/lc-form/approval-status",
+          `${ENV.BASE_URL}/lc-form/approval-status`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setApprovals(response.data.approvals);
+
+        // Handle sendResponse format
+        if (response.data.success) {
+          // Access approvals from response.data.data.approvals
+          if (response.data.data.approvals) {
+            setApprovals(response.data.data.approvals);
+            setError(null); // Clear any previous errors
+          } else {
+            setError("Please submit your LC form first");
+          }
+        } else {
+          // Use message from sendResponse format for errors
+          setError(response.data.message || "Failed to load approval status");
+        }
       } catch (err) {
-        setError("Please submit your LC form first");
+        console.error("Error fetching approvals:", err);
+
+        // Enhanced error handling for sendResponse format
+        if (err.response) {
+          // For sendResponse format, check status and message
+          if (err.response.status === 404) {
+            setError("Please submit your LC form first");
+          } else {
+            setError(
+              err.response.data?.message ||
+                "Failed to load approval status. Please try again."
+            );
+          }
+        } else if (err.request) {
+          setError("Network error. Please check your connection.");
+        } else {
+          setError("An unexpected error occurred. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -82,63 +113,63 @@ const StudentDashboard = () => {
   const getDepartmentIcon = (deptName) => {
     const department = deptName.toLowerCase();
     if (department.includes("account"))
-      return <BanknotesIcon className="h-6 w-6 text-blue-600" />;
+      return <BanknotesIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("library"))
-      return <BookOpenIcon className="h-6 w-6 text-green-600" />;
+      return <BookOpenIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("alumni"))
-      return <UserGroupIcon className="h-6 w-6 text-purple-600" />;
+      return <UserGroupIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("placement"))
-      return <BriefcaseIcon className="h-6 w-6 text-indigo-600" />;
+      return <BriefcaseIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("scholarship"))
-      return <TrophyIcon className="h-6 w-6 text-yellow-600" />;
+      return <TrophyIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("exam"))
-      return <ClipboardDocumentListIcon className="h-6 w-6 text-red-600" />;
+      return <ClipboardDocumentListIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("hostel") || department.includes("mess"))
       return <HomeIcon className="h-6 w-6 text-gray-600" />;
     if (department.includes("bus") || department.includes("transport"))
-      return <TruckIcon className="h-6 w-6 text-orange-600" />;
+      return <TruckIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("civil"))
-      return <BuildingOfficeIcon className="h-6 w-6 text-brown-600" />;
+      return <BuildingOfficeIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("computer"))
-      return <ComputerDesktopIcon className="h-6 w-6 text-blue-500" />;
+      return <ComputerDesktopIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mechanical"))
-      return <WrenchIcon className="h-6 w-6 text-gray-700" />;
+      return <WrenchIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("ai") || department.includes("data"))
-      return <CpuChipIcon className="h-6 w-6 text-purple-500" />;
+      return <CpuChipIcon className="h-6 w-6 text-[#00539C]" />;
     if (
       department.includes("electronics") ||
       department.includes("telecommunication")
     )
-      return <CubeIcon className="h-6 w-6 text-green-500" />;
+      return <CubeIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("first year"))
-      return <AcademicCapIcon className="h-6 w-6 text-indigo-500" />;
+      return <AcademicCapIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("it"))
-      return <CodeBracketIcon className="h-6 w-6 text-red-500" />;
+      return <CodeBracketIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mba"))
-      return <ChartBarIcon className="h-6 w-6 text-green-700" />;
+      return <ChartBarIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("mca"))
-      return <PuzzlePieceIcon className="h-6 w-6 text-blue-700" />;
+      return <PuzzlePieceIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("m.tech"))
-      return <BeakerIcon className="h-6 w-6 text-orange-500" />;
+      return <BeakerIcon className="h-6 w-6 text-[#00539C]" />;
     if (department.includes("engineering"))
-      return <RocketLaunchIcon className="h-6 w-6 text-teal-600" />;
-    return <BuildingLibraryIcon className="h-6 w-6 text-gray-500" />;
+      return <RocketLaunchIcon className="h-6 w-6 text-[#00539C]" />;
+    return <BuildingLibraryIcon className="h-6 w-6 text-[#00539C]" />;
   };
 
   const renderStatusIcon = (status) => {
     if (status === "APPROVED")
-      return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+      return <CheckCircleIcon className="h-5 w-5 text-emerald-500" />;
     if (status === "REJECTED")
-      return <XCircleIcon className="h-5 w-5 text-red-500" />;
+      return <XCircleIcon className="h-5 w-5 text-rose-500" />;
     if (status === "REQUESTED_INFO")
-      return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
+      return <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />;
     return <ClockIcon className="h-5 w-5 text-yellow-500" />;
   };
 
   const getStatusColor = (status) => {
-    if (status === "APPROVED") return "text-green-600";
-    if (status === "REJECTED") return "text-red-600";
-    if (status === "REQUESTED_INFO") return "text-orange-600";
+    if (status === "APPROVED") return "text-emerald-600";
+    if (status === "REJECTED") return "text-rose-600";
+    if (status === "REQUESTED_INFO") return "text-amber-600";
     return "text-yellow-600";
   };
 
@@ -150,33 +181,34 @@ const StudentDashboard = () => {
   };
 
   const extractContactInfo = (remarks) => {
-  if (!remarks) return { phone: null, email: null, message: remarks };
+    if (!remarks) return { phone: null, email: null, message: remarks };
 
-  const phoneRegex = /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
-  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const phoneRegex =
+      /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 
-  // Extract phone and email
-  const phones = remarks.match(phoneRegex) || [];
-  const emails = remarks.match(emailRegex) || [];
+    // Extract phone and email
+    const phones = remarks.match(phoneRegex) || [];
+    const emails = remarks.match(emailRegex) || [];
 
-  // Remove the "Phone: " and "Email: " labels along with the actual numbers/emails
-  let message = remarks
-    .replace(/Phone:\s*[^\n]*/gi, '')  // Remove "Phone: xxx" lines
-    .replace(/Email:\s*[^\n]*/gi, '')  // Remove "Email: xxx" lines
-    .replace(/\n\s*\n/g, '\n')         // Clean up extra newlines
-    .trim();
+    // Remove the "Phone: " and "Email: " labels along with the actual numbers/emails
+    let message = remarks
+      .replace(/Phone:\s*[^\n]*/gi, "") // Remove "Phone: xxx" lines
+      .replace(/Email:\s*[^\n]*/gi, "") // Remove "Email: xxx" lines
+      .replace(/\n\s*\n/g, "\n") // Clean up extra newlines
+      .trim();
 
-  // If message is empty after removal, provide a default
-  if (!message) {
-    message = "Additional information required";
-  }
+    // If message is empty after removal, provide a default
+    if (!message) {
+      message = "Additional information required";
+    }
 
-  return {
-    phone: phones[0] || null,
-    email: emails[0] || null,
-    message: message,
+    return {
+      phone: phones[0] || null,
+      email: emails[0] || null,
+      message: message,
+    };
   };
-};
 
   const handleRemarksClick = (approval) => {
     if (approval.remarks && approval.status === "REQUESTED_INFO") {
@@ -186,6 +218,12 @@ const StudentDashboard = () => {
       });
       setShowRemarksDialog(true);
     }
+  };
+  const statusPriority = {
+    REJECTED: 0, // show rejected first
+    REQUESTED_INFO: 1,
+    PENDING: 2,
+    APPROVED: 3,
   };
 
   const closeRemarksDialog = () => {
@@ -203,8 +241,40 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-center mt-2 md:mt-0 text-gray-800 mb-6">
+          LC Form Approval Status
+        </h2>
+
+        <div className="mb-3 p-2  w-full h-[20vh]"></div>
+
+        {/* Skeleton Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {[...Array(10)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 border-gray-200 animate-pulse min-h-[140px]"
+            >
+              {/* Department Icon Placeholder */}
+              <div className="mb-3 p-2 rounded-full bg-gray-200 w-12 h-12"></div>
+
+              {/* Department Name */}
+              <div className="h-4 w-3/4 bg-gray-200 rounded mb-3"></div>
+
+              {/* Status Row */}
+              <div className="flex items-center gap-2 mt-1">
+                <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </div>
+
+              {/* Optional Remarks Indicator */}
+              <div className="mt-2 h-3 w-24 bg-gray-200 rounded"></div>
+
+              {/* Date Placeholder */}
+              <div className="h-3 w-16 bg-gray-200 rounded mt-3"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -220,80 +290,107 @@ const StudentDashboard = () => {
             <li>Ensure all details are accurate before submission.</li>
             <li>
               Mandatory fields are marked with{" "}
-              <span className="text-red-500">*</span>.
+              <span className="text-rose-500">*</span>.
             </li>
             <li>The application will be processed within 7 working days.</li>
             <li>Contact the admin office in case of discrepancies.</li>
           </ul>
-          <div className="mt-4 p-3 bg-red-50 rounded-md">
-            <p className="text-red-600">{error}</p>
+          <div className="mt-4 p-3 bg-rose-50 rounded-md">
+            <p className="text-rose-600">{error}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const approvalsToRender = [...approvals];
+  const getRejectionNotice = (approval) => {
+    if (!approval || approval.status !== "REJECTED") return null;
+
+    const reason =
+      approval.remarks ||
+      "You may not be part of the organization, or there is some discrepancy.";
+
+    return `Your approval from Account Department has been rejected. Reason: ${reason}. Please contact the admin office or visit the college manually for assistance.`;
+  };
+
+  const rejectedApprovals = approvals.filter(
+    (approval) => approval.status === "REJECTED"
+  );
+
+  const approvalsToRender = [...approvals].sort((a, b) => {
+    return (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99);
+  });
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+    <div className="container mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-6">
+      <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
         LC Form Approval Status
       </h2>
 
-      {/* Approval Timeline Component */}
+      {/* Approval Timeline */}
       {!allApproved && <ApprovalTimeline approvals={approvals} />}
 
-      {/* LC Generated Card - Show when LC is actually generated */}
+      {rejectedApprovals.length > 0 && (
+        <div className="w-full sm:max-w-md mx-auto bg-rose-50 border-2 border-rose-300 rounded-lg p-5 shadow-md mb-6">
+          <h3 className="text-lg sm:text-xl font-semibold text-rose-600 mb-3 text-center">
+            Approval Rejected
+          </h3>
+          {rejectedApprovals.map((approval) => (
+            <p
+              key={approval.approvalId}
+              className="text-sm sm:text-base text-rose-700 text-center mb-2"
+            >
+              {getRejectionNotice(approval)}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* LC Generated Card */}
       {lcCard && (
-        <div className="max-w-md mx-auto bg-green-50 border-2 border-green-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          <CheckCircleIcon className="h-8 w-8 text-green-600 mb-2" />
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+        <div className="w-full sm:max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-5 text-center">
             Your LC is Generated!
           </h3>
           <button
             onClick={() => window.open(lcCard.lcUrl, "_blank")}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+            className="px-4 py-2 bg-[#00539C] text-white rounded hover:bg-[#004988] transition-colors w-full sm:w-auto"
           >
             Open LC
           </button>
-          <p className="text-xs text-gray-400 mt-2 text-center">
+          <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
             Generated on: {new Date(lcCard.updatedAt).toLocaleDateString()}
           </p>
         </div>
       )}
 
-      {/* LC Being Generated Card - Show when all approved but LC not generated yet */}
+      {/* LC Being Generated Card */}
       {allApproved && !lcCard && (
-        <div className="max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
-          <div className="flex items-center justify-center mb-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+        <div className="w-full sm:max-w-md mx-auto bg-blue-50 border-2 border-blue-300 rounded-lg p-5 flex flex-col items-center shadow-md hover:shadow-lg transition-all">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 text-center">
             Your LC is Being Generated!
           </h3>
-          <p className="text-sm text-gray-600 text-center mb-3">
-            All departments have approved. Your LC will be available shortly.
+          <p className="text-sm sm:text-base text-gray-500 text-center mb-3">
+            All departments have <span className="text-emerald-500">Approved</span> your application. Registrar will soon
+            generate your leaving certificate.
           </p>
-          <div className="px-4 py-2 bg-blue-500 text-white rounded cursor-not-allowed opacity-75">
-            Generating LC...
-          </div>
-          <p className="text-xs text-gray-400 mt-2 text-center">
+
+          <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
             Please check back later
           </p>
         </div>
       )}
 
       {/* Approvals Grid */}
-      {approvalsToRender.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-          {approvalsToRender.reverse().map((approval) => {
+      {approvals && approvalsToRender.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
+          {approvalsToRender.map((approval) => {
             const hasRemarks =
               approval.remarks && approval.status === "REQUESTED_INFO";
             return (
               <div
                 key={approval.approvalId}
-                className={`bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 hover:shadow-lg transition-all duration-200 min-h-[140px] relative group ${
+                className={`bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 hover:shadow-lg transition-all duration-200 min-h-[160px] relative group ${
                   hasRemarks
                     ? "border-orange-300 bg-orange-50 hover:bg-orange-100"
                     : "border-gray-200 hover:border-gray-300"
@@ -317,14 +414,14 @@ const StudentDashboard = () => {
                   {getDepartmentIcon(approval.department.deptName)}
                 </div>
 
-                <h3 className="text-sm font-semibold text-gray-800 text-center mb-2 leading-tight">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 text-center mb-2 leading-tight break-words">
                   {approval.department.deptName}
                 </h3>
 
                 <div className="flex items-center gap-2 mt-1">
                   {renderStatusIcon(approval.status)}
                   <span
-                    className={`text-sm font-medium ${getStatusColor(
+                    className={`text-sm sm:text-base font-medium ${getStatusColor(
                       approval.status
                     )}`}
                   >
@@ -334,14 +431,14 @@ const StudentDashboard = () => {
 
                 {hasRemarks && (
                   <div className="mt-2 text-center">
-                    <p className="text-xs text-orange-600 font-medium">
+                    <p className="text-xs sm:text-sm text-orange-600 font-medium">
                       Click icon for details
                     </p>
                   </div>
                 )}
 
                 {approval.updatedAt && (
-                  <p className="text-xs text-gray-400 mt-2 text-center">
+                  <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
                     {new Date(approval.updatedAt).toLocaleDateString()}
                   </p>
                 )}
@@ -351,7 +448,7 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Remarks Dialog */}
+      {/* 🔹 Remarks Dialog Modal */}
       {showRemarksDialog && selectedRemarks && (
         <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">

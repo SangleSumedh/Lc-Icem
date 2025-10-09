@@ -1,32 +1,62 @@
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiPlus, FiRefreshCw, FiMoreVertical, FiDownload } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiDownload,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Building2, Users } from "lucide-react";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+} from "docx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
+import ENV from "../../env.js";
+import useDepartmentStore from "../../store/departmentStore.js";
 
 const AddDepartmentForm = () => {
   const token = localStorage.getItem("token");
-  const BASE_URL = "http://localhost:5000/admin";
+
+  const {
+    departments,
+    allStaff,
+    loadingStates,
+    fetchDepartments,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
+    addStaff,
+    updateStaff,
+    deleteStaff,
+    getStaffByDepartment,
+    shouldFetchInitially,
+  } = useDepartmentStore();
 
   // Configure axios defaults
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  axios.defaults.headers.common["Content-Type"] = "application/json";
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      axios.defaults.headers.common["Content-Type"] = "application/json";
+    }
+  }, [token]);
 
-  const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
   const [collegeFilter, setCollegeFilter] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [allStaff, setAllStaff] = useState([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -36,6 +66,15 @@ const AddDepartmentForm = () => {
   const [staffDept, setStaffDept] = useState(null);
   const [staffList, setStaffList] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
+
+  // Staff management states - RENAMED to avoid conflict
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showEditStaffModal, setShowEditStaffModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [staffToDelete, setStaffToDelete] = useState(null); // CHANGED: Renamed from deleteStaff
+
+  const [staffDropdown, setStaffDropdown] = useState(null);
+  const [refreshingStaff, setRefreshingStaff] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -59,46 +98,19 @@ const AddDepartmentForm = () => {
     { value: "ALL", label: "All - Common Departments For ICEM & IGSB" },
   ];
 
-  // Fetch departments with loading and toast
-  const fetchDepartments = async () => {
-    setRefreshing(true);
-    const toastId = toast.loading("Fetching departments...");
-
-    try {
-      const [deptResponse, staffResponse] = await Promise.all([
-        axios.get(`${BASE_URL}/departments`),
-        axios.get(`${BASE_URL}/staff`)
-      ]);
-
-      if (deptResponse.data.success) {
-        setDepartments(deptResponse.data.data);
-      } else {
-        toast.error(deptResponse.data.message || "Failed to fetch departments", {
-          id: toastId,
-        });
-      }
-
-      if (staffResponse.data.success) {
-        setAllStaff(staffResponse.data.data);
-      }
-
-      toast.success("Data loaded successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Fetch data error:", error);
-      toast.error("Error fetching data", { id: toastId });
-    }
-    setRefreshing(false);
-  };
-
+  // Fetch departments on component mount
   useEffect(() => {
-    fetchDepartments();
-  }, []);
+    if (token && shouldFetchInitially()) {
+      fetchDepartmentsData();
+    }
+  }, [token, shouldFetchInitially]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       setActiveDropdown(null);
       setShowExportDropdown(false);
+      setStaffDropdown(null);
     };
 
     document.addEventListener("click", handleClickOutside);
@@ -107,31 +119,49 @@ const AddDepartmentForm = () => {
     };
   }, []);
 
+  // Update staff list when staffDept changes
+  useEffect(() => {
+    if (staffDept && showStaffModal) {
+      refreshStaffList();
+    }
+  }, [staffDept, showStaffModal, allStaff]);
+
+  const fetchDepartmentsData = async (forceRefresh = false) => {
+    try {
+      await fetchDepartments(token, forceRefresh);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    }
+  };
+
   // Handle field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleStaffChange = (e) => {
     const { name, value } = e.target;
-    setStaffData((p) => ({ ...p, [name]: value }));
+    setStaffData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Export Functions
   const exportToExcel = () => {
     try {
-      const exportData = departments.map(dept => {
-        const deptStaff = allStaff.filter(staff => staff.deptId === dept.deptId);
+      const exportData = departments.map((dept) => {
+        const deptStaff = allStaff.filter(
+          (staff) => staff.deptId === dept.deptId
+        );
         return {
           "Department ID": dept.deptId,
           "Department Name": dept.deptName,
           "Branch ID": dept.branchId || "N/A",
-          "College": dept.college,
+          College: dept.college,
           "Staff Count": deptStaff.length,
-          "Staff Details": deptStaff.map(staff => 
-            `${staff.name} (${staff.email})`
-          ).join("; ") || "No staff"
+          "Staff Details":
+            deptStaff
+              .map((staff) => `${staff.name} (${staff.email})`)
+              .join("; ") || "No staff",
         };
       });
 
@@ -140,21 +170,24 @@ const AddDepartmentForm = () => {
       XLSX.utils.book_append_sheet(wb, ws, "Departments");
 
       // Add Staff sheet
-      const staffSheetData = allStaff.map(staff => {
-        const dept = departments.find(d => d.deptId === staff.deptId);
+      const staffSheetData = allStaff.map((staff) => {
+        const dept = departments.find((d) => d.deptId === staff.deptId);
         return {
           "Staff ID": staff.staffId,
           "Staff Name": staff.name,
-          "Email": staff.email,
+          Email: staff.email,
           "Department ID": staff.deptId,
           "Department Name": dept?.deptName || "N/A",
-          "College": dept?.college || "N/A"
+          College: dept?.college || "N/A",
         };
       });
       const staffWs = XLSX.utils.json_to_sheet(staffSheetData);
       XLSX.utils.book_append_sheet(wb, staffWs, "Staff");
 
-      XLSX.writeFile(wb, `departments_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `departments_export_${new Date().toISOString().split("T")[0]}.xlsx`
+      );
       toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -169,22 +202,45 @@ const AddDepartmentForm = () => {
       const deptTableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Dept ID")], width: { size: 20, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Dept Name")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Branch ID")], width: { size: 20, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("College")], width: { size: 30, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Staff Count")], width: { size: 20, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("Dept ID")],
+              width: { size: 20, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Dept Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Branch ID")],
+              width: { size: 20, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("College")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Staff Count")],
+              width: { size: 20, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...departments.map(dept => {
-          const deptStaff = allStaff.filter(staff => staff.deptId === dept.deptId);
+        ...departments.map((dept) => {
+          const deptStaff = allStaff.filter(
+            (staff) => staff.deptId === dept.deptId
+          );
           return new TableRow({
             children: [
-              new TableCell({ children: [new Paragraph(dept.deptId.toString())] }),
+              new TableCell({
+                children: [new Paragraph(dept.deptId.toString())],
+              }),
               new TableCell({ children: [new Paragraph(dept.deptName)] }),
-              new TableCell({ children: [new Paragraph(dept.branchId?.toString() || "N/A")] }),
+              new TableCell({
+                children: [new Paragraph(dept.branchId?.toString() || "N/A")],
+              }),
               new TableCell({ children: [new Paragraph(dept.college)] }),
-              new TableCell({ children: [new Paragraph(deptStaff.length.toString())] }),
+              new TableCell({
+                children: [new Paragraph(deptStaff.length.toString())],
+              }),
             ],
           });
         }),
@@ -194,63 +250,89 @@ const AddDepartmentForm = () => {
       const staffTableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Staff ID")], width: { size: 20, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Staff Name")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Email")], width: { size: 50, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Dept ID")], width: { size: 20, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Dept Name")], width: { size: 40, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("Staff ID")],
+              width: { size: 20, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Staff Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Email")],
+              width: { size: 50, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Dept ID")],
+              width: { size: 20, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Dept Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...allStaff.map(staff => {
-          const dept = departments.find(d => d.deptId === staff.deptId);
+        ...allStaff.map((staff) => {
+          const dept = departments.find((d) => d.deptId === staff.deptId);
           return new TableRow({
             children: [
-              new TableCell({ children: [new Paragraph(staff.staffId.toString())] }),
+              new TableCell({
+                children: [new Paragraph(staff.staffId.toString())],
+              }),
               new TableCell({ children: [new Paragraph(staff.name)] }),
               new TableCell({ children: [new Paragraph(staff.email)] }),
-              new TableCell({ children: [new Paragraph(staff.deptId.toString())] }),
-              new TableCell({ children: [new Paragraph(dept?.deptName || "N/A")] }),
+              new TableCell({
+                children: [new Paragraph(staff.deptId.toString())],
+              }),
+              new TableCell({
+                children: [new Paragraph(dept?.deptName || "N/A")],
+              }),
             ],
           });
         }),
       ];
 
       const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              text: "Departments and Staff Report",
-              heading: "Heading1",
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Generated on: ${new Date().toLocaleDateString()}`,
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: "Departments",
-              heading: "Heading2",
-              spacing: { after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: deptTableRows,
-            }),
-            new Paragraph({
-              text: "Staff Members",
-              heading: "Heading2",
-              spacing: { before: 400, after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: staffTableRows,
-            }),
-          ],
-        }],
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: "Departments and Staff Report",
+                heading: "Heading1",
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Generated on: ${new Date().toLocaleDateString()}`,
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: "Departments",
+                heading: "Heading2",
+                spacing: { after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: deptTableRows,
+              }),
+              new Paragraph({
+                text: "Staff Members",
+                heading: "Heading2",
+                spacing: { before: 400, after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: staffTableRows,
+              }),
+            ],
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `departments_report_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(
+        blob,
+        `departments_report_${new Date().toISOString().split("T")[0]}.docx`
+      );
       toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -259,249 +341,228 @@ const AddDepartmentForm = () => {
     }
   };
 
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
 
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(40, 53, 147);
+      doc.text("Departments and Staff Report", 105, 15, { align: "center" });
 
-const exportToPDF = () => {
-  try {
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(20);
-    doc.setTextColor(40, 53, 147);
-    doc.text("Departments and Staff Report", 105, 15, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, {
+        align: "center",
+      });
 
-    let yPosition = 35;
+      let yPosition = 35;
 
-    // Departments table
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Departments", 14, yPosition);
-    yPosition += 8;
+      // Departments table
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Departments", 14, yPosition);
+      yPosition += 8;
 
-    const deptData = departments.map(dept => {
-      const deptStaff = allStaff.filter(staff => staff.deptId === dept.deptId);
-      return [
-        dept.deptId.toString(),
-        dept.deptName,
-        dept.branchId?.toString() || "N/A",
-        dept.college,
-        deptStaff.length.toString()
-      ];
-    });
+      const deptData = departments.map((dept) => {
+        const deptStaff = allStaff.filter(
+          (staff) => staff.deptId === dept.deptId
+        );
+        return [
+          dept.deptId.toString(),
+          dept.deptName,
+          dept.branchId?.toString() || "N/A",
+          dept.college,
+          deptStaff.length.toString(),
+        ];
+      });
 
-    // Use autoTable as a function, not as doc.autoTable
-    autoTable(doc, {
-      startY: yPosition,
-      head: [['Dept ID', 'Dept Name', 'Branch ID', 'College', 'Staff Count']],
-      body: deptData,
-      theme: 'grid',
-      headStyles: { 
-        fillColor: [0, 83, 156],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      styles: { 
-        fontSize: 8, 
-        cellPadding: 3,
-        halign: 'left'
-      },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 25 }
-      }
-    });
+      autoTable(doc, {
+        startY: yPosition,
+        head: [["Dept ID", "Dept Name", "Branch ID", "College", "Staff Count"]],
+        body: deptData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [0, 83, 156],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          halign: "left",
+        },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 },
+        },
+      });
 
-    // Staff table
-    const finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.text("Staff Members", 14, finalY);
+      // Staff table
+      const finalY = doc.lastAutoTable.finalY + 15;
+      doc.setFontSize(14);
+      doc.text("Staff Members", 14, finalY);
 
-    const staffData = allStaff.map(staff => {
-      const dept = departments.find(d => d.deptId === staff.deptId);
-      return [
-        staff.staffId.toString(),
-        staff.name,
-        staff.email,
-        staff.deptId.toString(),
-        dept?.deptName || "N/A"
-      ];
-    });
+      const staffData = allStaff.map((staff) => {
+        const dept = departments.find((d) => d.deptId === staff.deptId);
+        return [
+          staff.staffId.toString(),
+          staff.name,
+          staff.email,
+          staff.deptId.toString(),
+          dept?.deptName || "N/A",
+        ];
+      });
 
-    autoTable(doc, {
-      startY: finalY + 8,
-      head: [['Staff ID', 'Staff Name', 'Email', 'Dept ID', 'Department Name']],
-      body: staffData,
-      theme: 'grid',
-      headStyles: { 
-        fillColor: [0, 83, 156],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      styles: { 
-        fontSize: 7, 
-        cellPadding: 2,
-        halign: 'left'
-      },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 40 }
-      }
-    });
+      autoTable(doc, {
+        startY: finalY + 8,
+        head: [
+          ["Staff ID", "Staff Name", "Email", "Dept ID", "Department Name"],
+        ],
+        body: staffData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [0, 83, 156],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 7,
+          cellPadding: 2,
+          halign: "left",
+        },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 20 },
+          4: { cellWidth: 40 },
+        },
+      });
 
-    doc.save(`departments_report_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success("Exported to PDF successfully!");
-    setShowExportDropdown(false);
-  } catch (error) {
-    console.error("PDF export error:", error);
-    toast.error("Error exporting to PDF");
-  }
-};
+      doc.save(
+        `departments_report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
+      toast.success("Exported to PDF successfully!");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Error exporting to PDF");
+    }
+  };
 
   // Add Department + Staff
   const handleAdd = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Adding department...");
 
     try {
-      // Convert branchId to int or null
-      const deptPayload = {
-        ...formData,
-        branchId: formData.branchId ? parseInt(formData.branchId) : null,
-      };
-
-      // 1. Add department
-      const deptResponse = await axios.post(
-        `${BASE_URL}/add-department`,
-        deptPayload
-      );
-
-      if (!deptResponse.data.success) {
-        toast.error(deptResponse.data.message || "Failed to add department", {
-          id: toastId,
-        });
-        setLoading(false);
-        return;
-      }
-
-      const deptId = deptResponse.data.data.deptId;
-
-      // 2. Add staff if provided
-      if (staffData.name && staffData.email && staffData.password) {
-        await axios.post(`${BASE_URL}/add-staff`, { ...staffData, deptId });
-      }
-
-      await fetchDepartments();
+      await addDepartment(token, formData, staffData);
       setFormData({ deptName: "", branchId: "", college: "ICEM" });
       setStaffData({ name: "", email: "", password: "" });
       setShowAddModal(false);
       toast.success("Department added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Add error", error);
       toast.error("Error adding department", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Update Department + Staff
+  // Update Department
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const toastId = toast.loading("Updating department...");
 
     try {
-      // 1. Update department
-      const deptPayload = {
-        deptId: editingDept.deptId,
-        college: editingDept.college,
-        branchId: editingDept.branchId ? parseInt(editingDept.branchId) : null,
-      };
-
-      await axios.put(`${BASE_URL}/update-department`, deptPayload);
-
-      // 2. Update staff if provided
-      if (editingDept.staff && editingDept.staff.staffId) {
-        const staffPayload = {
-          name: editingDept.staff.name,
-          email: editingDept.staff.email,
-          deptId: editingDept.deptId,
-        };
-
-        if (
-          editingDept.staff.password &&
-          editingDept.staff.password.trim() !== ""
-        ) {
-          staffPayload.password = editingDept.staff.password;
-        }
-
-        await axios.put(
-          `${BASE_URL}/update-staff/${editingDept.staff.staffId}`,
-          staffPayload
-        );
-      }
-
-      await fetchDepartments();
+      await updateDepartment(token, editingDept);
       setShowEditModal(false);
       setEditingDept(null);
       toast.success("Department updated successfully!", { id: toastId });
     } catch (error) {
-      console.error("Update error", error);
       toast.error("Error updating department", { id: toastId });
     }
-    setLoading(false);
   };
 
-  // Delete Department (delete staff first)
+  // Delete Department
   const handleDeleteConfirm = async () => {
     if (!deleteDept) return;
-    setLoading(true);
     const toastId = toast.loading("Deleting department...");
 
     try {
-  
-
-      // Delete department
-      await axios.delete(`${BASE_URL}/delete-department/${deleteDept.deptId}`);
-
-      await fetchDepartments();
+      await deleteDepartment(token, deleteDept.deptId);
       setDeleteDept(null);
       toast.success("Department deleted successfully!", { id: toastId });
     } catch (error) {
-      console.error("Delete error", error);
       toast.error("Error deleting department", { id: toastId });
     }
-    setLoading(false);
   };
 
   // View staff of department
-  const handleViewStaff = async (dept) => {
-    const toastId = toast.loading("Fetching staff...");
+  const handleViewStaff = (dept) => {
+    setStaffDept(dept);
+    setShowStaffModal(true);
+  };
+
+  // Add Staff Handler
+  const handleAddStaff = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Adding staff...");
 
     try {
-      const response = await axios.get(`${BASE_URL}/staff`);
-      if (response.data.success) {
-        setStaffList(
-          response.data.data.filter((s) => s.deptId === dept.deptId)
-        );
-        toast.success("Staff loaded successfully!", { id: toastId });
-      } else {
-        toast.error("Failed to fetch staff", { id: toastId });
-      }
-      setStaffDept(dept);
-      setShowStaffModal(true);
+      await addStaff(token, { ...staffData, deptId: staffDept.deptId });
+      setStaffData({ name: "", email: "", password: "" });
+      setShowAddStaffModal(false);
+      toast.success("Staff added successfully!", { id: toastId });
     } catch (error) {
-      console.error("Fetch staff error:", error);
-      toast.error("Error fetching staff", { id: toastId });
+      toast.error("Error adding staff", { id: toastId });
+    }
+  };
+
+  // Update Staff Handler
+  const handleUpdateStaff = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Updating staff...");
+
+    try {
+      await updateStaff(token, editingStaff.staffId, {
+        ...editingStaff,
+        deptId: staffDept.deptId,
+      });
+      setShowEditStaffModal(false);
+      setEditingStaff(null);
+      toast.success("Staff updated successfully!", { id: toastId });
+    } catch (error) {
+      toast.error("Error updating staff", { id: toastId });
+    }
+  };
+
+  // Delete Staff Handler - UPDATED to use staffToDelete
+  const handleDeleteStaffConfirm = async () => {
+    if (!staffToDelete) return;
+    const toastId = toast.loading("Deleting staff...");
+
+    try {
+      await deleteStaff(token, staffToDelete.staffId);
+      setStaffToDelete(null);
+      toast.success("Staff deleted successfully!", { id: toastId });
+    } catch (error) {
+      toast.error("Error deleting staff", { id: toastId });
+    }
+  };
+
+  // Refresh staff list
+  const refreshStaffList = () => {
+    setRefreshingStaff(true);
+    try {
+      const staffForDept = getStaffByDepartment(staffDept.deptId);
+      setStaffList(staffForDept);
+    } catch (error) {
+      console.error("Error refreshing staff:", error);
+      toast.error("Error refreshing staff data");
+    } finally {
+      setRefreshingStaff(false);
     }
   };
 
@@ -522,34 +583,12 @@ const exportToPDF = () => {
   );
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen p-6">
-      {/* Toast Container */}
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: "#363636",
-            color: "#fff",
-          },
-          success: {
-            duration: 3000,
-            theme: {
-              primary: "green",
-              secondary: "black",
-            },
-          },
-          loading: {
-            duration: Infinity,
-          },
-        }}
-      />
-
+    <div className="space-y-6 text-sm bg-gray-50 min-h-screen">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white py-6 rounded-xl "
       >
         <div>
           <h1 className="text-2xl font-bold text-[#00539C]">Departments</h1>
@@ -565,8 +604,8 @@ const exportToPDF = () => {
                 e.stopPropagation();
                 setShowExportDropdown(!showExportDropdown);
               }}
-              disabled={loading || departments.length === 0}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              disabled={loadingStates.operations || departments.length === 0}
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
@@ -578,7 +617,7 @@ const exportToPDF = () => {
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-green-600 font-medium">Excel</span>
+                  <span className="text-emerald-600 font-medium">Excel</span>
                 </button>
                 <button
                   onClick={exportToWord}
@@ -590,7 +629,7 @@ const exportToPDF = () => {
                   onClick={exportToPDF}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-red-600 font-medium">PDF</span>
+                  <span className="text-rose-600 font-medium">PDF</span>
                 </button>
               </div>
             )}
@@ -598,8 +637,8 @@ const exportToPDF = () => {
 
           <button
             onClick={() => setShowAddModal(true)}
-            disabled={loading}
-            className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-[#004085] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+            disabled={loadingStates.operations}
+            className="flex items-center gap-2 bg-[#00539C] text-white px-4 py-2.5 rounded-lg hover:bg-[#00539C] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
           >
             <FiPlus size={16} /> Add Department
           </button>
@@ -607,7 +646,7 @@ const exportToPDF = () => {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white p-4 rounded-xl shadow-sm border">
+      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -621,143 +660,213 @@ const exportToPDF = () => {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all duration-200 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
           />
         </div>
-        <select
-          value={collegeFilter}
-          onChange={(e) => {
-            setCollegeFilter(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
-        >
-          <option value="">All Colleges</option>
-          {[...new Set(departments.map((d) => d.college))].map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+
+        <div className="relative">
+          <select
+            value={collegeFilter}
+            onChange={(e) => {
+              setCollegeFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full px-8 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm appearance-none cursor-pointer"
+          >
+            <option value="">All Colleges</option>
+            {[...new Set(departments.map((d) => d.college))].map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        </div>
+
         <button
-          onClick={fetchDepartments}
-          disabled={refreshing || loading}
-          className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          onClick={fetchDepartmentsData}
+          disabled={loadingStates.departments || loadingStates.operations}
+          className="p-2.5 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
         >
-          <FiRefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+          <FiRefreshCw
+            size={16}
+            className={loadingStates.departments ? "animate-spin" : ""}
+          />
         </button>
       </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00539C]"></div>
-            <span className="text-sm">Processing...</span>
+      {loadingStates.departments ||
+        (loadingStates.operations && (
+          // ✅ Skeleton Loader
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 animate-pulse">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-lg shadow p-4 space-y-3 border border-gray-200"
+              >
+                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-10 bg-gray-300 rounded mt-3"></div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        ))}
 
       {/* Table */}
-<div className="bg-white rounded-xl shadow-sm border relative">
-  <table className="w-full text-left">
-    <thead className="bg-[#00539C] text-white">
-      <tr>
-        <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">Dept ID</th>
-        <th className="px-6 py-4 font-semibold text-sm">Dept Name</th>
-        <th className="px-6 py-4 font-semibold text-sm">Branch ID</th>
-        <th className="px-6 py-4 font-semibold text-sm">College</th>
-        <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl"></th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-100">
-      {paginatedDepts.map((dept, index) => (
-        <tr key={dept.deptId} className="transition-colors duration-150 rounded-lg">
-          <td className="px-6 py-4 text-md font-medium text-gray-900 rounded-l-lg">{dept.deptId}</td>
-          <td className="px-6 py-4 text-md text-gray-700">{dept.deptName}</td>
-          <td className="px-6 py-4 text-md text-gray-700">{dept.branchId || 0}</td>
-          <td className="px-6 py-4 text-md text-gray-700">{dept.college}</td>
-          <td className="px-6 py-4 text-md relative rounded-r-lg">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === dept.deptId ? null : dept.deptId);
-              }}
-              disabled={loading}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-            >
-              <FiMoreVertical size={18} className="text-gray-600" />
-            </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-300 relative">
+        <table className="w-full text-left font-semibold">
+          <thead className="bg-[#00539C] text-white">
+            <tr>
+              <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">
+                Dept ID
+              </th>
+              <th className="px-6 py-4 font-semibold text-sm">Dept Name</th>
+              <th className="px-6 py-4 font-semibold text-sm">Branch ID</th>
+              <th className="px-6 py-4 font-semibold text-sm">College</th>
+              <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {paginatedDepts.map((dept, index) => (
+              <tr
+                key={dept.deptId}
+                className="transition-colors duration-150 rounded-lg"
+              >
+                <td className="px-6 py-4 text-md font-medium text-gray-900 rounded-l-lg">
+                  {dept.deptId}
+                </td>
+                <td className="px-6 py-4 text-md text-gray-700">
+                  {dept.deptName}
+                </td>
+                <td className="px-6 py-4 text-md text-gray-700">
+                  {dept.branchId || 0}
+                </td>
+                <td className="px-6 py-4 text-md text-gray-700">
+                  {dept.college}
+                </td>
+                <td className="px-6 py-4 text-md relative rounded-r-lg">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDropdown(
+                        activeDropdown === dept.deptId ? null : dept.deptId
+                      );
+                    }}
+                    disabled={loadingStates.operations}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    <FiMoreVertical size={18} className="text-gray-600" />
+                  </button>
 
-            {/* Dropdown Menu */}
-            {activeDropdown === dept.deptId && (
-              <div className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px]">
-                <button
-                  onClick={() => {
-                    handleViewStaff(dept);
-                    setActiveDropdown(null);
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <Users size={14} />
-                  View Staff
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingDept({
-                      ...dept,
-                      staff: { name: "", email: "", password: "" },
-                    });
-                    setShowEditModal(true);
-                    setActiveDropdown(null);
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Update
-                </button>
-                <button
-                  onClick={() => {
-                    setDeleteDept(dept);
-                    setActiveDropdown(null);
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete
-                </button>
-              </div>
+                  {/* Dropdown Menu */}
+                  {activeDropdown === dept.deptId && (
+                    <div
+                      className={`absolute bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px] ${
+                        index >= paginatedDepts.length - 3
+                          ? "bottom-full mb-2"
+                          : "top-full "
+                      } right-5`}
+                    >
+                      <button
+                        onClick={() => {
+                          handleViewStaff(dept);
+                          setActiveDropdown(null);
+                        }}
+                        disabled={loadingStates.operations}
+                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <Users size={14} />
+                        View Staff
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingDept(dept);
+                          setShowEditModal(true);
+                          setActiveDropdown(null);
+                        }}
+                        disabled={loadingStates.operations}
+                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Update
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeleteDept(dept);
+                          setActiveDropdown(null);
+                        }}
+                        disabled={loadingStates.operations}
+                        className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {paginatedDepts.length === 0 && (
+              <tr>
+                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <Building2 className="h-12 w-12 text-gray-300 mb-2" />
+                    <p className="text-sm">No departments found</p>
+                  </div>
+                </td>
+              </tr>
             )}
-          </td>
-        </tr>
-      ))}
-      {paginatedDepts.length === 0 && (
-        <tr>
-          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-            <div className="flex flex-col items-center justify-center">
-              <Building2 className="h-12 w-12 text-gray-300 mb-2" />
-              <p className="text-sm">No departments found</p>
-            </div>
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6 text-sm">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || loading}
+            disabled={currentPage === 1 || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Previous
@@ -767,7 +876,7 @@ const exportToPDF = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              disabled={loading}
+              disabled={loadingStates.operations}
               className={`w-9 h-9 flex items-center justify-center border rounded-lg text-sm transition-colors duration-200 ${
                 currentPage === page
                   ? "bg-[#00539C] text-white border-[#00539C]"
@@ -780,7 +889,7 @@ const exportToPDF = () => {
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || loading}
+            disabled={currentPage === totalPages || loadingStates.operations}
             className="px-4 py-2 h-9 flex items-center justify-center border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
             Next
@@ -799,7 +908,7 @@ const exportToPDF = () => {
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -818,15 +927,15 @@ const exportToPDF = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Department Name <span className="text-red-500">*</span>
+                      Department Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="deptName"
                       value={formData.deptName}
                       onChange={handleChange}
                       required
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
 
@@ -838,22 +947,22 @@ const exportToPDF = () => {
                       name="branchId"
                       value={formData.branchId}
                       onChange={handleChange}
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      College <span className="text-red-500">*</span>
+                      College <span className="text-rose-500">*</span>
                     </label>
                     <select
                       name="college"
                       value={formData.college}
                       onChange={handleChange}
-                      disabled={loading}
+                      disabled={loadingStates.operations}
                       required
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     >
                       {collegeOptions.map((c) => (
                         <option key={c.value} value={c.value}>
@@ -875,21 +984,21 @@ const exportToPDF = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Staff Name <span className="text-red-500">*</span>
+                      Staff Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="name"
                       value={staffData.name}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Email <span className="text-red-500">*</span>
+                      Email <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -897,14 +1006,14 @@ const exportToPDF = () => {
                       value={staffData.email}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Password <span className="text-red-500">*</span>
+                      Password <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -912,8 +1021,8 @@ const exportToPDF = () => {
                       value={staffData.password}
                       onChange={handleStaffChange}
                       required
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -924,17 +1033,17 @@ const exportToPDF = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Adding..." : "Add Department"}
+                  {loadingStates.operations ? "Adding..." : "Add Department"}
                 </button>
               </div>
             </form>
@@ -949,11 +1058,11 @@ const exportToPDF = () => {
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
-                Edit Department & Staff
+                Edit Department
               </h2>
               <button
                 onClick={() => setShowEditModal(false)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -970,7 +1079,9 @@ const exportToPDF = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Department ID</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      Department ID
+                    </label>
                     <input
                       value={editingDept.deptId}
                       disabled
@@ -978,7 +1089,9 @@ const exportToPDF = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Department Name</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      Department Name
+                    </label>
                     <input
                       value={editingDept.deptName}
                       disabled
@@ -986,29 +1099,35 @@ const exportToPDF = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Branch ID</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      Branch ID
+                    </label>
                     <input
                       value={editingDept.branchId || ""}
                       onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
+                        setEditingDept((prev) => ({
+                          ...prev,
                           branchId: e.target.value,
                         }))
                       }
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">College</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      College
+                    </label>
                     <select
-                      name="college"
                       value={editingDept.college}
                       onChange={(e) =>
-                        setEditingDept((p) => ({ ...p, college: e.target.value }))
+                        setEditingDept((prev) => ({
+                          ...prev,
+                          college: e.target.value,
+                        }))
                       }
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      disabled={loadingStates.operations}
+                      className="w-full  p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     >
                       {collegeOptions.map((c) => (
                         <option key={c.value} value={c.value}>
@@ -1020,88 +1139,24 @@ const exportToPDF = () => {
                 </div>
               </div>
 
-              {/* Staff Section */}
-              <div className="border border-gray-200 rounded-lg p-5 space-y-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Users className="h-5 w-5 text-[#00539C]" />
-                  Staff Details
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Name</label>
-                    <input
-                      name="name"
-                      value={editingDept.staff?.name || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, name: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={editingDept.staff?.email || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, email: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={editingDept.staff?.password || ""}
-                      onChange={(e) =>
-                        setEditingDept((p) => ({
-                          ...p,
-                          staff: { ...p.staff, password: e.target.value },
-                        }))
-                      }
-                      disabled={loading}
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm disabled:opacity-50 focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Dept ID</label>
-                    <input
-                      value={editingDept.deptId}
-                      disabled
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-100 text-gray-600"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Footer */}
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Updating..." : "Update Department"}
+                  {loadingStates.operations
+                    ? "Updating..."
+                    : "Update Department"}
                 </button>
               </div>
             </form>
@@ -1112,45 +1167,142 @@ const exportToPDF = () => {
       {/* Staff Modal */}
       {showStaffModal && staffDept && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
                 Staff of {staffDept.deptName}
               </h2>
-              <button
-                onClick={() => setShowStaffModal(false)}
-                disabled={loading}
-                className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={refreshStaffList}
+                  disabled={refreshingStaff || loadingStates.operations}
+                  className="flex items-center gap-2 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 text-sm font-medium transition-colors duration-200 border border-gray-300"
+                >
+                  <FiRefreshCw
+                    size={18}
+                    className={refreshingStaff ? "animate-spin" : ""}
+                  />
+                </button>
+                <button
+                  onClick={() => setShowAddStaffModal(true)}
+                  disabled={loadingStates.operations}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
+                >
+                  <FiPlus size={14} /> Add Staff
+                </button>
+                <button
+                  onClick={() => setShowStaffModal(false)}
+                  disabled={loadingStates.operations}
+                  className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-4">
               {staffList.length > 0 ? (
-                <ul className="space-y-3">
-                  {staffList.map((s) => (
-                    <li
-                      key={s.staffId}
-                      className="p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white transition-colors duration-200"
+                <div className="space-y-3">
+                  {staffList.map((staff, index) => (
+                    <div
+                      key={staff.staffId}
+                      className="p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white transition-colors duration-200 relative"
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <strong className="text-gray-700">Staff ID:</strong>
-                          <p className="text-gray-900">{s.staffId}</p>
+                          <p className="text-gray-900">{staff.staffId}</p>
                         </div>
                         <div>
                           <strong className="text-gray-700">Name:</strong>
-                          <p className="text-gray-900">{s.name}</p>
+                          <p className="text-gray-900">{staff.name}</p>
                         </div>
                         <div>
                           <strong className="text-gray-700">Email:</strong>
-                          <p className="text-gray-900">{s.email}</p>
+                          <p className="text-gray-900">{staff.email}</p>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStaffDropdown(
+                                staffDropdown === staff.staffId
+                                  ? null
+                                  : staff.staffId
+                              );
+                            }}
+                            disabled={loadingStates.operations}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                          >
+                            <FiMoreVertical
+                              size={16}
+                              className="text-gray-600"
+                            />
+                          </button>
+
+                          {/* Staff Action Dropdown */}
+                          {staffDropdown === staff.staffId && (
+                            <div
+                              className={`absolute bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[140px] ${
+                                index >= staffList.length - 3
+                                  ? "bottom-12"
+                                  : "top-12"
+                              } right-4`}
+                            >
+                              <button
+                                onClick={() => {
+                                  setEditingStaff(staff);
+                                  setShowEditStaffModal(true);
+                                  setStaffDropdown(null);
+                                }}
+                                disabled={loadingStates.operations}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                              >
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setStaffToDelete(staff); // UPDATED: Changed from setDeleteStaffState
+                                  setStaffDropdown(null);
+                                }}
+                                disabled={loadingStates.operations}
+                                className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex items-center gap-2 transition-colors duration-150"
+                              >
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -1160,21 +1312,214 @@ const exportToPDF = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="px-6 py-4 flex justify-end border-t border-gray-200">
+      {/* Add Staff Modal */}
+      {showAddStaffModal && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">Add Staff</h2>
               <button
-                onClick={() => setShowStaffModal(false)}
-                disabled={loading}
-                className="px-5 py-2.5 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
+                onClick={() => setShowAddStaffModal(false)}
+                disabled={loadingStates.operations}
+                className="text-white disabled:opacity-50"
               >
-                Close
+                <XMarkIcon className="h-6 w-6" />
               </button>
+            </div>
+            <form onSubmit={handleAddStaff} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Name
+                </label>
+                <input
+                  name="name"
+                  value={staffData.name}
+                  onChange={handleStaffChange}
+                  required
+                  disabled={loadingStates.operations}
+                  className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={staffData.email}
+                  onChange={handleStaffChange}
+                  required
+                  disabled={loadingStates.operations}
+                  className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={staffData.password}
+                  onChange={handleStaffChange}
+                  required
+                  disabled={loadingStates.operations}
+                  className="w-full  p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStaffModal(false)}
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50"
+                >
+                  {loadingStates.operations ? "Adding..." : "Add Staff"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {showEditStaffModal && editingStaff && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">Edit Staff</h2>
+              <button
+                onClick={() => setShowEditStaffModal(false)}
+                disabled={loadingStates.operations}
+                className="text-white disabled:opacity-50"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateStaff} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Name
+                </label>
+                <input
+                  value={editingStaff.name}
+                  onChange={(e) =>
+                    setEditingStaff({ ...editingStaff, name: e.target.value })
+                  }
+                  required
+                  disabled={loadingStates.operations}
+                  className="w-full  p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editingStaff.email}
+                  onChange={(e) =>
+                    setEditingStaff({ ...editingStaff, email: e.target.value })
+                  }
+                  required
+                  disabled={loadingStates.operations}
+                  className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Password (leave blank to keep current)
+                </label>
+                <input
+                  type="password"
+                  value={editingStaff.password || ""}
+                  onChange={(e) =>
+                    setEditingStaff({
+                      ...editingStaff,
+                      password: e.target.value,
+                    })
+                  }
+                  disabled={loadingStates.operations}
+                  className="w-full p-2.5 rounded-lg text-sm focus:ring-1 border border-gray-300 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditStaffModal(false)}
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 bg-[#00539C] text-white rounded-lg hover:bg-[#004085] disabled:opacity-50"
+                >
+                  {loadingStates.operations ? "Updating..." : "Update Staff"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Staff Modal - UPDATED to use staffToDelete */}
+      {staffToDelete && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-rose-600 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">
+                Confirm Delete Staff
+              </h2>
+              <button
+                onClick={() => setStaffToDelete(null)}
+                disabled={loadingStates.operations}
+                className="text-white disabled:opacity-50"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-700">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">{staffToDelete.name}</span>?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setStaffToDelete(null)}
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteStaffConfirm}
+                  disabled={loadingStates.operations}
+                  className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50"
+                >
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Modal */}
+      {/* Delete Department Modal */}
       {deleteDept && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
@@ -1184,7 +1529,7 @@ const exportToPDF = () => {
               </h2>
               <button
                 onClick={() => setDeleteDept(null)}
-                disabled={loading}
+                disabled={loadingStates.operations}
                 className="text-white disabled:opacity-50 hover:bg-white/10 p-1 rounded-lg transition-colors duration-200"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -1193,26 +1538,30 @@ const exportToPDF = () => {
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-700">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold text-gray-900">{deleteDept.deptName}</span>?
+                <span className="font-semibold text-gray-900">
+                  {deleteDept.deptName}
+                </span>
+                ?
                 <br />
-                <span className="text-red-500 text-xs">
-                  This action cannot be undone and will remove all associated staff members.
+                <span className="text-rose-500 text-xs">
+                  This action cannot be undone and will remove all associated
+                  staff members.
                 </span>
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteDept(null)}
-                  disabled={loading}
+                  disabled={loadingStates.operations}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  disabled={loading}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
+                  disabled={loadingStates.operations}
+                  className="px-5 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium"
                 >
-                  {loading ? "Deleting..." : "Delete"}
+                  {loadingStates.operations ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

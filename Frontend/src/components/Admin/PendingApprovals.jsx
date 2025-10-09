@@ -1,17 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiRefreshCw, FiMoreVertical, FiDownload } from "react-icons/fi";
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiDownload,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+} from "docx";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+import useApprovalsStore from "../../store/approvalsStore";
 import toast from "react-hot-toast";
 
-function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(false);
+import ENV from "../../env";
+
+function PendingApprovals({ title, subtitle, updateUrl }) {
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -24,6 +38,14 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const staffEmail = localStorage.getItem("email");
+
+  const { approvalsData, loadingStates, fetchApprovals, updateApproval } =
+    useApprovalsStore();
+
+  const approvals = approvalsData.pending;
+  const loading = loadingStates.pending;
 
   const token = localStorage.getItem("token");
   const deptName = localStorage.getItem("deptName");
@@ -41,64 +63,50 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     };
   }, []);
 
-  // ✅ Fetch approvals
-  const fetchApprovals = async () => {
+  // ✅ Fetch approvals using Zustand
+  const fetchData = async () => {
     setRefreshing(true);
-    try {
-      const res = await fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (res.ok) {
-          setApprovals(data.pendingApprovals || []);
-        } else {
-          console.error("Fetch error:", data);
-          setApprovals([]);
-        }
-      } catch {
-        console.error("Received non-JSON response:", text);
-        setApprovals([]);
-      }
-    } catch (err) {
-      console.error("Error fetching approvals:", err);
-      setApprovals([]);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
+    const fetchUrl =
+      `${ENV.BASE_URL}/departments/pending-approvals` ||
+      "http://localhost:5000/departments/pending-approvals";
+    await fetchApprovals("pending", fetchUrl, token);
+    setRefreshing(false);
   };
 
-  useEffect(() => {
-    fetchApprovals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
 
   // Export Functions
   const exportToExcel = () => {
     try {
-      const exportData = approvals.map(approval => ({
+      const exportData = approvals.map((approval) => ({
         "Approval ID": approval.approvalId,
         "Student Name": approval.student.studentName,
-        "PRN": approval.student.prn,
-        "Email": approval.student.email,
-        "Phone": approval.student.phoneNo || "N/A",
-        "Department": approval.deptName || "N/A",
-        "Branch": approval.branch || "N/A",
+        PRN: approval.student.prn,
+        Email: approval.student.email,
+        Phone: approval.student.phoneNo || "N/A",
+        Department: approval.deptName || "N/A",
+        Branch: approval.branch || "N/A",
         "Year of Admission": approval.yearOfAdmission || "N/A",
-        "Status": approval.status,
-        "Remarks": approval.remarks || "N/A",
-        "Created At": approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : "N/A",
-        "Approved At": approval.approvedAt ? new Date(approval.approvedAt).toLocaleDateString() : "N/A"
+        Status: approval.status,
+        Remarks: approval.remarks || "N/A",
+        "Created At": approval.createdAt
+          ? new Date(approval.createdAt).toLocaleDateString()
+          : "N/A",
+        "Approved At": approval.approvedAt
+          ? new Date(approval.approvedAt).toLocaleDateString()
+          : "N/A",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Approvals");
 
-      XLSX.writeFile(wb, `${title.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `${title.toLowerCase().replace(/\s+/g, "_")}_export_${
+          new Date().toISOString().split("T")[0]
+        }.xlsx`
+      );
       toast.success("Exported to Excel successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -112,54 +120,90 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       const tableRows = [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Student Name")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("PRN")], width: { size: 30, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Email")], width: { size: 50, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Phone")], width: { size: 35, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Department")], width: { size: 40, type: WidthType.DXA } }),
-            new TableCell({ children: [new Paragraph("Status")], width: { size: 30, type: WidthType.DXA } }),
+            new TableCell({
+              children: [new Paragraph("Student Name")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("PRN")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Email")],
+              width: { size: 50, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Phone")],
+              width: { size: 35, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Department")],
+              width: { size: 40, type: WidthType.DXA },
+            }),
+            new TableCell({
+              children: [new Paragraph("Status")],
+              width: { size: 30, type: WidthType.DXA },
+            }),
           ],
         }),
-        ...approvals.map(approval => 
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph(approval.student.studentName)] }),
-              new TableCell({ children: [new Paragraph(approval.student.prn)] }),
-              new TableCell({ children: [new Paragraph(approval.student.email)] }),
-              new TableCell({ children: [new Paragraph(approval.student.phoneNo || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.deptName || "N/A")] }),
-              new TableCell({ children: [new Paragraph(approval.status)] }),
-            ],
-          })
+        ...approvals.map(
+          (approval) =>
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph(approval.student.studentName)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.prn)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.email)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.student.phoneNo || "N/A")],
+                }),
+                new TableCell({
+                  children: [new Paragraph(approval.deptName || "N/A")],
+                }),
+                new TableCell({ children: [new Paragraph(approval.status)] }),
+              ],
+            })
         ),
       ];
 
       const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              text: `${title} Report`,
-              heading: "Heading1",
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Generated on: ${new Date().toLocaleDateString()}`,
-              spacing: { after: 400 },
-            }),
-            new Paragraph({
-              text: `Total Records: ${approvals.length}`,
-              spacing: { after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: tableRows,
-            }),
-          ],
-        }],
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: `${title} Report`,
+                heading: "Heading1",
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Generated on: ${new Date().toLocaleDateString()}`,
+                spacing: { after: 400 },
+              }),
+              new Paragraph({
+                text: `Total Records: ${approvals.length}`,
+                spacing: { after: 200 },
+              }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: tableRows,
+              }),
+            ],
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `${title.toLowerCase().replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(
+        blob,
+        `${title.toLowerCase().replace(/\s+/g, "_")}_report_${
+          new Date().toISOString().split("T")[0]
+        }.docx`
+      );
       toast.success("Exported to Word successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -171,44 +215,29 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 53, 147);
-      doc.text(`${title} Report`, 105, 15, { align: "center" });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: "center" });
-      doc.text(`Total Records: ${approvals.length}`, 105, 28, { align: "center" });
 
-      const tableData = approvals.map(approval => [
-        approval.student.studentName,
-        approval.student.prn,
-        approval.student.email,
-        approval.student.phoneNo || "N/A",
-        approval.deptName || "N/A",
-        approval.status
-      ]);
-
-      doc.autoTable({
+      // Add autoTable to the jsPDF instance
+      autoTable(doc, {
         startY: 35,
-        head: [['Student Name', 'PRN', 'Email', 'Phone', 'Department', 'Status']],
-        body: tableData,
-        theme: 'grid',
+        head: [
+          ["Student Name", "PRN", "Email", "Phone", "Department", "Status"],
+        ],
+        body: approvals.map((approval) => [
+          approval.student.studentName,
+          approval.student.prn,
+          approval.student.email,
+          approval.student.phoneNo || "N/A",
+          approval.deptName || "N/A",
+          approval.status,
+        ]),
+        theme: "grid",
         headStyles: { fillColor: [0, 83, 156] },
         styles: { fontSize: 7, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 20 }
-        }
       });
 
-      doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(
+        `approvals_report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
       toast.success("Exported to PDF successfully!");
       setShowExportDropdown(false);
     } catch (error) {
@@ -217,15 +246,15 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     }
   };
 
-  // ✅ Update approval status
+  // ✅ Update approval status using Zustand
   const handleUpdateStatus = async () => {
     if (!status) {
       toast.error("Please select a status");
       return;
     }
     if (!remarks.trim()) {
-      toast.error("Remarks are required");
-      return;
+      setRemarks("Approved");
+      toast.caller("Remark Set To Approved");
     }
 
     let finalRemarks = remarks;
@@ -236,30 +265,23 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
 
     const updatePromise = new Promise(async (resolve, reject) => {
       try {
-        const res = await fetch(updateUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            approvalId: Number(selectedApproval.approvalId),
-            status,
-            remarks: finalRemarks,
-          }),
+        const result = await updateApproval(updateUrl, token, {
+          approvalId: Number(selectedApproval.approvalId),
+          status,
+          remarks: finalRemarks,
         });
 
-        const data = await res.json();
-        if (res.ok && data.success) {
+        if (result.success) {
           setSelectedApproval(null);
           setStatus("");
           setRemarks("");
           setPhone("");
           setEmail("");
-          fetchApprovals();
-          resolve("Approval updated successfully");
+          // Refresh the data using Zustand
+          await fetchData();
+          resolve(result.message || "Approval updated successfully");
         } else {
-          reject(data.error || "Failed to update approval");
+          reject(result.message || "Failed to update approval");
         }
       } catch (err) {
         console.error("Error updating approval:", err);
@@ -268,7 +290,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
     });
 
     toast.promise(updatePromise, {
-      loading: 'Updating approval...',
+      loading: "Updating approval...",
       success: (message) => message,
       error: (err) => err,
     });
@@ -290,18 +312,18 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
   );
 
   return (
-    <div className="space-y-6 text-sm bg-gray-50 min-h-screen p-6">
+    <div className="space-y-6 text-sm  min-h-screen">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6 rounded-xl "
       >
         <div>
-          <h1 className="text-2xl font-bold text-[#00539C]">{title}</h1>
-          <p className="text-gray-600 mt-1 text-sm">{subtitle}</p>
+          <h1 className="text-2xl font-bold pl-5 text-[#00539C]">{title}</h1>
+          <p className="text-gray-600 mt-1 pl-5 text-sm">{subtitle}</p>
         </div>
-        
+
         {/* Export Button */}
         {approvals.length > 0 && (
           <div className="relative">
@@ -311,31 +333,31 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                 setShowExportDropdown(!showExportDropdown);
               }}
               disabled={loading || approvals.length === 0}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+              className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
             >
               <FiDownload size={16} /> Export
             </button>
 
             {/* Export Dropdown */}
             {showExportDropdown && (
-              <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
+              <div className="absolute right-0 top-12 bg-gray-50 border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[140px]">
                 <button
                   onClick={exportToExcel}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-green-600 font-medium">Excel</span>
+                  <span className="text-emerald-600 font-medium">Excel</span>
                 </button>
                 <button
                   onClick={exportToWord}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-blue-600 font-medium">Word</span>
+                  <span className="text-sky-600 font-medium">Word</span>
                 </button>
                 <button
                   onClick={exportToPDF}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors duration-150"
                 >
-                  <span className="text-red-600 font-medium">PDF</span>
+                  <span className="text-rose-600 font-medium">PDF</span>
                 </button>
               </div>
             )}
@@ -344,7 +366,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </motion.header>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 text-sm bg-white p-4 rounded-xl shadow-sm border">
+      <div className="flex flex-col sm:flex-row gap-3 pl-3 text-sm  py-4 rounded-xl">
         <div className="relative flex-1">
           <FiSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -358,11 +380,11 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm"
           />
         </div>
         <button
-          onClick={fetchApprovals}
+          onClick={fetchData}
           disabled={refreshing}
           className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
         >
@@ -371,101 +393,150 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       </div>
 
       {/* Table */}
-<div className="bg-white rounded-xl shadow-sm border relative">
-  <table className="w-full text-left">
-    <thead className="bg-[#00539C] text-white">
-      <tr>
-        <th className="px-6 py-4 font-semibold text-sm">Student Name</th>
-        <th className="px-6 py-4 font-semibold text-sm">PRN</th>
-        <th className="px-6 py-4 font-semibold text-sm">Email</th>
-        <th className="px-6 py-4 font-semibold text-sm">Phone</th>
-        <th className="px-6 py-4 font-semibold text-sm w-20"></th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-100">
-      {paginatedApprovals.map((a, index) => (
-        <tr key={a.approvalId} className="transition-colors duration-150 rounded-lg">
-          <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">{a.student.studentName}</td>
-          <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
-          <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
-          <td className="px-6 py-4 text-gray-700">{a.student.phoneNo || "—"}</td>
-          <td className="px-6 py-4 relative rounded-r-lg">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === a.approvalId ? null : a.approvalId);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <FiMoreVertical size={18} className="text-gray-600" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {activeDropdown === a.approvalId && (
-              <div 
-                className="absolute top-full right-5 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[160px]"
+      <div className="bg-gray-50 rounded-xl ml-3 shadow-sm border border-gray-300 relative">
+        <table className="w-full text-left">
+          <thead className="bg-[#00539C] text-white">
+            <tr>
+              <th className="px-6 py-4 font-semibold text-sm rounded-tl-xl">
+                Student Name
+              </th>
+              <th className="px-6 py-4 font-semibold text-sm">PRN</th>
+              <th className="px-6 py-4 font-semibold text-sm">Email</th>
+              <th className="px-6 py-4 font-semibold text-sm">Phone</th>
+              <th className="px-6 py-4 font-semibold text-sm w-20 rounded-tr-xl"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {paginatedApprovals.map((a, index) => (
+              <tr
+                key={a.approvalId}
+                className="transition-colors duration-150 rounded-lg"
               >
-                <button
-                  onClick={() => {
-                    setSelectedApproval(a);
-                    setStatus("APPROVED");
-                    setActiveDropdown(null);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Approve
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedApproval(a);
-                    setStatus("REQUESTED_INFO");
-                    setActiveDropdown(null);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2 transition-colors duration-150"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Request Info
-                </button>
-                {deptName && deptName.toLowerCase() === "account" && (
+                <td className="px-6 py-4 font-medium text-gray-900 rounded-l-lg">
+                  {a.student.studentName}
+                </td>
+                <td className="px-6 py-4 text-gray-700">{a.student.prn}</td>
+                <td className="px-6 py-4 text-gray-700">{a.student.email}</td>
+                <td className="px-6 py-4 text-gray-700">
+                  {a.student.phoneNo || "—"}
+                </td>
+                <td className="px-6 py-4 text-md relative rounded-r-lg  ">
                   <button
-                    onClick={() => {
-                      setSelectedApproval(a);
-                      setStatus("REJECTED");
-                      setActiveDropdown(null);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDropdown(
+                        activeDropdown === a.approvalId ? null : a.approvalId
+                      );
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors duration-150"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Reject
+                    <FiMoreVertical size={18} className="text-gray-600" />
                   </button>
-                )}
-              </div>
+
+                  {/* Dropdown Menu */}
+                  {activeDropdown === a.approvalId && (
+                    <div className="absolute top-full right-5 mt-2 bg-gray-50 border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[160px]">
+                      <button
+                        onClick={() => {
+                          setSelectedApproval(a);
+                          setStatus("APPROVED");
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedApproval(a);
+                          setStatus("REQUESTED_INFO");
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2 transition-colors duration-150"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Request Info
+                      </button>
+                      {deptName && deptName.toLowerCase() === "account" && (
+                        <button
+                          onClick={() => {
+                            setSelectedApproval(a);
+                            setStatus("REJECTED");
+                            setActiveDropdown(null);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-150"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                          Reject
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {paginatedApprovals.length === 0 && !loading && (
+              <tr>
+                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg
+                      className="h-12 w-12 text-gray-300 mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="text-sm">No pending approvals</p>
+                  </div>
+                </td>
+              </tr>
             )}
-          </td>
-        </tr>
-      ))}
-      {paginatedApprovals.length === 0 && !loading && (
-        <tr>
-          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-            <div className="flex flex-col items-center justify-center">
-              <svg className="h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-sm">No pending approvals</p>
-            </div>
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -505,7 +576,7 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       {/* Remarks Modal */}
       {selectedApproval && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gray-50 w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-[#00539C] px-6 py-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-white">
@@ -531,24 +602,26 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                   {selectedApproval.student.studentName}
                 </p>
                 <p className="text-sm text-gray-700">
-                  <span className="font-medium">PRN:</span> {selectedApproval.student.prn}
+                  <span className="font-medium">PRN:</span>{" "}
+                  {selectedApproval.student.prn}
                 </p>
                 <p className="text-sm text-gray-700">
-                  <span className="font-medium">Email:</span> {selectedApproval.student.email}
+                  <span className="font-medium">Email:</span>{" "}
+                  {selectedApproval.student.email}
                 </p>
               </div>
 
               {/* Remarks */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remarks <span className="text-red-500">*</span>
+                  Remarks <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Enter your remarks here..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                   required
                 />
               </div>
@@ -564,8 +637,9 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                       type="text"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Enter phone number for follow-up"
-                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      required
+                      placeholder="Enter your phone number for follow-up"
+                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-1  focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
                   </div>
                   <div>
@@ -574,11 +648,20 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                     </label>
                     <input
                       type="email"
-                      value={email}
+                      value={email || staffEmail} // Use manual email first, fallback to staffEmail
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter email for follow-up"
-                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#00539C] focus:border-transparent transition-all duration-200"
+                      placeholder={
+                        staffEmail
+                          ? `Default: ${staffEmail}`
+                          : "Enter email for follow-up"
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 focus:outline-none focus:shadow-sm transition-all duration-200"
                     />
+                    {staffEmail && !email && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Using default email. Type to override.
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -596,13 +679,17 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
                 onClick={handleUpdateStatus}
                 className={`px-5 py-2.5 rounded-lg text-white font-medium text-sm transition-colors duration-200 ${
                   status === "APPROVED"
-                    ? "bg-green-600 hover:bg-green-700"
+                    ? "bg-emerald-600 hover:bg-emerald-700"
                     : status === "REJECTED"
-                    ? "bg-red-600 hover:bg-red-700"
+                    ? "bg-rose-600 hover:bg-rose-700"
                     : "bg-yellow-600 hover:bg-yellow-700"
                 }`}
               >
-                {status === "APPROVED" ? "Approve" : status === "REJECTED" ? "Reject" : "Request Info"}
+                {status === "APPROVED"
+                  ? "Approve"
+                  : status === "REJECTED"
+                  ? "Reject"
+                  : "Request Info"}
               </button>
             </div>
           </div>
@@ -610,6 +697,6 @@ function PendingApprovals({ title, subtitle, fetchUrl, updateUrl }) {
       )}
     </div>
   );
-}    
+}
 
 export default PendingApprovals;
