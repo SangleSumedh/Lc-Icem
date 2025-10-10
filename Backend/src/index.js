@@ -21,17 +21,22 @@ const allowedOrigins = [
 // ✅ CORS options
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser requests
-    if (allowedOrigins.includes(origin)) {
+    if (!origin) {
+      // Allow server-to-server or Render internal requests
       return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
       console.warn("❌ CORS blocked origin:", origin);
-      return callback(new Error("Not allowed by CORS"));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  optionsSuccessStatus: 200, // 👈 ensures successful response for preflight on some browsers
 };
 
 // ✅ Apply CORS middleware

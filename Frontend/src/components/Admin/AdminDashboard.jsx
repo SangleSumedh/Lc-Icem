@@ -58,17 +58,14 @@ const AdminDashboard = () => {
     if (errorStates.allData) {
       toast.error(`Failed to refresh data: ${errorStates.allData}`);
     }
-  }, [errorStates.stats, errorStates.loginLogs, errorStates.allData]);
-
-  // Error handling
-  useEffect(() => {
     if (errorStates.stats) {
       toast.error(`Failed to load stats: ${errorStates.stats}`);
     }
     if (errorStates.loginLogs) {
       toast.error(`Failed to load login logs: ${errorStates.loginLogs}`);
     }
-  }, [errorStates.stats, errorStates.loginLogs]);
+  }, [errorStates.stats, errorStates.loginLogs, errorStates.allData]);
+
 
   const tabs = [
     {
