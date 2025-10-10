@@ -202,7 +202,7 @@ export const staffLogin = async (req, res) => {
         data: {
           staffId: staff.staffId,
           staffName: staff.name,
-          ipAddress: req.ip || req.connection.remoteAddress || null,
+          ipAddress: req.body.ip || req.connection.remoteAddress || null,
           userAgent: req.headers["user-agent"] || null,
         },
       });

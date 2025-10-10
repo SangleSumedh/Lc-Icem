@@ -93,6 +93,10 @@ const AdminLogin = () => {
     };
     setFormErrors(errors);
 
+    const { data } = await axios.get("https://api.ipify.org?format=json");
+    const ip = data.ip;
+    console.log(ip);
+
     if (!errors.email && !errors.password && !errors.loginType) {
       try {
         setLoading(true);
@@ -105,7 +109,10 @@ const AdminLogin = () => {
 
         const response = await axios.post(
           `${ENV.BASE_URL}${endpoint}`,
-          formData,
+          {
+            ...formData,
+            ip,
+          },
           {
             headers: { "Content-Type": "application/json" },
           }
@@ -130,7 +137,7 @@ const AdminLogin = () => {
               localStorage.setItem("username", user.username || "");
               localStorage.setItem("email", user.email || "");
             }
-            toast.success( "Welcome Admin");
+            toast.success("Welcome Admin");
             navigate("/admin-dashboard");
           } else if (decoded.role === "department") {
             // Store department staff data

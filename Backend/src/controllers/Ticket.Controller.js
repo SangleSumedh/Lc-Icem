@@ -17,6 +17,12 @@ export const getTickets = async (req, res) => {
       sortOrder = "desc",
     } = req.query;
 
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    const pageFinal = isNaN(pageNumber) ? 1 : pageNumber;
+    const limitFinal = isNaN(limitNumber) ? 10 : limitNumber;
+
     // Build where clause
     const where = {};
     if (status) where.status = status;
@@ -56,8 +62,8 @@ export const getTickets = async (req, res) => {
     return sendResponse(res, true, "Tickets fetched successfully", {
       tickets: formattedTickets,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parseInt(pageFinal),
+        limit: parseInt(limitFinal),
         total,
         pages: Math.ceil(total / limit),
       },
@@ -158,6 +164,12 @@ export const getTicketDetails = async (req, res) => {
 
 /**
  * POST create a new ticket
+ * Required fields
+ * subject,
+ * description,
+ * category,
+ * department,
+ * contactEmail,
  */
 export const createTicket = async (req, res) => {
   try {
@@ -262,41 +274,43 @@ export const updateTicketStatus = async (req, res) => {
 };
 
 /**
- * GET ticket statistics
+ * GET ticket statistics (currently NOT USED)
+ * Counts tickets by status and aggregates by department.
+ * ⚠️ Commented out due to performance concerns. Consider re-implementing efficiently if needed.
  */
-export const getTicketStats = async (req, res) => {
-  try {
-    const total = await prisma.ticket.count();
-    const open = await prisma.ticket.count({ where: { status: "OPEN" } });
-    const inProgress = await prisma.ticket.count({
-      where: { status: "IN_PROGRESS" },
-    });
-    const resolved = await prisma.ticket.count({
-      where: { status: "RESOLVED" },
-    });
-    const closed = await prisma.ticket.count({ where: { status: "CLOSED" } });
+// export const getTicketStats = async (req, res) => {
+//   try {
+//     const total = await prisma.ticket.count();
+//     const open = await prisma.ticket.count({ where: { status: "OPEN" } });
+//     const inProgress = await prisma.ticket.count({
+//       where: { status: "IN_PROGRESS" },
+//     });
+//     const resolved = await prisma.ticket.count({
+//       where: { status: "RESOLVED" },
+//     });
+//     const closed = await prisma.ticket.count({ where: { status: "CLOSED" } });
 
-    const departmentStats = await prisma.ticket.groupBy({
-      by: ["department"],
-      _count: { _all: true },
-    });
+//     const departmentStats = await prisma.ticket.groupBy({
+//       by: ["department"],
+//       _count: { _all: true },
+//     }); -> problematic reducing performance of database if the size becomes large
 
-    return sendResponse(res, true, "Ticket statistics fetched successfully", {
-      stats: { total, open, inProgress, resolved, closed },
-      departmentStats,
-    });
-  } catch (err) {
-    console.error("Error fetching ticket statistics:", err.message);
+//     return sendResponse(res, true, "Ticket statistics fetched successfully", {
+//       stats: { total, open, inProgress, resolved, closed },
+//       departmentStats,
+//     });
+//   } catch (err) {
+//     console.error("Error fetching ticket statistics:", err.message);
 
-    const { message, statusCode } = handlePrismaError(err, {
-      operation: "get_ticket_stats",
-    });
+//     const { message, statusCode } = handlePrismaError(err, {
+//       operation: "get_ticket_stats",
+//     });
 
-    return sendResponse(res, false, message, null, statusCode);
-  }
-};
+//     return sendResponse(res, false, message, null, statusCode);
+//   }
+// };
 
-// Simple date formatter (unchanged)
+// Formats a Date object to 'YYYY-MM-DD', returns null if invalid
 const formatDate = (date) => {
   if (!date) return null;
   const d = new Date(date);

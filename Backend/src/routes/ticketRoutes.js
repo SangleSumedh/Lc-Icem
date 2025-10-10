@@ -5,7 +5,6 @@ import {
   getTicketDetails,
   createTicket,
   updateTicketStatus,
-  getTicketStats,
 } from "../controllers/Ticket.Controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
@@ -19,7 +18,8 @@ const router = express.Router();
 router.get("/", verifyToken(["superadmin", "department"]), getTickets);
 
 // 🔹 Get ticket statistics (SuperAdmin + Department can view)
-router.get("/stats", verifyToken(["superadmin", "department"]), getTicketStats);
+// CURRENTLY NOT IN USE
+// router.get("/stats", verifyToken(["superadmin", "department"]), getTicketStats);
 
 // 🔹 Get tickets for a specific student (Student can view their own tickets, SuperAdmin + Department can view all)
 router.get(
