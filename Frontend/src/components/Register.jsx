@@ -257,8 +257,8 @@ const Register = () => {
             </p>
           )}
           {formData.phoneNo.length=== 10 && (
-            <p className="text-xs text-rose-500 mt-1">
-              10 digit number only !
+            <p className="text-xs text-emerald-500 mt-1">
+              10 digit number complete !
             </p>
           )}
         </div>
